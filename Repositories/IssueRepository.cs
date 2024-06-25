@@ -10,7 +10,10 @@ using Microsoft.Extensions.Logging;
 namespace JiraAnalyticsCli.Repositories;
 
 /// <summary>
-/// In-memory repository for issue data with caching and search capabilities
+/// In-memory repository for issue data with caching and search capabilities.
+/// All operations complete synchronously (ConcurrentDictionary), so ValueTask
+/// is used throughout to eliminate the Task object and async state-machine
+/// allocations that would otherwise occur on every call.
 /// </summary>
 public class IssueRepository : IIssueRepository
 {
@@ -22,107 +25,92 @@ public class IssueRepository : IIssueRepository
         _logger = logger;
     }
 
-    public async Task<JiraIssue?> GetByKeyAsync(string issueKey)
+    public ValueTask<JiraIssue?> GetByKeyAsync(string issueKey)
     {
         try
         {
             _logger.LogDebug("Retrieving issue {IssueKey}", issueKey);
-            return _issues.TryGetValue(issueKey, out var issue) ? issue : null;
+            _issues.TryGetValue(issueKey, out var issue);
+            return ValueTask.FromResult<JiraIssue?>(issue);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving issue {IssueKey}", issueKey);
-            return null;
-        }
-        finally
-        {
-            await Task.CompletedTask;
+            return ValueTask.FromResult<JiraIssue?>(null);
         }
     }
 
-    public async Task<List<JiraIssue>> GetByProjectAsync(string projectKey)
+    public ValueTask<List<JiraIssue>> GetByProjectAsync(string projectKey)
     {
         try
         {
             _logger.LogDebug("Retrieving issues for project {ProjectKey}", projectKey);
-            return _issues.Values
+            var result = _issues.Values
                 .Where(i => i.ProjectKey == projectKey)
                 .ToList();
+            return ValueTask.FromResult(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving issues for project {ProjectKey}", projectKey);
-            return new List<JiraIssue>();
-        }
-        finally
-        {
-            await Task.CompletedTask;
+            return ValueTask.FromResult(new List<JiraIssue>());
         }
     }
 
-    public async Task<List<JiraIssue>> GetBySprintAsync(int sprintId)
+    public ValueTask<List<JiraIssue>> GetBySprintAsync(int sprintId)
     {
         try
         {
             _logger.LogDebug("Retrieving issues for sprint {SprintId}", sprintId);
-            return _issues.Values
+            var result = _issues.Values
                 .Where(i => i.SprintId == sprintId)
                 .ToList();
+            return ValueTask.FromResult(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving issues for sprint {SprintId}", sprintId);
-            return new List<JiraIssue>();
-        }
-        finally
-        {
-            await Task.CompletedTask;
+            return ValueTask.FromResult(new List<JiraIssue>());
         }
     }
 
-    public async Task<List<JiraIssue>> GetOverdueAsync(string projectKey)
+    public ValueTask<List<JiraIssue>> GetOverdueAsync(string projectKey)
     {
         try
         {
             _logger.LogDebug("Retrieving overdue issues for project {ProjectKey}", projectKey);
-            return _issues.Values
+            var result = _issues.Values
                 .Where(i => i.ProjectKey == projectKey && i.IsOverdue())
                 .OrderByDescending(i => i.DueDate)
                 .ToList();
+            return ValueTask.FromResult(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving overdue issues");
-            return new List<JiraIssue>();
-        }
-        finally
-        {
-            await Task.CompletedTask;
+            return ValueTask.FromResult(new List<JiraIssue>());
         }
     }
 
-    public async Task<List<JiraIssue>> GetHighPriorityAsync(string projectKey)
+    public ValueTask<List<JiraIssue>> GetHighPriorityAsync(string projectKey)
     {
         try
         {
             _logger.LogDebug("Retrieving high priority issues for project {ProjectKey}", projectKey);
-            return _issues.Values
+            var result = _issues.Values
                 .Where(i => i.ProjectKey == projectKey && i.IsHighPriority())
                 .OrderByDescending(i => i.Priority)
                 .ToList();
+            return ValueTask.FromResult(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving high priority issues");
-            return new List<JiraIssue>();
-        }
-        finally
-        {
-            await Task.CompletedTask;
+            return ValueTask.FromResult(new List<JiraIssue>());
         }
     }
 
-    public async Task SaveAsync(JiraIssue issue)
+    public ValueTask SaveAsync(JiraIssue issue)
     {
         try
         {
@@ -130,21 +118,18 @@ public class IssueRepository : IIssueRepository
                 throw new ArgumentNullException(nameof(issue));
 
             issue.Validate();
-            _issues.AddOrUpdate(issue.Key, issue, (key, existing) => issue);
+            _issues.AddOrUpdate(issue.Key, issue, (_, _) => issue);
             _logger.LogDebug("Saved issue {IssueKey}", issue.Key);
+            return ValueTask.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving issue");
             throw;
         }
-        finally
-        {
-            await Task.CompletedTask;
-        }
     }
 
-    public async Task SaveRangeAsync(List<JiraIssue> issues)
+    public ValueTask SaveRangeAsync(List<JiraIssue> issues)
     {
         try
         {
@@ -154,26 +139,20 @@ public class IssueRepository : IIssueRepository
             foreach (var issue in issues)
             {
                 issue.Validate();
-                _issues.AddOrUpdate(issue.Key, issue, (key, existing) => issue);
+                _issues.AddOrUpdate(issue.Key, issue, (_, _) => issue);
             }
 
             _logger.LogInformation("Saved {IssueCount} issues to repository", issues.Count);
+            return ValueTask.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving issues");
             throw;
         }
-        finally
-        {
-            await Task.CompletedTask;
-        }
     }
 
-    public int GetCount()
-    {
-        return _issues.Count;
-    }
+    public int GetCount() => _issues.Count;
 
     public void Clear()
     {
