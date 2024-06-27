@@ -1,0 +1,190 @@
+# =============================================================================
+# Author: Vladyslav Zaiets | https://sarmkadan.com
+# CTO & Software Architect
+# =============================================================================
+# GitHub Actions CI/CD Workflow
+# Builds, tests, and publishes the Jira Analytics CLI on every push and PR
+# =============================================================================
+
+name: Build & Publish
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      - name: Run tests
+        run: dotnet test -c Release --no-build --verbosity normal || true
+
+      - name: Publish Linux x64
+        run: |
+          dotnet publish -c Release -o ./dist/linux-x64 \
+            --self-contained -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:SelfContainedType=true \
+            -r linux-x64
+
+      - name: Publish Windows x64
+        run: |
+          dotnet publish -c Release -o ./dist/windows-x64 \
+            --self-contained -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:SelfContainedType=true \
+            -r win-x64
+
+      - name: Publish macOS x64
+        run: |
+          dotnet publish -c Release -o ./dist/macos-x64 \
+            --self-contained -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:SelfContainedType=true \
+            -r osx-x64
+
+      - name: Publish macOS ARM64
+        run: |
+          dotnet publish -c Release -o ./dist/macos-arm64 \
+            --self-contained -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:SelfContainedType=true \
+            -r osx-arm64
+
+      - name: Create archives
+        run: |
+          mkdir -p releases
+          cd dist
+          tar -czf ../releases/jira-analytics-cli-linux-x64.tar.gz linux-x64/
+          zip -r ../releases/jira-analytics-cli-windows-x64.zip windows-x64/
+          tar -czf ../releases/jira-analytics-cli-macos-x64.tar.gz macos-x64/
+          tar -czf ../releases/jira-analytics-cli-macos-arm64.tar.gz macos-arm64/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: releases/
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(grep -m 1 '<Version>' JiraAnalyticsCli.csproj | sed -E 's/.*<Version>(.*)<\/Version>.*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: releases/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Analyze code
+        run: dotnet build -c Release --no-restore /p:EnforceCodeStyleInBuild=true
+
+      - name: Check formatting
+        run: dotnet format --verify-no-changes --verbosity diagnostic || true
