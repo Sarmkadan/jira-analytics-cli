@@ -83,3 +83,20 @@ public class CacheUpdatedEvent : DomainEvent
     public string Operation { get; set; } = string.Empty; // Set, Clear, Remove
     public long DataSizeBytes { get; set; }
 }
+
+/// <summary>
+/// Event raised when a dashboard layout is created or updated.
+/// </summary>
+public class DashboardLayoutSavedEvent : DomainEvent
+{
+    /// <summary>Gets or sets the Jira project key the layout belongs to.</summary>
+    public string ProjectKey { get; set; } = string.Empty;
+    /// <summary>Gets or sets the UUID of the saved layout.</summary>
+    public string LayoutId { get; set; } = string.Empty;
+    /// <summary>Gets or sets the human-readable layout name.</summary>
+    public string LayoutName { get; set; } = string.Empty;
+    /// <summary>Gets or sets the operation that triggered this event: <c>Created</c> or <c>Updated</c>.</summary>
+    public string Operation { get; set; } = string.Empty;
+    /// <summary>Gets or sets the number of widgets in the layout at the time of save.</summary>
+    public int WidgetCount { get; set; }
+}

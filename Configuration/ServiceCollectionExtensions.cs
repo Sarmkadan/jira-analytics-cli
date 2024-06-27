@@ -17,6 +17,7 @@ using JiraAnalyticsCli.BackgroundTasks;
 using JiraAnalyticsCli.Events;
 using JiraAnalyticsCli.Services;
 using JiraAnalyticsCli.Repositories;
+using JiraAnalyticsCli.Dashboard;
 
 namespace JiraAnalyticsCli.Configuration;
 
@@ -204,6 +205,37 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Registers the dashboard builder subsystem: layout manager, widget registry,
+    /// configuration options, and the <see cref="IDashboardService"/> implementation.
+    /// </summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="options">
+    /// Optional dashboard options. When <see langword="null"/>, default values are used.
+    /// </param>
+    public static IServiceCollection AddDashboardServices(
+        this IServiceCollection services,
+        DashboardOptions? options = null)
+    {
+        var resolvedOptions = options ?? new DashboardOptions();
+
+        services.AddSingleton(resolvedOptions);
+
+        services.AddSingleton(sp => new DashboardLayoutManager(
+            sp.GetRequiredService<ILogger<DashboardLayoutManager>>()));
+
+        services.AddSingleton<IDashboardService>(sp => new DashboardService(
+            sp.GetRequiredService<IAnalyticsService>(),
+            sp.GetRequiredService<ISprintComparisonService>(),
+            sp.GetRequiredService<CacheManager>(),
+            sp.GetRequiredService<EventBus>(),
+            sp.GetRequiredService<DashboardLayoutManager>(),
+            sp.GetRequiredService<DashboardOptions>(),
+            sp.GetRequiredService<ILogger<DashboardService>>()));
+
+        return services;
+    }
+
+    /// <summary>
     /// Convenience method to register all Phase 2 services at once.
     /// </summary>
     public static IServiceCollection AddPhase2Services(
@@ -224,7 +256,8 @@ public static class ServiceCollectionExtensions
             .AddBackgroundTaskServices()
             .AddEventServices()
             .AddFeatureFlagServices()
-            .AddSprintComparisonServices();
+            .AddSprintComparisonServices()
+            .AddDashboardServices();
 
         return services;
     }
