@@ -28,6 +28,8 @@ public class JiraApiService : IJiraApiService
 
     public async Task<JiraProject?> GetProjectAsync(string projectKey)
     {
+        // Fix: Add input validation for projectKey
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         try
         {
             _logger.LogInformation("Fetching project {ProjectKey}", projectKey);
@@ -44,6 +46,7 @@ public class JiraApiService : IJiraApiService
             var root = doc.RootElement;
 
             var createdStr = GetString(root, "created");
+            var createdDate = DateTime.TryParse(createdStr, out var parsedCreatedDate) ? parsedCreatedDate : DateTime.MinValue;
             var project = new JiraProject
             {
                 Key = projectKey,
@@ -52,7 +55,7 @@ public class JiraApiService : IJiraApiService
                 Description = GetStringOrNull(root, "description"),
                 ProjectType = GetString(root, "type", "software"),
                 Lead = GetNestedStringOrNull(root, "lead", "displayName"),
-                CreatedDate = DateTime.Parse(string.IsNullOrEmpty(createdStr) ? DateTime.UtcNow.ToString() : createdStr),
+                CreatedDate = createdDate,
                 Url = GetStringOrNull(root, "url")
             };
 
@@ -68,6 +71,8 @@ public class JiraApiService : IJiraApiService
 
     public async Task<List<Sprint>> GetProjectSprintsAsync(string projectKey)
     {
+        // Fix: Add input validation for projectKey
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         var sprints = new List<Sprint>();
 
         try
@@ -118,6 +123,8 @@ public class JiraApiService : IJiraApiService
 
     public async Task<Sprint?> GetSprintAsync(int sprintId)
     {
+        // Fix: Add input validation for sprintId
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
         try
         {
             _logger.LogInformation("Fetching sprint {SprintId}", sprintId);
@@ -152,6 +159,8 @@ public class JiraApiService : IJiraApiService
 
     public async Task<List<JiraIssue>> GetSprintIssuesAsync(int sprintId)
     {
+        // Fix: Add input validation for sprintId
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
         var issues = new List<JiraIssue>();
 
         try
@@ -191,6 +200,8 @@ public class JiraApiService : IJiraApiService
 
     public async Task<List<JiraIssue>> GetProjectIssuesAsync(string projectKey)
     {
+        // Fix: Add input validation for projectKey
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         var issues = new List<JiraIssue>();
 
         try
@@ -226,6 +237,8 @@ public class JiraApiService : IJiraApiService
 
     public async Task<List<Developer>> GetProjectTeamAsync(string projectKey)
     {
+        // Fix: Add input validation for projectKey
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         var team = new List<Developer>();
 
         try
@@ -252,6 +265,8 @@ public class JiraApiService : IJiraApiService
 
     public async Task<JiraIssue?> GetIssueAsync(string issueKey)
     {
+        // Fix: Add input validation for issueKey
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(issueKey, nameof(issueKey));
         try
         {
             var response = await _httpClient.GetAsync($"/rest/api/3/issues/{issueKey}");
@@ -270,6 +285,8 @@ public class JiraApiService : IJiraApiService
 
     public async Task<List<BurndownSnapshot>> GetBurndownDataAsync(int sprintId)
     {
+        // Fix: Add input validation for sprintId
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
         var snapshots = new List<BurndownSnapshot>();
 
         try
@@ -319,6 +336,8 @@ public class JiraApiService : IJiraApiService
             var updatedStr = GetNestedStringOrNull(issueData, "fields", "updated");
             var storyPtsStr = GetNestedStringOrNull(issueData, "fields", "customfield_10016") ?? "0";
 
+            var createdDate = DateTime.TryParse(createdStr, out var parsedCreatedDate) ? parsedCreatedDate : DateTime.MinValue;
+            var updatedDate = DateTime.TryParse(updatedStr, out var parsedUpdatedDate) ? parsedUpdatedDate : DateTime.MinValue;
             var issue = new JiraIssue
             {
                 Key = GetString(issueData, "key"),
@@ -330,8 +349,8 @@ public class JiraApiService : IJiraApiService
                 Assignee = GetPath(issueData, "fields", "assignee", "displayName"),
                 Priority = GetPath(issueData, "fields", "priority", "name") ?? "Medium",
                 StoryPoints = int.TryParse(storyPtsStr, out var points) ? points : 0,
-                CreatedDate = DateTime.Parse(string.IsNullOrEmpty(createdStr) ? DateTime.UtcNow.ToString() : createdStr),
-                UpdatedDate = DateTime.Parse(string.IsNullOrEmpty(updatedStr) ? DateTime.UtcNow.ToString() : updatedStr),
+                CreatedDate = createdDate,
+                UpdatedDate = updatedDate,
                 SprintId = sprintId
             };
 
@@ -352,12 +371,15 @@ public class JiraApiService : IJiraApiService
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static string GetString(JsonElement element, string property, string defaultValue = "")
         => element.TryGetProperty(property, out var p) ? p.GetString() ?? defaultValue : defaultValue;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static string? GetStringOrNull(JsonElement element, string property)
         => element.TryGetProperty(property, out var p) ? p.GetString() : null;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int GetInt(JsonElement element, string property, int defaultValue = 0)
     {
         if (!element.TryGetProperty(property, out var p)) return defaultValue;
@@ -366,6 +388,7 @@ public class JiraApiService : IJiraApiService
         return defaultValue;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static string GetNestedString(JsonElement element, string prop1, string prop2, string defaultValue = "")
     {
         if (element.TryGetProperty(prop1, out var p1) && p1.TryGetProperty(prop2, out var p2))
@@ -373,6 +396,7 @@ public class JiraApiService : IJiraApiService
         return defaultValue;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static string? GetNestedStringOrNull(JsonElement element, string prop1, string prop2)
     {
         if (element.TryGetProperty(prop1, out var p1) && p1.TryGetProperty(prop2, out var p2))
@@ -380,6 +404,7 @@ public class JiraApiService : IJiraApiService
         return null;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static string? GetPath(JsonElement element, params string[] path)
     {
         var current = element;
@@ -391,6 +416,7 @@ public class JiraApiService : IJiraApiService
         return current.GetString();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static DateTime? ParseDateOrNull(string? value)
         => DateTime.TryParse(value, out var dt) ? dt : null;
 }
