@@ -9,6 +9,7 @@
     <Optimize>true</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>jira-analytics-cli.Benchmarks</AssemblyName>
+    <Version>2.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
