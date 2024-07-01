@@ -1,0 +1,68 @@
+# Rider
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Visual Studio
+.vs/
+*.user
+*.sln.docstates
+*.suo
+
+# Build artifacts
+bin/
+obj/
+.output/
+artifacts/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/packages/
+*.lock.json
+
+# Diagnostic files
+*.log
+*.stackdump
+*.dmp
+
+# Cache
+.cache/
+*.cache
+
+# OS-specific
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Generated files
+appsettings.local.json
+*.generated.cs
+
+# Test artifacts
+TestResults/
+Coverage/
+.coverage
+opencover.xml
+
+# IDE
+.editorconfig.user
+
+# Application output
+reports/
+exports/
+*.pdf
+*.png
+*.jpg
+*.csv
+*.json.bak
