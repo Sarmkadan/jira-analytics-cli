@@ -279,7 +279,7 @@ public class AnalyticsService : IAnalyticsService
             {
                 result.AverageDaysOverdue = overdueIssues
                     .Where(i => i.DueDate.HasValue)
-                    .Average(i => (DateTime.UtcNow - i.DueDate.Value).TotalDays);
+                    .Average(i => (DateTime.UtcNow - i.DueDate!.Value).TotalDays);
             }
 
             _logger.LogInformation("Overdue issues analysis completed: {OverdueCount} overdue, {CriticalCount} critical",
