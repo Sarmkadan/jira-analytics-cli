@@ -11,7 +11,7 @@
     <Authors>Vladyslav Zaiets</Authors>
     <Description>Advanced Jira Analytics CLI - Sprint metrics, developer load analysis, burndown charts, and professional reporting</Description>
     <RepositoryUrl>https://github.com/sarmkadan/jira-analytics-cli</RepositoryUrl>
-    <License>MIT</License>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>

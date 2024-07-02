@@ -21,6 +21,7 @@ artifacts/
 # NuGet
 *.nupkg
 *.snupkg
+packages/
 .nuget/packages/
 *.lock.json
 
@@ -47,6 +48,7 @@ Thumbs.db
 
 # Generated files
 appsettings.local.json
+appsettings.Development.json
 *.generated.cs
 
 # Test artifacts
