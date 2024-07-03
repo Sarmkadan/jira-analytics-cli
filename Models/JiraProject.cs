@@ -4,7 +4,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
 
@@ -14,30 +14,30 @@ namespace JiraAnalyticsCli.Models;
 public class JiraProject
 {
     [Required]
-    [JsonProperty("key")]
+    [JsonPropertyName("key")]
     public string Key { get; set; } = string.Empty;
 
     [Required]
-    [JsonProperty("id")]
+    [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
 
     [Required]
-    [JsonProperty("name")]
+    [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonProperty("description")]
+    [JsonPropertyName("description")]
     public string? Description { get; set; }
 
-    [JsonProperty("projectType")]
+    [JsonPropertyName("projectType")]
     public string ProjectType { get; set; } = "software"; // software, service_management, business
 
-    [JsonProperty("lead")]
+    [JsonPropertyName("lead")]
     public string? Lead { get; set; }
 
-    [JsonProperty("created")]
+    [JsonPropertyName("created")]
     public DateTime CreatedDate { get; set; }
 
-    [JsonProperty("url")]
+    [JsonPropertyName("url")]
     public string? Url { get; set; }
 
     public List<Sprint> Sprints { get; set; } = new();

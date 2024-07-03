@@ -4,7 +4,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
 
@@ -14,33 +14,33 @@ namespace JiraAnalyticsCli.Models;
 public class Sprint
 {
     [Required]
-    [JsonProperty("id")]
+    [JsonPropertyName("id")]
     public int Id { get; set; }
 
     [Required]
-    [JsonProperty("key")]
+    [JsonPropertyName("key")]
     public string Key { get; set; } = string.Empty;
 
     [Required]
-    [JsonProperty("name")]
+    [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonProperty("state")]
+    [JsonPropertyName("state")]
     public string State { get; set; } = "Open"; // Open, Active, Closed
 
-    [JsonProperty("startDate")]
+    [JsonPropertyName("startDate")]
     public DateTime? StartDate { get; set; }
 
-    [JsonProperty("endDate")]
+    [JsonPropertyName("endDate")]
     public DateTime? EndDate { get; set; }
 
-    [JsonProperty("completeDate")]
+    [JsonPropertyName("completeDate")]
     public DateTime? CompleteDate { get; set; }
 
-    [JsonProperty("goal")]
+    [JsonPropertyName("goal")]
     public string? Goal { get; set; }
 
-    [JsonProperty("projectKey")]
+    [JsonPropertyName("projectKey")]
     public string ProjectKey { get; set; } = string.Empty;
 
     public List<JiraIssue> Issues { get; set; } = new();
