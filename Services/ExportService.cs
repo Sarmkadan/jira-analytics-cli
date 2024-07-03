@@ -4,10 +4,10 @@
 // =============================================================================
 
 using System.Text;
+using System.Text.Json;
 using SkiaSharp;
 using JiraAnalyticsCli.Models;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace JiraAnalyticsCli.Services;
 
@@ -115,7 +115,7 @@ public class ExportService : IExportService
 
         try
         {
-            var json = JsonConvert.SerializeObject(data, Formatting.Indented);
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(outputPath, json, Encoding.UTF8);
         }
         catch (Exception ex)

@@ -4,8 +4,7 @@
 // =============================================================================
 
 using System.Text.Json;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Utils;
 
@@ -15,20 +14,18 @@ namespace JiraAnalyticsCli.Utils;
 /// </summary>
 public static class JsonConverterUtils
 {
-    private static readonly JsonSerializerSettings DefaultSettings = new()
+    private static readonly JsonSerializerOptions DefaultOptions = new()
     {
-        NullValueHandling = NullValueHandling.Ignore,
-        DateFormatString = "yyyy-MM-ddTHH:mm:ssZ",
-        ContractResolver = new CamelCasePropertyNamesContractResolver(),
-        Formatting = Formatting.Indented
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    private static readonly JsonSerializerSettings CompactSettings = new()
+    private static readonly JsonSerializerOptions CompactOptions = new()
     {
-        NullValueHandling = NullValueHandling.Ignore,
-        DateFormatString = "yyyy-MM-ddTHH:mm:ssZ",
-        ContractResolver = new CamelCasePropertyNamesContractResolver(),
-        Formatting = Formatting.None
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
     /// <summary>
@@ -37,7 +34,7 @@ public static class JsonConverterUtils
     /// </summary>
     public static string ToJsonIndented<T>(this T obj)
     {
-        return JsonConvert.SerializeObject(obj, DefaultSettings);
+        return JsonSerializer.Serialize(obj, DefaultOptions);
     }
 
     /// <summary>
@@ -46,7 +43,7 @@ public static class JsonConverterUtils
     /// </summary>
     public static string ToJsonCompact<T>(this T obj)
     {
-        return JsonConvert.SerializeObject(obj, CompactSettings);
+        return JsonSerializer.Serialize(obj, CompactOptions);
     }
 
     /// <summary>
@@ -60,7 +57,7 @@ public static class JsonConverterUtils
 
         try
         {
-            return JsonConvert.DeserializeObject<T>(json, DefaultSettings);
+            return JsonSerializer.Deserialize<T>(json, DefaultOptions);
         }
         catch (JsonException)
         {
@@ -74,8 +71,8 @@ public static class JsonConverterUtils
     /// </summary>
     public static TTarget ConvertViaJson<TSource, TTarget>(TSource source) where TTarget : class
     {
-        var json = JsonConvert.SerializeObject(source, CompactSettings);
-        return JsonConvert.DeserializeObject<TTarget>(json, DefaultSettings)
+        var json = JsonSerializer.Serialize(source, CompactOptions);
+        return JsonSerializer.Deserialize<TTarget>(json, DefaultOptions)
             ?? throw new InvalidOperationException("Conversion resulted in null");
     }
 
@@ -85,12 +82,10 @@ public static class JsonConverterUtils
     /// </summary>
     public static string MergeJson(string json1, string json2)
     {
-        var obj1 = JsonConvert.DeserializeObject<dynamic>(json1) ?? new { };
-        var obj2 = JsonConvert.DeserializeObject<dynamic>(json2) ?? new { };
-
         // In a real implementation, would do deep merge
         // For now, return obj2 as it represents the merge
-        return JsonConvert.SerializeObject(obj2, CompactSettings);
+        using var doc2 = JsonDocument.Parse(json2);
+        return JsonSerializer.Serialize(doc2.RootElement, CompactOptions);
     }
 
     /// <summary>
@@ -101,11 +96,9 @@ public static class JsonConverterUtils
     {
         try
         {
-            var obj = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-            if (obj?.TryGetValue(propertyName, out var value) == true)
-            {
-                return (T?)Convert.ChangeType(value, typeof(T));
-            }
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty(propertyName, out var prop))
+                return prop.Deserialize<T>(DefaultOptions);
         }
         catch
         {
@@ -126,7 +119,7 @@ public static class JsonConverterUtils
 
         try
         {
-            JsonConvert.DeserializeObject(json);
+            JsonDocument.Parse(json);
             return true;
         }
         catch

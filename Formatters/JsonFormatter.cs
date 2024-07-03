@@ -3,8 +3,8 @@
 // CTO & Software Architect
 // =============================================================================
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace JiraAnalyticsCli.Formatters;
@@ -32,15 +32,14 @@ public class JsonFormatter
     {
         try
         {
-            var settings = new JsonSerializerSettings
+            var options = new JsonSerializerOptions
             {
-                NullValueHandling = NullValueHandling.Ignore,
-                DateFormatString = "yyyy-MM-ddTHH:mm:ssZ",
-                Formatting = _prettyPrint ? Formatting.Indented : Formatting.None,
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                WriteIndented = _prettyPrint,
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
             };
 
-            var json = JsonConvert.SerializeObject(data, settings);
+            var json = JsonSerializer.Serialize(data, options);
             _logger.LogDebug("Formatted data to JSON: {JsonLength} bytes", json.Length);
 
             return json;
@@ -81,13 +80,27 @@ public class JsonFormatter
     {
         try
         {
-            var json = JsonConvert.SerializeObject(data);
-            var jObject = JObject.Parse(json);
+            var rawJson = JsonSerializer.Serialize(data);
+            using var sourceDoc = JsonDocument.Parse(rawJson);
+            var root = sourceDoc.RootElement;
 
-            var filtered = FilterJsonObject(jObject, includedFields);
-            var filteredJson = JsonConvert.SerializeObject(filtered, _prettyPrint ? Formatting.Indented : Formatting.None);
+            using var stream = new System.IO.MemoryStream();
+            using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = _prettyPrint });
 
-            return filteredJson;
+            writer.WriteStartObject();
+            foreach (var field in includedFields)
+            {
+                var token = SelectToken(root, field);
+                if (token.HasValue)
+                {
+                    writer.WritePropertyName(field);
+                    token.Value.WriteTo(writer);
+                }
+            }
+            writer.WriteEndObject();
+            writer.Flush();
+
+            return System.Text.Encoding.UTF8.GetString(stream.ToArray());
         }
         catch (Exception ex)
         {
@@ -104,8 +117,8 @@ public class JsonFormatter
     {
         try
         {
-            var jObject = JObject.Parse(json);
-            return jObject.ToString(Formatting.Indented);
+            using var doc = JsonDocument.Parse(json);
+            return JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions { WriteIndented = true });
         }
         catch (JsonException ex)
         {
@@ -124,16 +137,12 @@ public class JsonFormatter
 
         try
         {
-            JObject.Parse(json);
+            JsonDocument.Parse(json);
             return (true, Array.Empty<string>());
         }
-        catch (JsonReaderException ex)
+        catch (JsonException ex)
         {
             errors.Add($"JSON parsing error at line {ex.LineNumber}: {ex.Message}");
-        }
-        catch (JsonSerializationException ex)
-        {
-            errors.Add($"JSON serialization error: {ex.Message}");
         }
         catch (Exception ex)
         {
@@ -143,19 +152,17 @@ public class JsonFormatter
         return (false, errors.ToArray());
     }
 
-    private JObject FilterJsonObject(JObject source, string[] fields)
+    private static JsonElement? SelectToken(JsonElement element, string path)
     {
-        var result = new JObject();
+        var parts = path.Split('.');
+        var current = element;
 
-        foreach (var field in fields)
+        foreach (var part in parts)
         {
-            var token = source.SelectToken(field);
-            if (token != null)
-            {
-                result.Add(field, token);
-            }
+            if (!current.TryGetProperty(part, out current))
+                return null;
         }
 
-        return result;
+        return current;
     }
 }

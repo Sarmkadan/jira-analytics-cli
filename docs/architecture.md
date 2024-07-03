@@ -490,7 +490,7 @@ public class MockJiraApiService : IJiraApiService
 | Logging | Microsoft.Extensions.Logging | Standard .NET logging |
 | DI | Microsoft.Extensions.DependencyInjection | Standard, lightweight |
 | Graphics | SkiaSharp | Cross-platform, high-performance |
-| JSON | Newtonsoft.Json | Industry standard, flexible |
+| JSON | System.Text.Json | Built-in, high-performance |
 
 ## Future Architecture Improvements
 

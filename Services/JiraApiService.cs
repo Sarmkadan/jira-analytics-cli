@@ -3,10 +3,10 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Text.Json;
 using JiraAnalyticsCli.Models;
 using JiraAnalyticsCli.Configuration;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace JiraAnalyticsCli.Services;
 
@@ -40,18 +40,20 @@ public class JiraApiService : IJiraApiService
             }
 
             var json = await response.Content.ReadAsStringAsync();
-            var projectData = JObject.Parse(json);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
 
+            var createdStr = GetString(root, "created");
             var project = new JiraProject
             {
                 Key = projectKey,
-                Id = projectData["id"]?.ToString() ?? string.Empty,
-                Name = projectData["name"]?.ToString() ?? string.Empty,
-                Description = projectData["description"]?.ToString(),
-                ProjectType = projectData["type"]?.ToString() ?? "software",
-                Lead = projectData["lead"]?["displayName"]?.ToString(),
-                CreatedDate = DateTime.Parse(projectData["created"]?.ToString() ?? DateTime.UtcNow.ToString()),
-                Url = projectData["url"]?.ToString()
+                Id = GetString(root, "id"),
+                Name = GetString(root, "name"),
+                Description = GetStringOrNull(root, "description"),
+                ProjectType = GetString(root, "type", "software"),
+                Lead = GetNestedStringOrNull(root, "lead", "displayName"),
+                CreatedDate = DateTime.Parse(string.IsNullOrEmpty(createdStr) ? DateTime.UtcNow.ToString() : createdStr),
+                Url = GetStringOrNull(root, "url")
             };
 
             _logger.LogInformation("Successfully fetched project {ProjectKey}: {ProjectName}", projectKey, project.Name);
@@ -80,23 +82,23 @@ public class JiraApiService : IJiraApiService
             }
 
             var json = await response.Content.ReadAsStringAsync();
-            var data = JObject.Parse(json);
-            var sprintArray = data["values"] as JArray;
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
 
-            if (sprintArray != null)
+            if (root.TryGetProperty("values", out var sprintArray) && sprintArray.ValueKind == JsonValueKind.Array)
             {
-                foreach (var sprintData in sprintArray)
+                foreach (var sprintData in sprintArray.EnumerateArray())
                 {
                     var sprint = new Sprint
                     {
-                        Id = (int)(sprintData["id"] ?? 0),
-                        Key = sprintData["key"]?.ToString() ?? string.Empty,
-                        Name = sprintData["name"]?.ToString() ?? string.Empty,
-                        State = sprintData["state"]?.ToString() ?? "Open",
-                        StartDate = DateTime.TryParse(sprintData["startDate"]?.ToString() ?? string.Empty, out var start) ? start : null,
-                        EndDate = DateTime.TryParse(sprintData["endDate"]?.ToString() ?? string.Empty, out var end) ? end : null,
-                        CompleteDate = DateTime.TryParse(sprintData["completeDate"]?.ToString() ?? string.Empty, out var complete) ? complete : null,
-                        Goal = sprintData["goal"]?.ToString(),
+                        Id = GetInt(sprintData, "id"),
+                        Key = GetString(sprintData, "key"),
+                        Name = GetString(sprintData, "name"),
+                        State = GetString(sprintData, "state", "Open"),
+                        StartDate = ParseDateOrNull(GetStringOrNull(sprintData, "startDate")),
+                        EndDate = ParseDateOrNull(GetStringOrNull(sprintData, "endDate")),
+                        CompleteDate = ParseDateOrNull(GetStringOrNull(sprintData, "completeDate")),
+                        Goal = GetStringOrNull(sprintData, "goal"),
                         ProjectKey = projectKey
                     };
 
@@ -128,14 +130,15 @@ public class JiraApiService : IJiraApiService
             }
 
             var json = await response.Content.ReadAsStringAsync();
-            var sprintData = JObject.Parse(json);
+            using var doc = JsonDocument.Parse(json);
+            var sprintData = doc.RootElement;
 
             var sprint = new Sprint
             {
-                Id = (int)(sprintData["id"] ?? sprintId),
-                Key = sprintData["key"]?.ToString() ?? string.Empty,
-                Name = sprintData["name"]?.ToString() ?? string.Empty,
-                State = sprintData["state"]?.ToString() ?? "Open"
+                Id = GetInt(sprintData, "id", sprintId),
+                Key = GetString(sprintData, "key"),
+                Name = GetString(sprintData, "name"),
+                State = GetString(sprintData, "state", "Open")
             };
 
             return sprint;
@@ -164,14 +167,14 @@ public class JiraApiService : IJiraApiService
             }
 
             var json = await response.Content.ReadAsStringAsync();
-            var data = JObject.Parse(json);
-            var issueArray = data["issues"] as JArray;
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
 
-            if (issueArray != null)
+            if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
             {
-                foreach (var issueData in issueArray)
+                foreach (var issueData in issueArray.EnumerateArray())
                 {
-                    var issue = ParseIssueData(issueData as JObject, sprintId);
+                    var issue = ParseIssueData(issueData, sprintId);
                     if (issue != null) issues.Add(issue);
                 }
             }
@@ -199,14 +202,14 @@ public class JiraApiService : IJiraApiService
             if (!response.IsSuccessStatusCode) return issues;
 
             var json = await response.Content.ReadAsStringAsync();
-            var data = JObject.Parse(json);
-            var issueArray = data["issues"] as JArray;
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
 
-            if (issueArray != null)
+            if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
             {
-                foreach (var issueData in issueArray)
+                foreach (var issueData in issueArray.EnumerateArray())
                 {
-                    var issue = ParseIssueData(issueData as JObject, 0);
+                    var issue = ParseIssueData(issueData, 0);
                     if (issue != null) issues.Add(issue);
                 }
             }
@@ -255,9 +258,8 @@ public class JiraApiService : IJiraApiService
             if (!response.IsSuccessStatusCode) return null;
 
             var json = await response.Content.ReadAsStringAsync();
-            var issueData = JObject.Parse(json);
-
-            return ParseIssueData(issueData, 0);
+            using var doc = JsonDocument.Parse(json);
+            return ParseIssueData(doc.RootElement, 0);
         }
         catch (Exception ex)
         {
@@ -307,32 +309,38 @@ public class JiraApiService : IJiraApiService
         }
     }
 
-    private JiraIssue? ParseIssueData(JObject? issueData, int sprintId)
+    private JiraIssue? ParseIssueData(JsonElement issueData, int sprintId)
     {
-        if (issueData == null) return null;
+        if (issueData.ValueKind != JsonValueKind.Object) return null;
 
         try
         {
+            var createdStr = GetNestedStringOrNull(issueData, "fields", "created");
+            var updatedStr = GetNestedStringOrNull(issueData, "fields", "updated");
+            var storyPtsStr = GetNestedStringOrNull(issueData, "fields", "customfield_10016") ?? "0";
+
             var issue = new JiraIssue
             {
-                Key = issueData["key"]?.ToString() ?? string.Empty,
-                Id = issueData["id"]?.ToString() ?? string.Empty,
-                Summary = issueData["fields"]?["summary"]?.ToString() ?? string.Empty,
-                Description = issueData["fields"]?["description"]?.ToString(),
-                Status = issueData["fields"]?["status"]?["name"]?.ToString() ?? "Open",
-                IssueType = issueData["fields"]?["issuetype"]?["name"]?.ToString() ?? "Task",
-                Assignee = issueData["fields"]?["assignee"]?["displayName"]?.ToString(),
-                Priority = issueData["fields"]?["priority"]?["name"]?.ToString() ?? "Medium",
-                StoryPoints = int.TryParse(issueData["fields"]?["customfield_10016"]?.ToString() ?? "0", out var points) ? points : 0,
-                CreatedDate = DateTime.Parse(issueData["fields"]?["created"]?.ToString() ?? DateTime.UtcNow.ToString()),
-                UpdatedDate = DateTime.Parse(issueData["fields"]?["updated"]?.ToString() ?? DateTime.UtcNow.ToString()),
+                Key = GetString(issueData, "key"),
+                Id = GetString(issueData, "id"),
+                Summary = GetNestedString(issueData, "fields", "summary"),
+                Description = GetNestedStringOrNull(issueData, "fields", "description"),
+                Status = GetPath(issueData, "fields", "status", "name") ?? "Open",
+                IssueType = GetPath(issueData, "fields", "issuetype", "name") ?? "Task",
+                Assignee = GetPath(issueData, "fields", "assignee", "displayName"),
+                Priority = GetPath(issueData, "fields", "priority", "name") ?? "Medium",
+                StoryPoints = int.TryParse(storyPtsStr, out var points) ? points : 0,
+                CreatedDate = DateTime.Parse(string.IsNullOrEmpty(createdStr) ? DateTime.UtcNow.ToString() : createdStr),
+                UpdatedDate = DateTime.Parse(string.IsNullOrEmpty(updatedStr) ? DateTime.UtcNow.ToString() : updatedStr),
                 SprintId = sprintId
             };
 
-            if (DateTime.TryParse(issueData["fields"]?["duedate"]?.ToString() ?? string.Empty, out var dueDate))
+            var dueStr = GetNestedStringOrNull(issueData, "fields", "duedate");
+            if (DateTime.TryParse(dueStr, out var dueDate))
                 issue.DueDate = dueDate;
 
-            if (DateTime.TryParse(issueData["fields"]?["resolutiondate"]?.ToString() ?? string.Empty, out var resDate))
+            var resStr = GetNestedStringOrNull(issueData, "fields", "resolutiondate");
+            if (DateTime.TryParse(resStr, out var resDate))
                 issue.ResolutionDate = resDate;
 
             return issue;
@@ -343,4 +351,46 @@ public class JiraApiService : IJiraApiService
             return null;
         }
     }
+
+    private static string GetString(JsonElement element, string property, string defaultValue = "")
+        => element.TryGetProperty(property, out var p) ? p.GetString() ?? defaultValue : defaultValue;
+
+    private static string? GetStringOrNull(JsonElement element, string property)
+        => element.TryGetProperty(property, out var p) ? p.GetString() : null;
+
+    private static int GetInt(JsonElement element, string property, int defaultValue = 0)
+    {
+        if (!element.TryGetProperty(property, out var p)) return defaultValue;
+        if (p.ValueKind == JsonValueKind.Number) return p.GetInt32();
+        if (int.TryParse(p.GetString(), out var v)) return v;
+        return defaultValue;
+    }
+
+    private static string GetNestedString(JsonElement element, string prop1, string prop2, string defaultValue = "")
+    {
+        if (element.TryGetProperty(prop1, out var p1) && p1.TryGetProperty(prop2, out var p2))
+            return p2.GetString() ?? defaultValue;
+        return defaultValue;
+    }
+
+    private static string? GetNestedStringOrNull(JsonElement element, string prop1, string prop2)
+    {
+        if (element.TryGetProperty(prop1, out var p1) && p1.TryGetProperty(prop2, out var p2))
+            return p2.GetString();
+        return null;
+    }
+
+    private static string? GetPath(JsonElement element, params string[] path)
+    {
+        var current = element;
+        foreach (var key in path)
+        {
+            if (!current.TryGetProperty(key, out current))
+                return null;
+        }
+        return current.GetString();
+    }
+
+    private static DateTime? ParseDateOrNull(string? value)
+        => DateTime.TryParse(value, out var dt) ? dt : null;
 }

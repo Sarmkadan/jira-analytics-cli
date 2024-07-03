@@ -4,7 +4,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
 
@@ -14,23 +14,23 @@ namespace JiraAnalyticsCli.Models;
 public class Developer
 {
     [Required]
-    [JsonProperty("key")]
+    [JsonPropertyName("key")]
     public string Key { get; set; } = string.Empty;
 
     [Required]
-    [JsonProperty("name")]
+    [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonProperty("email")]
+    [JsonPropertyName("email")]
     public string? Email { get; set; }
 
-    [JsonProperty("displayName")]
+    [JsonPropertyName("displayName")]
     public string DisplayName { get; set; } = string.Empty;
 
-    [JsonProperty("active")]
+    [JsonPropertyName("active")]
     public bool Active { get; set; } = true;
 
-    [JsonProperty("joinDate")]
+    [JsonPropertyName("joinDate")]
     public DateTime? JoinDate { get; set; }
 
     public List<JiraIssue> AssignedIssues { get; set; } = new();

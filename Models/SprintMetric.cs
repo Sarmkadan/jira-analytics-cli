@@ -4,7 +4,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
 
@@ -14,47 +14,47 @@ namespace JiraAnalyticsCli.Models;
 public class SprintMetric
 {
     [Required]
-    [JsonProperty("sprintId")]
+    [JsonPropertyName("sprintId")]
     public int SprintId { get; set; }
 
     [Required]
-    [JsonProperty("sprintName")]
+    [JsonPropertyName("sprintName")]
     public string SprintName { get; set; } = string.Empty;
 
-    [JsonProperty("startDate")]
+    [JsonPropertyName("startDate")]
     public DateTime StartDate { get; set; }
 
-    [JsonProperty("endDate")]
+    [JsonPropertyName("endDate")]
     public DateTime EndDate { get; set; }
 
-    [JsonProperty("plannedStoryPoints")]
+    [JsonPropertyName("plannedStoryPoints")]
     public int PlannedStoryPoints { get; set; }
 
-    [JsonProperty("completedStoryPoints")]
+    [JsonPropertyName("completedStoryPoints")]
     public int CompletedStoryPoints { get; set; }
 
-    [JsonProperty("committedStoryPoints")]
+    [JsonPropertyName("committedStoryPoints")]
     public int CommittedStoryPoints { get; set; }
 
-    [JsonProperty("completedIssueCount")]
+    [JsonPropertyName("completedIssueCount")]
     public int CompletedIssueCount { get; set; }
 
-    [JsonProperty("totalIssueCount")]
+    [JsonPropertyName("totalIssueCount")]
     public int TotalIssueCount { get; set; }
 
-    [JsonProperty("defectsCount")]
+    [JsonPropertyName("defectsCount")]
     public int DefectsCount { get; set; }
 
-    [JsonProperty("avgCycleTime")]
+    [JsonPropertyName("avgCycleTime")]
     public double AverageCycleTime { get; set; }
 
-    [JsonProperty("overdueIssueCount")]
+    [JsonPropertyName("overdueIssueCount")]
     public int OverdueIssueCount { get; set; }
 
-    [JsonProperty("teamSize")]
+    [JsonPropertyName("teamSize")]
     public int TeamSize { get; set; }
 
-    [JsonProperty("scopeChangeCount")]
+    [JsonPropertyName("scopeChangeCount")]
     public int ScopeChangeCount { get; set; }
 
     public double GetVelocity()
