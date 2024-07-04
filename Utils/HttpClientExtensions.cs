@@ -29,7 +29,7 @@ public static class HttpClientExtensions
             {
                 var response = await client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsAsync<T>();
+                return await response.Content.ReadFromJsonAsync<T>();
             },
             logger);
     }
@@ -38,7 +38,7 @@ public static class HttpClientExtensions
     /// Makes POST request with JSON body and automatic retry.
     /// Serializes object to JSON and sends with proper content type.
     /// </summary>
-    public static async Task<T?> PostJsonWithRetryAsync<TRequest, TResponse>(
+    public static async Task<TResponse?> PostJsonWithRetryAsync<TRequest, TResponse>(
         this HttpClient client, string url, TRequest data, ILogger? logger = null)
     {
         return await ExecuteWithRetryAsync(
@@ -46,7 +46,7 @@ public static class HttpClientExtensions
             {
                 var response = await client.PostAsJsonAsync(url, data);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsAsync<TResponse>();
+                return await response.Content.ReadFromJsonAsync<TResponse>();
             },
             logger);
     }

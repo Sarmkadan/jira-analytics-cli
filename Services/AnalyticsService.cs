@@ -4,6 +4,7 @@
 // =============================================================================
 
 using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace JiraAnalyticsCli.Services;

@@ -169,9 +169,20 @@ public class BatchExportExample
     {
         public async Task ExportAnalytics(string projectKey, string format, string outputPath)
         {
-            // Simulate export by creating file
             await File.WriteAllTextAsync(outputPath, $"Mock export for {projectKey} in {format} format");
-            await Task.Delay(100); // Simulate work
+            await Task.Delay(100);
         }
+
+        public Task ExportBurndownChart(int sprintId, string format, string outputPath)
+            => Task.CompletedTask;
+
+        public Task ExportTeamMetrics(string projectKey, string format, string outputPath)
+            => Task.CompletedTask;
+
+        public Task ExportAsJson(object data, string outputPath)
+            => Task.CompletedTask;
+
+        public Task ExportAsCsv(List<Dictionary<string, object>> data, string outputPath)
+            => Task.CompletedTask;
     }
 }
