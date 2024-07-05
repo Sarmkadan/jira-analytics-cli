@@ -1,0 +1,28 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JiraAnalyticsCli", "JiraAnalyticsCli.csproj", "{A8E7C2D1-F3B4-4A96-8E5D-C9B7F2E1A4D3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "jira-analytics-cli.Tests", "tests\jira-analytics-cli.Tests\jira-analytics-cli.Tests.csproj", "{B2D4F6A8-C1E3-4D5F-7A9B-2C4E6F8A0B1D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A8E7C2D1-F3B4-4A96-8E5D-C9B7F2E1A4D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8E7C2D1-F3B4-4A96-8E5D-C9B7F2E1A4D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8E7C2D1-F3B4-4A96-8E5D-C9B7F2E1A4D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8E7C2D1-F3B4-4A96-8E5D-C9B7F2E1A4D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2D4F6A8-C1E3-4D5F-7A9B-2C4E6F8A0B1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2D4F6A8-C1E3-4D5F-7A9B-2C4E6F8A0B1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2D4F6A8-C1E3-4D5F-7A9B-2C4E6F8A0B1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2D4F6A8-C1E3-4D5F-7A9B-2C4E6F8A0B1D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
