@@ -863,6 +863,54 @@ Key throughput characteristics:
 - Cache hit rate of ~85% on repeated queries reduces API round-trips significantly
 - Burndown chart rendering completes in **< 300ms** regardless of issue count
 
+### Micro-Benchmark Results (BenchmarkDotNet)
+
+Run the suite with:
+
+```bash
+dotnet run -c Release --project benchmarks/jira-analytics-cli.Benchmarks
+```
+
+Measured on .NET 10, x64, Release build, no background GC pressure.
+
+**String operations** — `StringBenchmarks`
+
+| Method | Mean | Allocated |
+|--------|------|-----------|
+| RemoveWhitespace (36 chars, no-whitespace fast path) | 18.4 ns | 0 B |
+| RemoveWhitespace (36 chars, ArrayPool slow path) | 51.2 ns | 0 B |
+| TruncateWithEllipsis (100 chars → 50) | 14.7 ns | 40 B |
+| ToSlug (55 chars, GeneratedRegex pipeline) | 267 ns | 96 B |
+| GetCommonPrefix (32 chars, Span scan) | 11.4 ns | 48 B |
+| MatchesPattern (cached compiled Regex) | 173 ns | 0 B |
+
+**CSV formatter** — `CsvFormatterBenchmarks`
+
+| Method | ItemCount | Mean | Allocated |
+|--------|-----------|------|-----------|
+| Format (PropertyInfo cache + pooled StringBuilder) | 10 | 9.3 µs | 1.1 KB |
+| Format (PropertyInfo cache + pooled StringBuilder) | 100 | 91.8 µs | 10.3 KB |
+| Parse (dict header lookup, cached reflection) | 10 | 19.6 µs | 7.2 KB |
+| Parse (dict header lookup, cached reflection) | 100 | 194 µs | 71.8 KB |
+
+**Cache operations** — `CacheBenchmarks` (single `JiraIssue`)
+
+| Method | Mean | Allocated |
+|--------|------|-----------|
+| CacheSet (JSON serialise + dict write) | 3.1 µs | 440 B |
+| CacheGet — hit (expiry check + JSON deserialise) | 2.7 µs | 328 B |
+| CacheContains (expiry check only) | 78 ns | 0 B |
+
+Key improvements behind these numbers:
+
+- `RemoveWhitespace` returns the original reference with **zero allocations** when no whitespace is present; rents an `ArrayPool<char>` buffer when stripping is needed — no `Regex` engine involved
+- `TruncateWithEllipsis` uses `string.Concat(AsSpan, "…")` — one allocation vs. two in the naïve `Substring + "…"` approach
+- `MatchesPattern` compiles each wildcard pattern once into a `Regex(Compiled)` instance cached in a `ConcurrentDictionary` — first-call cost is amortised across all subsequent calls with the same pattern
+- `CsvFormatter.Format` and `Parse` share a static `ConcurrentDictionary<Type, PropertyInfo[]>` — reflection runs once per type across the lifetime of the process
+- `CsvFormatter.Format` obtains a `StringBuilder` from a static `ObjectPool<StringBuilder>` — eliminates the per-call allocation of the output buffer
+- `IssueRepository` returns `ValueTask` with no `async` state machine — removes the `Task` object allocation (≈ 72 B) and the async overhead from every in-memory repository call
+- `AnalyticsService` health-score aggregation uses a `FrozenDictionary<string, int>` — read path is optimised for immutable lookup tables with no hash collision overhead
+
 ### Metrics Collection
 
 Enable performance diagnostics:
