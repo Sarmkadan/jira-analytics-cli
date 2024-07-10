@@ -70,7 +70,7 @@ public class RateLimitMiddleware
         var rateLimited = context.GetItem<bool>("RateLimited");
         if (rateLimited)
         {
-            var retryAfter = context.GetItem<int>("RetryAfter") ?? 60;
+            var retryAfter = context.GetItem<int?>("RetryAfter") ?? 60;
             var backoffMs = retryAfter * 1000 + new Random().Next(0, 5000); // Add jitter
 
             _logger.LogInformation("Rate limited. Waiting {BackoffMs}ms before retry", backoffMs);
