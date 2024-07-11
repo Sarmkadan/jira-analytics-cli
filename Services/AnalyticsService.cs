@@ -72,7 +72,7 @@ public class AnalyticsService : IAnalyticsService
                     TotalIssueCount = sprint.GetTotalIssueCount(),
                     DefectsCount = issues.Count(i => i.IssueType == "Bug"),
                     OverdueIssueCount = sprint.GetOverdueIssues().Count,
-                    TeamSize = 5 // Would aggregate from team data
+                    TeamSize = DeriveTeamSize(issues)
                 };
 
                 metric.AverageCycleTime = issues.Any() ? issues.Average(i => i.GetCycleTime()) : 0;
@@ -258,6 +258,21 @@ public class AnalyticsService : IAnalyticsService
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Derives the team size from unique issue assignees. Returns at least 1 to
+    /// avoid division-by-zero in per-developer metric calculations.
+    /// </summary>
+    private static int DeriveTeamSize(IReadOnlyCollection<JiraIssue> issues)
+    {
+        var uniqueAssignees = issues
+            .Where(i => !string.IsNullOrWhiteSpace(i.Assignee))
+            .Select(i => i.Assignee)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+
+        return Math.Max(uniqueAssignees, 1);
     }
 
     public async Task<OverdueIssuesResult> AnalyzeOverdueIssues(string projectKey)
