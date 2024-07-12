@@ -27,9 +27,9 @@ public static class HttpClientExtensions
         return await ExecuteWithRetryAsync(
             async () =>
             {
-                var response = await client.GetAsync(url);
+                var response = await client.GetAsync(url).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<T>();
+                return await response.Content.ReadFromJsonAsync<T>().ConfigureAwait(false);
             },
             logger);
     }
@@ -44,9 +44,9 @@ public static class HttpClientExtensions
         return await ExecuteWithRetryAsync(
             async () =>
             {
-                var response = await client.PostAsJsonAsync(url, data);
+                var response = await client.PostAsJsonAsync(url, data).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<TResponse>();
+                return await response.Content.ReadFromJsonAsync<TResponse>().ConfigureAwait(false);
             },
             logger);
     }
@@ -68,7 +68,7 @@ public static class HttpClientExtensions
         {
             try
             {
-                return await operation();
+                return await operation().ConfigureAwait(false);
             }
             catch (HttpRequestException ex) when (ex.InnerException is TimeoutException or OperationCanceledException)
             {
@@ -77,7 +77,7 @@ public static class HttpClientExtensions
 
                 if (attempt < maxRetries)
                 {
-                    await Task.Delay(delay + new Random().Next(0, 500)); // Add jitter
+                    await Task.Delay(delay + new Random().Next(0, 500)).ConfigureAwait(false); // Add jitter
                     delay = (int)(delay * 1.5); // Exponential backoff
                 }
             }
@@ -88,7 +88,7 @@ public static class HttpClientExtensions
 
                 if (attempt < maxRetries)
                 {
-                    await Task.Delay(delay + new Random().Next(0, 500));
+                    await Task.Delay(delay + new Random().Next(0, 500)).ConfigureAwait(false);
                     delay = (int)(delay * 1.5);
                 }
             }

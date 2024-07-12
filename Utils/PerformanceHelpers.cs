@@ -25,7 +25,7 @@ public static class PerformanceHelpers
 
         try
         {
-            var result = await operation();
+            var result = await operation().ConfigureAwait(false);
             stopwatch.Stop();
             logger?.LogDebug($"Operation completed in {stopwatch.ElapsedMilliseconds}ms");
 
@@ -71,7 +71,7 @@ public static class PerformanceHelpers
 
         try
         {
-            await operation();
+            await operation().ConfigureAwait(false);
         }
         finally
         {

@@ -33,7 +33,7 @@ public class ExportService : IExportService
 
         try
         {
-            var analysis = await _analyticsService.AnalyzeSprints(projectKey, 5);
+            var analysis = await _analyticsService.AnalyzeSprints(projectKey, 5).ConfigureAwait(false);
 
             await (format.ToLower() switch
             {
@@ -58,22 +58,22 @@ public class ExportService : IExportService
 
         try
         {
-            var sprint = await _jiraService.GetSprintAsync(sprintId);
+            var sprint = await _jiraService.GetSprintAsync(sprintId).ConfigureAwait(false);
             if (sprint == null)
                 throw new InvalidOperationException($"Sprint {sprintId} not found");
 
-            var issues = await _jiraService.GetSprintIssuesAsync(sprintId);
+            var issues = await _jiraService.GetSprintIssuesAsync(sprintId).ConfigureAwait(false);
             sprint.Issues.AddRange(issues);
 
-            var burndownData = await _jiraService.GetBurndownDataAsync(sprintId);
+            var burndownData = await _jiraService.GetBurndownDataAsync(sprintId).ConfigureAwait(false);
 
             if (format.ToLower() is "png" or "jpg")
             {
-                await DrawBurndownChart(sprint, burndownData, format, outputPath);
+                await DrawBurndownChart(sprint, burndownData, format, outputPath).ConfigureAwait(false);
             }
             else if (format.ToLower() == "json")
             {
-                await ExportAsJson(burndownData, outputPath);
+                await ExportAsJson(burndownData, outputPath).ConfigureAwait(false);
             }
 
             _logger.LogInformation("Burndown chart exported to {OutputPath}", outputPath);
@@ -91,7 +91,7 @@ public class ExportService : IExportService
 
         try
         {
-            var teamAnalysis = await _analyticsService.AnalyzeTeam(projectKey);
+            var teamAnalysis = await _analyticsService.AnalyzeTeam(projectKey).ConfigureAwait(false);
 
             await (format.ToLower() switch
             {
@@ -116,7 +116,7 @@ public class ExportService : IExportService
         try
         {
             var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-            await File.WriteAllTextAsync(outputPath, json, Encoding.UTF8);
+            await File.WriteAllTextAsync(outputPath, json, Encoding.UTF8).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -135,7 +135,7 @@ public class ExportService : IExportService
         {
             if (!data.Any())
             {
-                await File.WriteAllTextAsync(outputPath, string.Empty);
+                await File.WriteAllTextAsync(outputPath, string.Empty).ConfigureAwait(false);
                 return;
             }
 
@@ -152,7 +152,7 @@ public class ExportService : IExportService
                 sb.AppendLine(string.Join(",", values));
             }
 
-            await File.WriteAllTextAsync(outputPath, sb.ToString(), Encoding.UTF8);
+            await File.WriteAllTextAsync(outputPath, sb.ToString(), Encoding.UTF8).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -361,7 +361,7 @@ public class ExportService : IExportService
             { "Health Status", m.GetHealthStatus() }
         }).ToList();
 
-        await ExportAsCsv(data, outputPath);
+        await ExportAsCsv(data, outputPath).ConfigureAwait(false);
     }
 
     private async Task ExportTeamAsCsv(TeamAnalysisResult teamAnalysis, string outputPath)
@@ -372,7 +372,7 @@ public class ExportService : IExportService
             { "Assigned Issues", kvp.Value }
         }).ToList();
 
-        await ExportAsCsv(data, outputPath);
+        await ExportAsCsv(data, outputPath).ConfigureAwait(false);
     }
 
     private string EscapeCsvValue(string? value)

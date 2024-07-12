@@ -55,8 +55,8 @@ public sealed class SprintComparisonService : ISprintComparisonService
             var sprintTasks = ids.Select(id => _sprintRepository.GetByIdAsync(id));
             var metricTasks = ids.Select(id => _metricsRepository.GetBySprintAsync(id));
 
-            var resolvedSprints = await Task.WhenAll(sprintTasks);
-            var resolvedMetrics = await Task.WhenAll(metricTasks);
+            var resolvedSprints = await Task.WhenAll(sprintTasks).ConfigureAwait(false);
+            var resolvedMetrics = await Task.WhenAll(metricTasks).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
 
             // Build a quick lookup so BuildComparisonEntry can pull pre-computed AverageCycleTime
@@ -107,7 +107,7 @@ public sealed class SprintComparisonService : ISprintComparisonService
 
         try
         {
-            var sprints = await _sprintRepository.GetRecentClosedSprints(sprintCount);
+            var sprints = await _sprintRepository.GetRecentClosedSprints(sprintCount).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
 
             var filtered = sprints
@@ -152,7 +152,7 @@ public sealed class SprintComparisonService : ISprintComparisonService
 
         try
         {
-            var sprints = await _sprintRepository.GetRecentClosedSprints(sprintCount);
+            var sprints = await _sprintRepository.GetRecentClosedSprints(sprintCount).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
 
             var filtered = sprints

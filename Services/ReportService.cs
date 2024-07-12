@@ -87,12 +87,12 @@ public class ReportService : IReportService
 
         try
         {
-            var sprint = await _jiraService.GetSprintAsync(sprintId);
+            var sprint = await _jiraService.GetSprintAsync(sprintId).ConfigureAwait(false);
             if (sprint == null)
                 throw new InvalidOperationException($"Sprint {sprintId} not found");
 
-            var issues = await _jiraService.GetSprintIssuesAsync(sprintId);
-            var burndownData = await _jiraService.GetBurndownDataAsync(sprintId);
+            var issues = await _jiraService.GetSprintIssuesAsync(sprintId).ConfigureAwait(false);
+            var burndownData = await _jiraService.GetBurndownDataAsync(sprintId).ConfigureAwait(false);
 
             // If no historical data, create synthetic burndown
             if (!burndownData.Any())
@@ -101,7 +101,7 @@ public class ReportService : IReportService
             }
 
             // Generate chart image using SkiaSharp
-            await _exportService.ExportAnalytics(projectKey, "png", outputPath);
+            await _exportService.ExportAnalytics(projectKey, "png", outputPath).ConfigureAwait(false);
 
             _logger.LogInformation("Burndown chart generated successfully at {OutputPath}", outputPath);
         }

@@ -60,7 +60,7 @@ public class WebhookHandler
 
             if (_handlers.TryGetValue(webhookEvent.EventType, out var handler))
             {
-                await handler(webhookEvent);
+                await handler(webhookEvent).ConfigureAwait(false);
             }
             else
             {

@@ -52,13 +52,13 @@ public class BatchExportExample
             {
                 // Export as JSON
                 var jsonFile = Path.Combine(outputDir, $"{project}-metrics.json");
-                await exportService.ExportAnalytics(project, "json", jsonFile);
+                await exportService.ExportAnalytics(project, "json", jsonFile).ConfigureAwait(false);
                 results.Add(new ExportResult { Project = project, Format = "JSON", Status = "✅ Success", FilePath = jsonFile });
                 Console.WriteLine($"   ✅ JSON exported");
 
                 // Export as CSV
                 var csvFile = Path.Combine(outputDir, $"{project}-metrics.csv");
-                await exportService.ExportAnalytics(project, "csv", csvFile);
+                await exportService.ExportAnalytics(project, "csv", csvFile).ConfigureAwait(false);
                 results.Add(new ExportResult { Project = project, Format = "CSV", Status = "✅ Success", FilePath = csvFile });
                 Console.WriteLine($"   ✅ CSV exported");
 
@@ -66,7 +66,7 @@ public class BatchExportExample
                 try
                 {
                     var pngFile = Path.Combine(outputDir, $"{project}-chart.png");
-                    await exportService.ExportAnalytics(project, "png", pngFile);
+                    await exportService.ExportAnalytics(project, "png", pngFile).ConfigureAwait(false);
                     results.Add(new ExportResult { Project = project, Format = "PNG", Status = "✅ Success", FilePath = pngFile });
                     Console.WriteLine($"   ✅ PNG exported");
                 }
@@ -169,8 +169,8 @@ public class BatchExportExample
     {
         public async Task ExportAnalytics(string projectKey, string format, string outputPath)
         {
-            await File.WriteAllTextAsync(outputPath, $"Mock export for {projectKey} in {format} format");
-            await Task.Delay(100);
+            await File.WriteAllTextAsync(outputPath, $"Mock export for {projectKey} in {format} format").ConfigureAwait(false);
+            await Task.Delay(100).ConfigureAwait(false);
         }
 
         public Task ExportBurndownChart(int sprintId, string format, string outputPath)

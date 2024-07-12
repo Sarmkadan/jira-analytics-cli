@@ -45,7 +45,7 @@ public abstract class EventSubscriber<TEvent> where TEvent : DomainEvent
                 @event.EventId);
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            await HandleAsync(@event);
+            await HandleAsync(@event).ConfigureAwait(false);
             stopwatch.Stop();
 
             Logger.LogInformation(
@@ -56,7 +56,7 @@ public abstract class EventSubscriber<TEvent> where TEvent : DomainEvent
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error handling event: {EventType}", @event.EventType);
-            await OnErrorAsync(@event, ex);
+            await OnErrorAsync(@event, ex).ConfigureAwait(false);
         }
     }
 

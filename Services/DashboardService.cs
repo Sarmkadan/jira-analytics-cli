@@ -301,7 +301,7 @@ public sealed class DashboardService : IDashboardService
         if (_options.EnableWidgetDataCaching && _cache.GetDefault<VelocityWidgetData>(cacheKey) is { } cached)
             return cached;
 
-        var trend = await _analytics.AnalyzeVelocityTrend(projectKey, sprintCount);
+        var trend = await _analytics.AnalyzeVelocityTrend(projectKey, sprintCount).ConfigureAwait(false);
         var data  = new VelocityWidgetData(
             DataPoints: trend.Velocities.Select(v => (v.SprintName, v.Velocity)).ToList(),
             Average:    trend.Velocities.Any() ? trend.Velocities.Average(v => v.Velocity) : 0,
@@ -316,7 +316,7 @@ public sealed class DashboardService : IDashboardService
 
     private async Task<WidgetData> BuildBurndownDataAsync(string projectKey, CancellationToken ct)
     {
-        var analysis = await _analytics.AnalyzeSprints(projectKey, 1);
+        var analysis = await _analytics.AnalyzeSprints(projectKey, 1).ConfigureAwait(false);
         var latest   = analysis.Metrics.FirstOrDefault();
 
         if (latest is null)
@@ -330,7 +330,7 @@ public sealed class DashboardService : IDashboardService
 
     private async Task<WidgetData> BuildSprintHealthDataAsync(string projectKey, CancellationToken ct)
     {
-        var analysis = await _analytics.AnalyzeSprints(projectKey, 1);
+        var analysis = await _analytics.AnalyzeSprints(projectKey, 1).ConfigureAwait(false);
         var latest   = analysis.Metrics.FirstOrDefault();
 
         if (latest is null)
@@ -346,7 +346,7 @@ public sealed class DashboardService : IDashboardService
 
     private async Task<WidgetData> BuildDeveloperLoadDataAsync(string projectKey, CancellationToken ct)
     {
-        var team = await _analytics.AnalyzeTeam(projectKey);
+        var team = await _analytics.AnalyzeTeam(projectKey).ConfigureAwait(false);
         var load = team.WorkloadDistribution;
 
         var top = load.Any()
@@ -360,7 +360,7 @@ public sealed class DashboardService : IDashboardService
 
     private async Task<WidgetData> BuildOverdueDataAsync(string projectKey, CancellationToken ct)
     {
-        var overdue = await _analytics.AnalyzeOverdueIssues(projectKey);
+        var overdue = await _analytics.AnalyzeOverdueIssues(projectKey).ConfigureAwait(false);
         var keys    = overdue.Issues.Take(20).Select(i => i.Key).ToList();
 
         return new OverdueIssuesWidgetData(
@@ -373,7 +373,7 @@ public sealed class DashboardService : IDashboardService
     private async Task<WidgetData> BuildQualityDataAsync(
         string projectKey, int sprintCount, CancellationToken ct)
     {
-        var quality = await _analytics.AnalyzeQuality(projectKey);
+        var quality = await _analytics.AnalyzeQuality(projectKey).ConfigureAwait(false);
 
         return new QualityMetricsWidgetData(
             TotalDefects:        quality.TotalDefects,
@@ -384,7 +384,7 @@ public sealed class DashboardService : IDashboardService
 
     private async Task<WidgetData> BuildIssuesSummaryDataAsync(string projectKey, CancellationToken ct)
     {
-        var overdue  = await _analytics.AnalyzeOverdueIssues(projectKey);
+        var overdue  = await _analytics.AnalyzeOverdueIssues(projectKey).ConfigureAwait(false);
         var issues   = overdue.Issues;
 
         var open      = issues.Count(i => i.Status is "To Do" or "Open" or "Backlog");
@@ -401,7 +401,7 @@ public sealed class DashboardService : IDashboardService
         var metric = widget.Settings.GetValueOrDefault("metric", "velocity");
         var unit   = widget.Settings.GetValueOrDefault("unit",   "pts/day");
 
-        var trend = await _analytics.AnalyzeVelocityTrend(projectKey, sprintCount);
+        var trend = await _analytics.AnalyzeVelocityTrend(projectKey, sprintCount).ConfigureAwait(false);
         var vels  = trend.Velocities.Select(v => v.Velocity).ToList();
 
         var current  = vels.LastOrDefault();
@@ -425,7 +425,7 @@ public sealed class DashboardService : IDashboardService
     {
         try
         {
-            var data = await GetWidgetDataAsync(widget, projectKey, ct);
+            var data = await GetWidgetDataAsync(widget, projectKey, ct).ConfigureAwait(false);
             return new PopulatedWidget(widget, data, DateTime.UtcNow);
         }
         catch (Exception ex)

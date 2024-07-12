@@ -49,7 +49,7 @@ public class VelocityAnalysisExample
             logger.LogInformation("Starting velocity analysis for {Project}", projectKey);
 
             // Analyze sprints
-            var analysis = await analyticsService.AnalyzeSprints(projectKey, sprintCount);
+            var analysis = await analyticsService.AnalyzeSprints(projectKey, sprintCount).ConfigureAwait(false);
 
             // Display velocity trend
             DisplayVelocityTrend(analysis);

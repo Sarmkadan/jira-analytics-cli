@@ -108,7 +108,7 @@ public class EventBus
         {
             try
             {
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks).ConfigureAwait(false);
                 _logger.LogDebug(
                     "Event published successfully: {EventType} (handled by {HandlerCount} handlers)",
                     @event.EventType,

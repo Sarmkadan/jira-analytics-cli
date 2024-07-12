@@ -54,7 +54,7 @@ public class MetricSyncTask
             {
                 _logger.LogDebug("Syncing metrics for project: {Project}", project);
 
-                var analysis = await _analyticsService.AnalyzeSprints(project, 5);
+                var analysis = await _analyticsService.AnalyzeSprints(project, 5).ConfigureAwait(false);
 
                 // Store in cache with 30-minute expiration
                 var cachePolicy = CachePolicy.WithAbsoluteExpiration($"metrics_{project}", TimeSpan.FromMinutes(30));
@@ -70,7 +70,7 @@ public class MetricSyncTask
             // Add delay between projects to avoid overwhelming Jira API
             if (_projects.Length > 1)
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
             }
         }
 
