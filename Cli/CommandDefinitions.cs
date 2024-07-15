@@ -44,9 +44,9 @@ public class CommandDefinitions
         {
             public const string Short = "-f";
             public const string Long = "--format";
-            public const string Description = "Output format (json, csv, xml, markdown)";
+            public const string Description = "Output format (json, csv, xml, markdown, png, svg)";
             public const string Default = "json";
-            public static readonly string[] ValidValues = { "json", "csv", "xml", "markdown", "png", "pdf" };
+            public static readonly string[] ValidValues = { "json", "csv", "xml", "markdown", "png", "svg", "pdf" };
         }
 
         public class OutputOption
