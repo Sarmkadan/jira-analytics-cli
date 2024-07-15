@@ -21,6 +21,7 @@
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
   </ItemGroup>
 
   <!-- Include only the source files required for the tested classes -->
@@ -42,6 +43,8 @@
     <Compile Include="..\..\Utils\ValidationHelpers.cs" />
     <Compile Include="..\..\Caching\InMemoryCache.cs" />
     <Compile Include="..\..\Caching\CachePolicy.cs" />
+    <Compile Include="..\..\Services\JiraApiService.cs" />
+    <Compile Include="..\..\Configuration\ICliConfig.cs" />
   </ItemGroup>
 
 </Project>
