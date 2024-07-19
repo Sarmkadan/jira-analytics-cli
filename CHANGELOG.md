@@ -5,14 +5,12 @@
 
 ## [2.0.0] - 2026-05-18
 ### Added
-- Add custom dashboard builder with drag-drop widgets and saved layouts
+- HTML report command with self-contained output
+- JQL query command with pagination support
+- Team comparison command (side-by-side multi-project metrics)
 - Docker support with multi-stage builds
-- Health check endpoints (/health, /health/ready)
-- Integration test suite with xUnit
-- Migration guide from v1.x
 ### Changed
 - Upgraded to .NET 10.0
-- Modern C# features (records, primary constructors)
-- Improved API consistency
+- SprintComparisonService extracted from analytics layer
 ### Fixed
 - Various edge cases found through testing
