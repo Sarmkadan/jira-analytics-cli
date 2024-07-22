@@ -12,10 +12,31 @@ namespace JiraAnalyticsCli.Services;
 /// </summary>
 public interface IAnalyticsService
 {
+    /// <summary>Analyzes sprints for a project.</summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <param name="sprintCount">Number of sprints to analyze.</param>
+    /// <returns>Sprint analysis results.</returns>
     Task<SprintAnalysisResult> AnalyzeSprints(string projectKey, int sprintCount);
+    
+    /// <summary>Analyzes team performance.</summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <returns>Team analysis results.</returns>
     Task<TeamAnalysisResult> AnalyzeTeam(string projectKey);
+    
+    /// <summary>Analyzes project quality metrics.</summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <returns>Quality metrics results.</returns>
     Task<QualityMetricsResult> AnalyzeQuality(string projectKey);
+    
+    /// <summary>Analyzes velocity trends over time.</summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <param name="sprintCount">Number of sprints to analyze.</param>
+    /// <returns>Velocity trend results.</returns>
     Task<VelocityTrendResult> AnalyzeVelocityTrend(string projectKey, int sprintCount);
+    
+    /// <summary>Analyzes overdue issues in a project.</summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <returns>Overdue issues results.</returns>
     Task<OverdueIssuesResult> AnalyzeOverdueIssues(string projectKey);
 }
 

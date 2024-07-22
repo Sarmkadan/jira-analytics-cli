@@ -1,15 +1,15 @@
 # jira-analytics-cli
 
-![CI](https://github.com/sarmkadan/jira-analytics-cli/actions/workflows/ci.yml/badge.svg)
+![Build](https://github.com/sarmkadan/jira-analytics-cli/actions/workflows/build.yml/badge.svg)
 ![License](https://img.shields.io/github/license/sarmkadan/jira-analytics-cli)
-![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
-.NET 10 CLI for Jira sprint analytics. Pulls data via Jira REST API v3 and outputs
+.NET 9 CLI for Jira sprint analytics. Pulls data via Jira REST API v3 and outputs
 velocity reports, burndown charts, HTML dashboards, and team comparison tables.
 
 ## Requirements
 
-- .NET 10 SDK
+- .NET 9 SDK
 - Jira Cloud or Server instance with API access
 - API token from [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens)
 
