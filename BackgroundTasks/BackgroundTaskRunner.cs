@@ -153,7 +153,7 @@ public class BackgroundTaskRunner : IDisposable
             {
                 try
                 {
-                    await Task.WaitAsync(taskInfo.Task, TimeSpan.FromSeconds(30));
+                    await taskInfo.Task.WaitAsync(TimeSpan.FromSeconds(30));
                 }
                 catch (TimeoutException)
                 {

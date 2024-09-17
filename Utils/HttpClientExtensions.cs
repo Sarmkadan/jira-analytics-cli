@@ -92,7 +92,7 @@ public static class HttpClientExtensions
                     delay = (int)(delay * 1.5);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Non-transient error, fail immediately
                 throw;

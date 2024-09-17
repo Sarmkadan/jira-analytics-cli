@@ -201,10 +201,12 @@ public class DiagnosticsService
     {
         try
         {
+#pragma warning disable CA1416
             using var cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
             cpuCounter.NextValue();
             System.Threading.Thread.Sleep(100);
             return cpuCounter.NextValue();
+#pragma warning restore CA1416
         }
         catch
         {

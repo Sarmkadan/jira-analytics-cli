@@ -4,6 +4,7 @@
 // =============================================================================
 
 using System.Text.Json;
+using System.Runtime.CompilerServices;
 using JiraAnalyticsCli.Models;
 using JiraAnalyticsCli.Configuration;
 using Microsoft.Extensions.Logging;
