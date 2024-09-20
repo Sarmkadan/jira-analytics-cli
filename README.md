@@ -8,6 +8,7 @@ A production-grade .NET command-line tool for advanced Jira analytics, sprint me
 
 ## Table of Contents
 
+- [Getting Started](#getting-started)
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Architecture](#architecture)
@@ -53,6 +54,65 @@ A production-grade .NET command-line tool for advanced Jira analytics, sprint me
 - **Structured Logging**: Microsoft.Extensions.Logging with console output
 - **Configuration Options**: JSON files, environment variables, and CLI arguments
 - **Error Handling**: Comprehensive exception handling with detailed error messages
+
+## Getting Started
+
+This five-minute walkthrough takes you from a fresh checkout to a velocity report and a burndown chart export.
+
+### Step 1 – Prerequisites
+
+- **.NET 10 SDK** — [download here](https://dotnet.microsoft.com/download/dotnet)
+- A **Jira Cloud or Server** instance with API access
+- A **Jira API Token** — generate one at [id.atlassian.com → Security → API tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+
+### Step 2 – Build
+
+```bash
+git clone https://github.com/sarmkadan/jira-analytics-cli.git
+cd jira-analytics-cli
+dotnet build -c Release
+dotnet publish -c Release -o ./dist --self-contained -p:PublishSingleFile=true
+```
+
+The single-file executable is created at `./dist/jira-analytics-cli` (or `.exe` on Windows).
+
+### Step 3 – Set Required Environment Variables
+
+```bash
+export JIRA_BASE_URL="https://your-instance.atlassian.net"
+export JIRA_API_TOKEN="your-api-token-here"
+```
+
+These two variables are **required**. All other configuration is optional (see [Configuration](#configuration)).
+
+### Step 4 – Verify Connectivity
+
+```bash
+./dist/jira-analytics-cli health
+```
+
+A successful response confirms that the CLI can reach your Jira instance and that the API token is valid.
+
+### Step 5 – Run a Velocity Report
+
+```bash
+./dist/jira-analytics-cli analytics -p MYPROJECT -s 5 -o velocity-report.txt
+cat velocity-report.txt
+```
+
+This analyzes the five most recent closed sprints for the `MYPROJECT` project and saves a formatted text report.
+
+### Step 6 – Export a Burndown Chart
+
+```bash
+# PNG raster image
+./dist/jira-analytics-cli burndown -p MYPROJECT --sprint-id 42 -o burndown.png
+
+# SVG vector image (ideal for documentation and high-DPI displays)
+./dist/jira-analytics-cli burndown -p MYPROJECT --sprint-id 42 -f svg -o burndown.svg
+```
+
+---
 
 ## Quick Start
 
@@ -482,23 +542,26 @@ jira-analytics-cli export [OPTIONS]
 | Option | Short | Type | Required | Description |
 |--------|-------|------|----------|-------------|
 | `--project` | `-p` | string | Yes | Jira project key |
-| `--format` | `-f` | string | Yes | Export format: json, csv, png, jpg, pdf |
+| `--format` | `-f` | string | No | Export format (default: `json`) |
 | `--output` | `-o` | string | Yes | Output file path |
 
 **Supported Formats:**
 
-- `json` - JSON structure with full metrics
-- `csv` - Comma-separated values for spreadsheets
-- `png` - PNG image (for charts and burndowns)
-- `jpg` - JPEG image (lossy compression)
-- `pdf` - PDF document (via SkiaSharp)
+| Format | Description |
+|--------|-------------|
+| `json` | JSON structure with full metrics |
+| `csv` | Comma-separated values for spreadsheets |
+| `xml` | XML document |
+| `markdown` | Markdown-formatted report |
+| `svg` | SVG vector image — lossless, ideal for high-DPI and documentation |
+| `png` | PNG raster image |
 
 **Examples:**
 
 ```bash
 jira-analytics-cli export -p MYPROJECT -f json -o metrics.json
 jira-analytics-cli export -p MYPROJECT -f csv -o metrics.csv
-jira-analytics-cli export -p MYPROJECT -f png -o velocity-chart.png
+jira-analytics-cli export -p MYPROJECT -f svg -o velocity-chart.svg
 ```
 
 ### Burndown Command
@@ -514,14 +577,41 @@ jira-analytics-cli burndown [OPTIONS]
 | Option | Short | Type | Required | Description |
 |--------|-------|------|----------|-------------|
 | `--project` | `-p` | string | Yes | Jira project key |
-| `--sprint-id` | | int | Yes | Jira sprint ID |
-| `--output` | `-o` | string | Yes | Output image file path |
+| `--sprint-id` | `-s` | int | Yes | Jira sprint ID |
+| `--output` | `-o` | string | Yes | Output file path |
+| `--format` | `-f` | string | No | Output format: `png`, `svg`, `json` (default: `png`) |
 
 **Examples:**
 
 ```bash
 jira-analytics-cli burndown -p MYPROJECT --sprint-id 42 -o burndown.png
+jira-analytics-cli burndown -p MYPROJECT --sprint-id 42 -f svg -o burndown.svg
 jira-analytics-cli burndown --project=BACKEND --sprint-id=100 --output=burn.png
+```
+
+### Developer Command
+
+Analyze individual developer load and contributions.
+
+```bash
+jira-analytics-cli developer [OPTIONS]
+```
+
+**Options:**
+
+| Option | Short | Type | Required | Description |
+|--------|-------|------|----------|-------------|
+| `--project` | `-p` | string | Yes | Jira project key |
+| `--developer` | `-d` | string | No | Developer username or email (omit for all) |
+| `--days` | | int | No | Analysis period in days (default: 30) |
+| `--working-hours` | | int | No | Working hours per day for capacity calculation (default: 8) |
+| `--exclude-weekends` | | bool | No | Exclude Saturdays and Sundays from capacity (default: false) |
+
+**Examples:**
+
+```bash
+jira-analytics-cli developer -p MYPROJECT
+jira-analytics-cli developer -p MYPROJECT -d alice --working-hours 6 --exclude-weekends
 ```
 
 ## API Reference
