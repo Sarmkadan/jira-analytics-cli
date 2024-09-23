@@ -304,6 +304,50 @@ public class JiraApiService : IJiraApiService
         return snapshots;
     }
 
+    public async Task<JiraSearchResult> SearchByJqlAsync(string jql, int maxResults = 50, int startAt = 0)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
+
+        var result = new JiraSearchResult { StartAt = startAt };
+
+        try
+        {
+            _logger.LogInformation("Executing JQL search (startAt={Start}, maxResults={Max}): {Jql}", startAt, maxResults, jql);
+
+            var url = $"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults={maxResults}&startAt={startAt}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("JQL search returned {StatusCode}", response.StatusCode);
+                return result;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            result.Total = GetInt(root, "total");
+
+            if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var issueData in issueArray.EnumerateArray())
+                {
+                    var issue = ParseIssueData(issueData, 0);
+                    if (issue != null) result.Issues.Add(issue);
+                }
+            }
+
+            _logger.LogInformation("JQL search returned {Count} of {Total} issues", result.Issues.Count, result.Total);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing JQL search");
+        }
+
+        return result;
+    }
+
     public async Task<bool> VerifyConnectionAsync()
     {
         try
