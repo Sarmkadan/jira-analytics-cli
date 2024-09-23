@@ -85,11 +85,16 @@ class Program
 
         // Analytics command
         var analyticsCommand = new Command("analytics", "Run analytics and generate reports");
-        analyticsCommand.AddOption(new Option<string>(new[] { "-p", "--project" }, "Jira project key"));
-        analyticsCommand.AddOption(new Option<int>(new[] { "-s", "--sprints" }, "Number of recent sprints to analyze") { IsRequired = false });
-        analyticsCommand.AddOption(new Option<string>(new[] { "-o", "--output" }, "Output file path") { IsRequired = false });
+        var analyticsProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key");
+        var analyticsSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, "Number of recent sprints to analyze") { IsRequired = false };
+        var analyticsOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output file path") { IsRequired = false };
+        var analyticsOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save reports to (created if it does not exist)");
+        analyticsCommand.AddOption(analyticsProjectOpt);
+        analyticsCommand.AddOption(analyticsSprintsOpt);
+        analyticsCommand.AddOption(analyticsOutputOpt);
+        analyticsCommand.AddOption(analyticsOutputDirOpt);
 
-        analyticsCommand.SetHandler(async (project, sprints, output) =>
+        analyticsCommand.SetHandler(async (project, sprints, output, outputDir) =>
         {
             var analyticsService = serviceProvider.GetRequiredService<IAnalyticsService>();
             var reportService = serviceProvider.GetRequiredService<IReportService>();
@@ -101,10 +106,11 @@ class Program
                 var analysis = await analyticsService.AnalyzeSprints(project, sprints > 0 ? sprints : 5);
                 var report = reportService.GenerateReport(analysis);
 
-                if (!string.IsNullOrEmpty(output))
+                var resolvedOutput = ResolveOutputPath(output, outputDir, "report.txt");
+                if (!string.IsNullOrEmpty(resolvedOutput))
                 {
-                    File.WriteAllText(output, report);
-                    logger.LogInformation("Report written to {OutputPath}", output);
+                    File.WriteAllText(resolvedOutput, report);
+                    logger.LogInformation("Report written to {OutputPath}", resolvedOutput);
                 }
                 else
                 {
@@ -116,25 +122,29 @@ class Program
                 logger.LogError(ex, "Analytics command failed");
                 throw;
             }
-        }, new Option<string>(new[] { "-p", "--project" }),
-           new Option<int>(new[] { "-s", "--sprints" }),
-           new Option<string>(new[] { "-o", "--output" }));
+        }, analyticsProjectOpt, analyticsSprintsOpt, analyticsOutputOpt, analyticsOutputDirOpt);
 
         // Export command
         var exportCommand = new Command("export", "Export analytics data to image or file");
-        exportCommand.AddOption(new Option<string>(new[] { "-p", "--project" }, "Jira project key"));
-        exportCommand.AddOption(new Option<string>(new[] { "-f", "--format" }, "Export format (png, jpg, pdf, json, csv)"));
-        exportCommand.AddOption(new Option<string>(new[] { "-o", "--output" }, "Output file path"));
+        var exportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key");
+        var exportFormatOpt = new Option<string>(new[] { "-f", "--format" }, "Export format (png, jpg, pdf, json, csv)");
+        var exportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output file path");
+        var exportOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save reports to (created if it does not exist)");
+        exportCommand.AddOption(exportProjectOpt);
+        exportCommand.AddOption(exportFormatOpt);
+        exportCommand.AddOption(exportOutputOpt);
+        exportCommand.AddOption(exportOutputDirOpt);
 
-        exportCommand.SetHandler(async (project, format, output) =>
+        exportCommand.SetHandler(async (project, format, output, outputDir) =>
         {
             var exportService = serviceProvider.GetRequiredService<IExportService>();
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
             try
             {
-                logger.LogInformation("Exporting analytics as {Format} to {Output}", format, output);
-                await exportService.ExportAnalytics(project, format, output);
+                var resolvedOutput = ResolveOutputPath(output, outputDir, $"report.{format ?? "json"}");
+                logger.LogInformation("Exporting analytics as {Format} to {Output}", format, resolvedOutput);
+                await exportService.ExportAnalytics(project, format, resolvedOutput);
                 logger.LogInformation("Export completed successfully");
             }
             catch (Exception ex)
@@ -142,40 +152,75 @@ class Program
                 logger.LogError(ex, "Export command failed");
                 throw;
             }
-        }, new Option<string>(new[] { "-p", "--project" }),
-           new Option<string>(new[] { "-f", "--format" }),
-           new Option<string>(new[] { "-o", "--output" }));
+        }, exportProjectOpt, exportFormatOpt, exportOutputOpt, exportOutputDirOpt);
 
         // Burndown command
         var burndownCommand = new Command("burndown", "Generate burndown chart for sprint");
-        burndownCommand.AddOption(new Option<string>(new[] { "-p", "--project" }, "Jira project key"));
-        burndownCommand.AddOption(new Option<int>(new[] { "--sprint-id" }, "Sprint ID"));
-        burndownCommand.AddOption(new Option<string>(new[] { "-o", "--output" }, "Output image path"));
+        var burndownProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key");
+        var burndownSprintIdOpt = new Option<int>(new[] { "--sprint-id" }, "Sprint ID");
+        var burndownOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output image path");
+        var burndownOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save reports to (created if it does not exist)");
+        burndownCommand.AddOption(burndownProjectOpt);
+        burndownCommand.AddOption(burndownSprintIdOpt);
+        burndownCommand.AddOption(burndownOutputOpt);
+        burndownCommand.AddOption(burndownOutputDirOpt);
 
-        burndownCommand.SetHandler(async (project, sprintId, output) =>
+        burndownCommand.SetHandler(async (project, sprintId, output, outputDir) =>
         {
             var reportService = serviceProvider.GetRequiredService<IReportService>();
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
             try
             {
+                var resolvedOutput = ResolveOutputPath(output, outputDir, "burndown.png");
                 logger.LogInformation("Generating burndown chart for sprint {SprintId}", sprintId);
-                await reportService.GenerateBurndownChart(project, sprintId, output);
-                logger.LogInformation("Burndown chart saved to {Output}", output);
+                await reportService.GenerateBurndownChart(project, sprintId, resolvedOutput);
+                logger.LogInformation("Burndown chart saved to {Output}", resolvedOutput);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Burndown command failed");
                 throw;
             }
-        }, new Option<string>(new[] { "-p", "--project" }),
-           new Option<int>(new[] { "--sprint-id" }),
-           new Option<string>(new[] { "-o", "--output" }));
+        }, burndownProjectOpt, burndownSprintIdOpt, burndownOutputOpt, burndownOutputDirOpt);
 
         rootCommand.AddCommand(analyticsCommand);
         rootCommand.AddCommand(exportCommand);
         rootCommand.AddCommand(burndownCommand);
 
         return rootCommand;
+    }
+
+    /// <summary>
+    /// Resolves the effective output file path given an optional explicit output file and an
+    /// optional output directory.  Creates the directory if it does not already exist.
+    /// </summary>
+    /// <param name="output">File name or path supplied via <c>--output</c> (may be null).</param>
+    /// <param name="outputDir">Directory supplied via <c>--output-dir</c> (may be null).</param>
+    /// <param name="defaultFileName">Fallback file name when <paramref name="output"/> is null.</param>
+    /// <returns>
+    /// The resolved file path, or <c>null</c> when neither <paramref name="output"/> nor
+    /// <paramref name="outputDir"/> was provided (callers should write to stdout in that case).
+    /// </returns>
+    static string? ResolveOutputPath(string? output, string? outputDir, string defaultFileName)
+    {
+        if (string.IsNullOrEmpty(outputDir) && string.IsNullOrEmpty(output))
+            return null;
+
+        var fileName = string.IsNullOrEmpty(output)
+            ? defaultFileName
+            : Path.GetFileName(output);
+
+        if (string.IsNullOrEmpty(outputDir))
+        {
+            // No output-dir: use the path as-is, but ensure parent directory exists
+            var dir = Path.GetDirectoryName(output!);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+            return output!;
+        }
+
+        Directory.CreateDirectory(outputDir);
+        return Path.Combine(outputDir, fileName!);
     }
 }
