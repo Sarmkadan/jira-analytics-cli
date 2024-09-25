@@ -18,7 +18,8 @@ public class FormattingHelpersTests
     [Fact]
     public void FormatPercentage_DefaultPrecision_ReturnsOneDecimalPlace()
     {
-        FormattingHelpers.FormatPercentage(75.55).Should().Be("75.6%");
+        // 75.55 as IEEE-754 double is ~75.5499..., so F1 rounds to 75.5
+        FormattingHelpers.FormatPercentage(75.55).Should().Be("75.5%");
     }
 
     [Fact]
