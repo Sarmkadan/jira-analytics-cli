@@ -8,22 +8,17 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Test (.NET ${{ matrix.dotnet-version }})
+    name: Build & Test
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        dotnet-version: [ '8.0.x', '10.0.x' ]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET ${{ matrix.dotnet-version }}
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          dotnet-version: '10.0.x'
 
       - name: Restore dependencies
         run: dotnet restore
@@ -38,6 +33,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.dotnet-version }}
+          name: test-results
           path: '**/TestResults/*.trx'
           retention-days: 14
