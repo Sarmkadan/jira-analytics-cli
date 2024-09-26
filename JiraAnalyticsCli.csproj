@@ -7,11 +7,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>2.0.2</Version>
-    <PackageId>Zaiets.jira.analytics.cli</PackageId>
+    <Version>1.0.0</Version>
+    <PackageId>jira-analytics-cli</PackageId>
     <Authors>Vladyslav Zaiets</Authors>
-    <Description>.NET CLI for Jira analytics - sprint velocity, developer load, overdue issues, burndown charts, SkiaSharp export</Description>
-    <PackageTags>jira cli analytics sprint velocity burndown charts developer-load</PackageTags>
+    <Description>A command-line tool for analyzing Jira project data and generating reports.</Description>
+    <PackageTags>jira;analytics;cli;reporting</PackageTags>
     <PackageProjectUrl>https://github.com/sarmkadan/jira-analytics-cli</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sarmkadan/jira-analytics-cli</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
