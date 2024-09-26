@@ -112,7 +112,19 @@ docker run --rm \
   jira-analytics-cli analytics -p MYPROJECT -o /app/output/report.txt
 ```
 
+## Usage Examples
+
+The repository includes practical usage examples in the `/examples` directory:
+
+- **BasicUsage.cs** - Minimal setup and first commands
+- **AdvancedUsage.cs** - Configuration, custom options, and error handling
+- **IntegrationExample.cs** - ASP.NET Core dependency injection integration
+
+
+These examples demonstrate real-world usage patterns and can be adapted for your projects.
+
 ## Development
+
 
 ```bash
 dotnet restore
