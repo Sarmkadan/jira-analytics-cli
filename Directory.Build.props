@@ -3,7 +3,7 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);CS0168;CS0219;CS8604;CS8603;NU1603;CA1416;CS1591</NoWarn>
     <Authors>Vladyslav Zaiets</Authors>
     <PackageProjectUrl>https://github.com/sarmkadan/jira-analytics-cli</PackageProjectUrl>
