@@ -71,3 +71,4 @@ exports/
 
 # aider internal state - never commit
 .aider*
+BenchmarkDotNet.Artifacts/
