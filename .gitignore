@@ -68,3 +68,6 @@ exports/
 *.jpg
 *.csv
 *.json.bak
+
+# aider internal state - never commit
+.aider*
