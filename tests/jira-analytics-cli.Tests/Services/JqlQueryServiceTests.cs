@@ -10,14 +10,18 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
-namespace JiraAnalyticsCli.Tests.Services;
-
+/// <summary>
+/// Tests for the JqlQueryService class.
+/// </summary>
 public class JqlQueryServiceTests
 {
     private readonly Mock<IJiraApiService> _jiraServiceMock;
     private readonly Mock<ILogger<JqlQueryService>> _loggerMock;
     private readonly JqlQueryService _sut;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JqlQueryServiceTests"/> class.
+    /// </summary>
     public JqlQueryServiceTests()
     {
         _jiraServiceMock = new Mock<IJiraApiService>();
@@ -25,6 +29,9 @@ public class JqlQueryServiceTests
         _sut             = new JqlQueryService(_jiraServiceMock.Object, _loggerMock.Object);
     }
 
+    /// <summary>
+    /// Verifies that the ExecuteQueryAsync method maps the result correctly when Jira returns issues.
+    /// </summary>
     [Fact]
     public async Task ExecuteQueryAsync_WhenJiraReturnsIssues_MapsResultCorrectly()
     {
@@ -48,6 +55,9 @@ public class JqlQueryServiceTests
         result.Jql.Should().Be("project = PROJ");
     }
 
+    /// <summary>
+    /// Verifies that the ExecuteQueryAsync method returns a success result with no issues when Jira returns an empty result.
+    /// </summary>
     [Fact]
     public async Task ExecuteQueryAsync_WhenJiraReturnsEmpty_ReturnsSuccessWithNoIssues()
     {
@@ -63,6 +73,9 @@ public class JqlQueryServiceTests
         result.HasMore.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that the ExecuteQueryAsync method returns a failure result when Jira throws an exception.
+    /// </summary>
     [Fact]
     public async Task ExecuteQueryAsync_WhenJiraThrows_ReturnsFailureResult()
     {
@@ -77,6 +90,10 @@ public class JqlQueryServiceTests
         result.Issues.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Verifies that the ExecuteQueryAsync method throws an ArgumentException when the JQL is empty.
+    /// </summary>
+    /// <param name="jql">The empty JQL string.</param>
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
@@ -85,6 +102,9 @@ public class JqlQueryServiceTests
         await Assert.ThrowsAsync<ArgumentException>(() => _sut.ExecuteQueryAsync(jql));
     }
 
+    /// <summary>
+    /// Verifies that the ExecuteQueryAsync method passes the startAt and maxResults parameters when a pagination request is made.
+    /// </summary>
     [Fact]
     public async Task ExecuteQueryAsync_WithPaginationRequest_PassesStartAtAndMaxResults()
     {
@@ -100,6 +120,11 @@ public class JqlQueryServiceTests
         _jiraServiceMock.Verify(s => s.SearchByJqlAsync("project = PROJ ORDER BY created", 25, 50), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that the FormatAsText method returns a string containing the issue keys when the result is successful.
+    /// </summary>
+    /// <param name="result">The successful JqlQueryResult.</param>
+    /// <returns>The formatted string.</returns>
     [Fact]
     public void FormatAsText_WithSuccessfulResult_ContainsIssueKeys()
     {
@@ -122,6 +147,11 @@ public class JqlQueryServiceTests
         text.Should().Contain("project = PROJ");
     }
 
+    /// <summary>
+    /// Verifies that the FormatAsText method returns a string containing the error message when the result is failed.
+    /// </summary>
+    /// <param name="result">The failed JqlQueryResult.</param>
+    /// <returns>The formatted string.</returns>
     [Fact]
     public void FormatAsText_WithFailedResult_ReturnsErrorMessage()
     {
