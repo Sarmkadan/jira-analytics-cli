@@ -11,6 +11,9 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+/// <summary>
+/// Tests for the AnalyticsService class.
+/// </summary>
 namespace JiraAnalyticsCli.Tests.Services;
 
 public class AnalyticsServiceTests
@@ -20,6 +23,9 @@ public class AnalyticsServiceTests
     private readonly Mock<ILogger<AnalyticsService>> _loggerMock;
     private readonly AnalyticsService _sut;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AnalyticsServiceTests"/> class.
+    /// </summary>
     public AnalyticsServiceTests()
     {
         _jiraServiceMock = new Mock<IJiraApiService>();
@@ -32,6 +38,9 @@ public class AnalyticsServiceTests
             _loggerMock.Object);
     }
 
+    /// <summary>
+    /// Tests that AnalyzeOverdueIssues returns zero count when the project has no issues.
+    /// </summary>
     [Fact]
     public async Task AnalyzeOverdueIssues_WhenProjectHasNoIssues_ReturnsZeroCount()
     {
@@ -46,6 +55,10 @@ public class AnalyticsServiceTests
         result.Issues.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that AnalyzeOverdueIssues counts only overdue issues when the project has mixed issues.
+    /// </summary>
+    /// <param name="issues">A list of Jira issues.</param>
     [Fact]
     public async Task AnalyzeOverdueIssues_WithMixedIssues_CountsOnlyOverdueOnes()
     {
@@ -91,6 +104,10 @@ public class AnalyticsServiceTests
         result.Issues.Should().ContainSingle(i => i.Key == "PROJ-1");
     }
 
+    /// <summary>
+    /// Tests that AnalyzeOverdueIssues correctly counts critical issues when the project has high-priority overdue issues.
+    /// </summary>
+    /// <param name="issues">A list of Jira issues.</param>
     [Fact]
     public async Task AnalyzeOverdueIssues_WithHighPriorityOverdueIssues_CorrectlyCountsCritical()
     {
