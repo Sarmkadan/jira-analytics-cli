@@ -9,8 +9,25 @@ using Xunit;
 
 namespace JiraAnalyticsCli.Tests.Models;
 
+/// <summary>
+/// Provides unit tests for the <see cref="SprintMetric"/> class.
+/// </summary>
 public class SprintMetricTests
 {
+    /// <summary>
+    /// Builds a <see cref="SprintMetric"/> instance with default values.
+    /// </summary>
+    /// <param name="planned">The planned story points.</param>
+    /// <param name="completed">The completed story points.</param>
+    /// <param name="committed">The committed story points.</param>
+    /// <param name="completedIssues">The completed issue count.</param>
+    /// <param name="totalIssues">The total issue count.</param>
+    /// <param name="defects">The defects count.</param>
+    /// <param name="overdue">The overdue issue count.</param>
+    /// <param name="scopeChanges">The scope change count.</param>
+    /// <param name="teamSize">The team size.</param>
+    /// <param name="durationDays">The sprint duration in days.</param>
+    /// <returns>A <see cref="SprintMetric"/> instance.</returns>
     private static SprintMetric BuildMetric(
         int planned = 100,
         int completed = 80,
@@ -42,6 +59,9 @@ public class SprintMetricTests
         };
     }
 
+    /// <summary>
+    /// Verifies that the <see cref="GetCompletionRate"/> method returns the correct completion rate when the planned points are non-zero.
+    /// </summary>
     [Fact]
     public void GetCompletionRate_WithNonZeroPlannedPoints_ReturnsCorrectPercentage()
     {
@@ -52,6 +72,9 @@ public class SprintMetricTests
         rate.Should().BeApproximately(75.0, precision: 0.001);
     }
 
+    /// <summary>
+    /// Verifies that the <see cref="GetCompletionRate"/> method returns zero when the planned points are zero.
+    /// </summary>
     [Fact]
     public void GetCompletionRate_WithZeroPlannedPoints_ReturnsZero()
     {
@@ -62,6 +85,9 @@ public class SprintMetricTests
         rate.Should().Be(0);
     }
 
+    /// <summary>
+    /// Verifies that the <see cref="GetHealthStatus"/> method returns "Excellent" when all metrics meet the excellent thresholds.
+    /// </summary>
     [Fact]
     public void GetHealthStatus_WithAllMetricsMeetingExcellentThresholds_ReturnsExcellent()
     {
@@ -73,6 +99,9 @@ public class SprintMetricTests
         status.Should().Be("Excellent");
     }
 
+    /// <summary>
+    /// Verifies that the <see cref="GetHealthStatus"/> method returns "Critical" when the completion rate is low and the defect rate is high.
+    /// </summary>
     [Fact]
     public void GetHealthStatus_WithLowCompletionRateAndHighDefects_ReturnsCritical()
     {
@@ -84,6 +113,9 @@ public class SprintMetricTests
         status.Should().Be("Critical");
     }
 
+    /// <summary>
+    /// Verifies that the <see cref="GetRiskScore"/> method aggregates all risk factors when there are overdue and scope changes.
+    /// </summary>
     [Fact]
     public void GetRiskScore_WithOverdueAndScopeChanges_AggregatesAllRiskFactors()
     {
@@ -95,6 +127,9 @@ public class SprintMetricTests
         risk.Should().BeApproximately(16.0, precision: 0.001);
     }
 
+    /// <summary>
+    /// Verifies that the <see cref="Validate"/> method throws an <see cref="ArgumentException"/> when the end date is before the start date.
+    /// </summary>
     [Fact]
     public void Validate_WithEndDateBeforeStartDate_ThrowsArgumentException()
     {
