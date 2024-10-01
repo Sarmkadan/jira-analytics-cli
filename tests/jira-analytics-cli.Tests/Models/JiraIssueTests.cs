@@ -9,8 +9,22 @@ using Xunit;
 
 namespace JiraAnalyticsCli.Tests.Models;
 
+/// <summary>
+/// Tests for the JiraIssue class.
+/// </summary>
 public class JiraIssueTests
 {
+    /// <summary>
+    /// Builds a JiraIssue instance with default values.
+    /// </summary>
+    /// <param name="key">The issue key.</param>
+    /// <param name="summary">The issue summary.</param>
+    /// <param name="status">The issue status.</param>
+    /// <param name="priority">The issue priority.</param>
+    /// <param name="dueDate">The due date of the issue.</param>
+    /// <param name="resolutionDate">The resolution date of the issue.</param>
+    /// <param name="storyPoints">The story points of the issue.</param>
+    /// <returns>A JiraIssue instance.</returns>
     private static JiraIssue BuildIssue(
         string key = "PROJ-1",
         string summary = "Sample issue",
@@ -36,6 +50,9 @@ public class JiraIssueTests
         };
     }
 
+    /// <summary>
+    /// Verifies that IsOverdue returns true when the due date is in the past and the status is open.
+    /// </summary>
     [Fact]
     public void IsOverdue_WhenDueDateIsInPastAndStatusIsOpen_ReturnsTrue()
     {
@@ -46,6 +63,9 @@ public class JiraIssueTests
         issue.IsOverdue().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that IsOverdue returns false when the status is done.
+    /// </summary>
     [Fact]
     public void IsOverdue_WhenStatusIsDone_ReturnsFalse()
     {
@@ -56,6 +76,9 @@ public class JiraIssueTests
         issue.IsOverdue().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that IsOverdue returns false when the resolution date is set.
+    /// </summary>
     [Fact]
     public void IsOverdue_WhenResolutionDateIsSet_ReturnsFalse()
     {
@@ -67,6 +90,9 @@ public class JiraIssueTests
         issue.IsOverdue().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that IsHighPriority returns true when the priority is critical.
+    /// </summary>
     [Fact]
     public void IsHighPriority_WithCriticalPriority_ReturnsTrue()
     {
@@ -75,6 +101,9 @@ public class JiraIssueTests
         issue.IsHighPriority().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that IsHighPriority returns false when the priority is medium.
+    /// </summary>
     [Fact]
     public void IsHighPriority_WithMediumPriority_ReturnsFalse()
     {
@@ -83,6 +112,9 @@ public class JiraIssueTests
         issue.IsHighPriority().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that GetCycleTime returns the days between creation and resolution when the resolution date is set.
+    /// </summary>
     [Fact]
     public void GetCycleTime_WhenResolutionDateIsSet_ReturnsDaysBetweenCreationAndResolution()
     {
