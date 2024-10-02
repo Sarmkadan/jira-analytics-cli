@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+/// <summary>
+/// Tests for the HtmlReportService class.
+/// </summary>
 namespace JiraAnalyticsCli.Tests.Services;
 
 public class HtmlReportServiceTests
@@ -18,6 +21,9 @@ public class HtmlReportServiceTests
     private readonly Mock<ILogger<HtmlReportService>> _loggerMock;
     private readonly HtmlReportService _sut;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HtmlReportServiceTests"/> class.
+    /// </summary>
     public HtmlReportServiceTests()
     {
         _analyticsMock = new Mock<IAnalyticsService>();
@@ -25,6 +31,9 @@ public class HtmlReportServiceTests
         _sut           = new HtmlReportService(_analyticsMock.Object, _loggerMock.Object);
     }
 
+    /// <summary>
+    /// Verifies that the BuildHtml method produces HTML that contains the project key in the title.
+    /// </summary>
     [Fact]
     public void BuildHtml_WithSprintData_ContainsProjectKeyInTitle()
     {
@@ -63,6 +72,9 @@ public class HtmlReportServiceTests
         html.Should().Contain("42.5");
     }
 
+    /// <summary>
+    /// Verifies that the BuildHtml method escapes HTML characters in the project key.
+    /// </summary>
     [Fact]
     public void BuildHtml_WithXssCharsInProjectKey_EscapesHtml()
     {
@@ -75,6 +87,9 @@ public class HtmlReportServiceTests
         html.Should().Contain("&lt;script&gt;");
     }
 
+    /// <summary>
+    /// Verifies that the BuildHtml method produces a valid HTML document even when there are no sprints.
+    /// </summary>
     [Fact]
     public void BuildHtml_WithNoSprints_StillProducesValidDocument()
     {
@@ -92,6 +107,9 @@ public class HtmlReportServiceTests
         html.Should().Contain("EMPTY");
     }
 
+    /// <summary>
+    /// Verifies that the BuildHtml method includes the top performers table in the HTML.
+    /// </summary>
     [Fact]
     public void BuildHtml_WithTopPerformers_IncludesPerformerTable()
     {
@@ -123,6 +141,9 @@ public class HtmlReportServiceTests
         html.Should().Contain("Top Performers");
     }
 
+    /// <summary>
+    /// Verifies that the GenerateReportAsync method throws an ArgumentOutOfRangeException when the sprint count is invalid.
+    /// </summary>
     [Fact]
     public async Task GenerateReportAsync_WithInvalidSprintCount_ThrowsArgumentOutOfRangeException()
     {
@@ -130,6 +151,9 @@ public class HtmlReportServiceTests
             () => _sut.GenerateReportAsync("PROJ", 0, "/tmp/report.html"));
     }
 
+    /// <summary>
+    /// Verifies that the GenerateReportAsync method writes the report to the specified file.
+    /// </summary>
     [Fact]
     public async Task GenerateReportAsync_WritesFileWithHtmlContent()
     {
