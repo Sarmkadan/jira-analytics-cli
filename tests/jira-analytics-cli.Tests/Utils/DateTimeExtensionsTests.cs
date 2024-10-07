@@ -7,10 +7,16 @@ using FluentAssertions;
 using JiraAnalyticsCli.Utils;
 using Xunit;
 
+/// <summary>
+/// Tests for the DateTimeExtensions class.
+/// </summary>
 namespace JiraAnalyticsCli.Tests.Utils;
 
 public class DateTimeExtensionsTests
 {
+    /// <summary>
+    /// Verifies that GetBusinessDaysBetween returns the correct number of business days when the start and end dates are the same.
+    /// </summary>
     [Fact]
     public void GetBusinessDaysBetween_SameDay_ReturnsZeroOrOne()
     {
@@ -18,6 +24,9 @@ public class DateTimeExtensionsTests
         date.GetBusinessDaysBetween(date).Should().BeGreaterThanOrEqualTo(0);
     }
 
+    /// <summary>
+    /// Verifies that GetBusinessDaysBetween returns the correct number of business days when the start and end dates are a full week apart.
+    /// </summary>
     [Fact]
     public void GetBusinessDaysBetween_FullWeek_ExcludesWeekends()
     {
@@ -28,6 +37,9 @@ public class DateTimeExtensionsTests
         businessDays.Should().BeLessThanOrEqualTo(5);
     }
 
+    /// <summary>
+    /// Verifies that GetBusinessDaysBetween returns 0 when the start and end dates are a weekend.
+    /// </summary>
     [Fact]
     public void GetBusinessDaysBetween_WeekendOnly_ReturnsZero()
     {
@@ -36,62 +48,92 @@ public class DateTimeExtensionsTests
         saturday.GetBusinessDaysBetween(sunday).Should().Be(0);
     }
 
+    /// <summary>
+    /// Verifies that IsBusinessHour returns true for dates between 9am and 5pm.
+    /// </summary>
     [Fact]
     public void IsBusinessHour_At9AM_ReturnsTrue()
     {
         new DateTime(2026, 5, 21, 9, 0, 0).IsBusinessHour().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that IsBusinessHour returns true for dates between 9am and 5pm.
+    /// </summary>
     [Fact]
     public void IsBusinessHour_At16_59_ReturnsTrue()
     {
         new DateTime(2026, 5, 21, 16, 59, 0).IsBusinessHour().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that IsBusinessHour returns false for dates outside of business hours.
+    /// </summary>
     [Fact]
     public void IsBusinessHour_At17_00_ReturnsFalse()
     {
         new DateTime(2026, 5, 21, 17, 0, 0).IsBusinessHour().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that IsBusinessHour returns false for dates outside of business hours.
+    /// </summary>
     [Fact]
     public void IsBusinessHour_At8AM_ReturnsFalse()
     {
         new DateTime(2026, 5, 21, 8, 0, 0).IsBusinessHour().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that GetWeekNumber returns the correct week number for dates in January.
+    /// </summary>
     [Fact]
     public void GetWeekNumber_January1_ReturnsWeek1()
     {
         new DateTime(2026, 1, 1).GetWeekNumber().Should().Be(1);
     }
 
+    /// <summary>
+    /// Verifies that GetWeekNumber returns the correct week number for dates in January.
+    /// </summary>
     [Fact]
     public void GetWeekNumber_January8_ReturnsWeek2()
     {
         new DateTime(2026, 1, 8).GetWeekNumber().Should().Be(2);
     }
 
+    /// <summary>
+    /// Verifies that IsPast returns true for dates in the past.
+    /// </summary>
     [Fact]
     public void IsPast_YesterdayDate_ReturnsTrue()
     {
         DateTime.UtcNow.AddDays(-1).IsPast().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that IsFuture returns true for dates in the future.
+    /// </summary>
     [Fact]
     public void IsFuture_TomorrowDate_ReturnsTrue()
     {
         DateTime.UtcNow.AddDays(1).IsFuture().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that IsPast returns false for dates in the future.
+    /// </summary>
     [Fact]
-    public void IsPast_FutureDate_ReturnsFalse()
+    public void IsFuture_PastDate_ReturnsFalse()
     {
         DateTime.UtcNow.AddDays(1).IsPast().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that IsFuture returns false for dates in the past.
+    /// </summary>
     [Fact]
-    public void IsFuture_PastDate_ReturnsFalse()
+    public void IsPast_FutureDate_ReturnsFalse()
     {
         DateTime.UtcNow.AddDays(-1).IsFuture().Should().BeFalse();
     }
@@ -100,36 +142,54 @@ public class DateTimeExtensionsTests
     // ToHumanReadableDuration
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Verifies that ToHumanReadableDuration returns the correct string representation for dates with multiple days.
+    /// </summary>
     [Fact]
     public void ToHumanReadableDuration_MultipleDays_ReturnsDaysFormat()
     {
         TimeSpan.FromDays(3).ToHumanReadableDuration().Should().Be("3 days");
     }
 
+    /// <summary>
+    /// Verifies that ToHumanReadableDuration returns the correct string representation for dates with a single day.
+    /// </summary>
     [Fact]
     public void ToHumanReadableDuration_SingleDay_ReturnsSingularForm()
     {
         TimeSpan.FromDays(1).ToHumanReadableDuration().Should().Be("1 day");
     }
 
+    /// <summary>
+    /// Verifies that ToHumanReadableDuration returns the correct string representation for dates with hours.
+    /// </summary>
     [Fact]
     public void ToHumanReadableDuration_Hours_ReturnsHoursFormat()
     {
         TimeSpan.FromHours(5).ToHumanReadableDuration().Should().Be("5 hours");
     }
 
+    /// <summary>
+    /// Verifies that ToHumanReadableDuration returns the correct string representation for dates with a single hour.
+    /// </summary>
     [Fact]
     public void ToHumanReadableDuration_SingleHour_ReturnsSingularForm()
     {
         TimeSpan.FromHours(1).ToHumanReadableDuration().Should().Be("1 hour");
     }
 
+    /// <summary>
+    /// Verifies that ToHumanReadableDuration returns the correct string representation for dates with minutes.
+    /// </summary>
     [Fact]
     public void ToHumanReadableDuration_Minutes_ReturnsMinutesFormat()
     {
         TimeSpan.FromMinutes(30).ToHumanReadableDuration().Should().Be("30 minutes");
     }
 
+    /// <summary>
+    /// Verifies that ToHumanReadableDuration returns the correct string representation for dates with seconds.
+    /// </summary>
     [Fact]
     public void ToHumanReadableDuration_Seconds_ReturnsSecondsFormat()
     {
@@ -140,6 +200,9 @@ public class DateTimeExtensionsTests
     // GetLastBusinessDayOfMonth
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Verifies that GetLastBusinessDayOfMonth returns the correct date for months ending on a Friday.
+    /// </summary>
     [Fact]
     public void GetLastBusinessDayOfMonth_MonthEndingOnFriday_ReturnsFriday()
     {
@@ -151,6 +214,9 @@ public class DateTimeExtensionsTests
         result.Month.Should().Be(1);
     }
 
+    /// <summary>
+    /// Verifies that GetLastBusinessDayOfMonth returns the correct date for months ending on a weekday.
+    /// </summary>
     [Fact]
     public void GetLastBusinessDayOfMonth_MonthEndingOnWeekday_ReturnsThatDay()
     {
