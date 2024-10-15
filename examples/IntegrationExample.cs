@@ -77,14 +77,35 @@ var app = builder.Build();");
 using Microsoft.AspNetCore.Mvc;
 using JiraAnalyticsCli.Services;
 
+/// <summary>
+/// Controller for generating and retrieving Jira analytics reports.
+/// Provides endpoints for analyzing project data and generating reports from jira-analytics-cli services.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class AnalyticsController : ControllerBase
 {
+    /// <summary>
+    /// The analytics service for processing Jira data and generating analysis.
+    /// </summary>
     private readonly IAnalyticsService _analyticsService;
+
+    /// <summary>
+    /// The report service for generating formatted reports from analysis data.
+    /// </summary>
     private readonly IReportService _reportService;
+
+    /// <summary>
+    /// Logger for tracking controller operations and errors.
+    /// </summary>
     private readonly ILogger<AnalyticsController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AnalyticsController"/> class.
+    /// </summary>
+    /// <param name="analyticsService">The analytics service for processing Jira data.</param>
+    /// <param name="reportService">The report service for generating formatted reports.</param>
+    /// <param name="logger">Logger for tracking operations and errors.</param>
     public AnalyticsController(
         IAnalyticsService analyticsService,
         IReportService reportService,
@@ -95,6 +116,18 @@ public class AnalyticsController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves analytics for a specific Jira project.
+    /// </summary>
+    /// <param name="projectKey">The Jira project key (e.g., "PROJ").</param>
+    /// <param name="sprints">Number of recent sprints to analyze (default: 5).</param>
+    /// <returns>
+    /// An <see cref="IActionResult"/> containing:
+    /// - Project key
+    /// - Number of sprints analyzed
+    /// - Analysis data
+    /// - Generated report
+    /// </returns>
     [HttpGet("project/{projectKey}")]
     public async Task<IActionResult> GetProjectAnalytics(string projectKey, [FromQuery] int sprints = 5)
     {
@@ -130,12 +163,33 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using JiraAnalyticsCli.Services;
 
+/// <summary>
+/// Background service for generating scheduled Jira analytics reports.
+/// Periodically generates and exports analytics reports based on configured schedule.
+/// </summary>
 public class ScheduledReportService : BackgroundService
 {
+    /// <summary>
+    /// The service provider for resolving scoped services.
+    /// </summary>
     private readonly IServiceProvider _services;
+
+    /// <summary>
+    /// Logger for tracking service operations and errors.
+    /// </summary>
     private readonly ILogger<ScheduledReportService> _logger;
+
+    /// <summary>
+    /// The time interval between scheduled report generations.
+    /// </summary>
     private readonly TimeSpan _scheduleInterval;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ScheduledReportService"/> class.
+    /// </summary>
+    /// <param name="services">The service provider for resolving scoped services.</param>
+    /// <param name="logger">Logger for tracking operations and errors.</param>
+    /// <param name="scheduleInterval">The time interval between scheduled report generations.</param>
     public ScheduledReportService(
         IServiceProvider services,
         ILogger<ScheduledReportService> logger,
@@ -146,6 +200,12 @@ public class ScheduledReportService : BackgroundService
         _scheduleInterval = scheduleInterval;
     }
 
+    /// <summary>
+    /// Executes the background service loop for generating scheduled reports.
+    /// Continuously generates weekly reports at the configured interval until cancellation is requested.
+    /// </summary>
+    /// <param name="stoppingToken">Cancellation token for graceful shutdown.</param>
+    /// <returns>Task representing the background service execution.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Scheduled Report Service started");
@@ -207,12 +267,33 @@ builder.Services.AddHostedService<ScheduledReportService>();");
 using JiraAnalyticsCli.Services;
 using JiraAnalyticsCli.Models;
 
+/// <summary>
+/// Service for generating comprehensive team dashboards from multiple Jira projects.
+/// Combines analytics from multiple projects, performs team comparisons, and generates HTML dashboards.
+/// </summary>
 public class TeamDashboardService
 {
+    /// <summary>
+    /// The analytics service for processing Jira data and generating analysis.
+    /// </summary>
     private readonly IAnalyticsService _analytics;
+
+    /// <summary>
+    /// The service for comparing team performance across projects.
+    /// </summary>
     private readonly ITeamComparisonService _comparison;
+
+    /// <summary>
+    /// The service for generating HTML reports and dashboards.
+    /// </summary>
     private readonly IHtmlReportService _htmlReport;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TeamDashboardService"/> class.
+    /// </summary>
+    /// <param name="analytics">The analytics service for processing Jira data.</param>
+    /// <param name="comparison">The service for comparing team performance across projects.</param>
+    /// <param name="htmlReport">The service for generating HTML reports and dashboards.</param>
     public TeamDashboardService(
         IAnalyticsService analytics,
         ITeamComparisonService comparison,
@@ -223,6 +304,12 @@ public class TeamDashboardService
         _htmlReport = htmlReport;
     }
 
+    /// <summary>
+    /// Generates a comprehensive dashboard combining analytics from multiple Jira projects.
+    /// </summary>
+    /// <param name="projectKeys">Array of Jira project keys to analyze.</param>
+    /// <param name="sprintCount">Number of sprints to analyze per project (default: 5).</param>
+    /// <returns>A <see cref="TeamDashboard"/> containing project analyses, team comparisons, and HTML dashboard.</returns>
     public async Task<TeamDashboard> GenerateTeamDashboard(string[] projectKeys, int sprintCount = 5)
     {
         // Get individual project analytics
@@ -271,15 +358,36 @@ builder.Services.AddJiraAnalyticsCli(options =>
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using JiraAnalyticsCli.Services;
 
+/// <summary>
+/// Health check for verifying Jira API connectivity.
+/// Used to monitor the availability of the Jira API service.
+/// </summary>
 public class JiraHealthCheck : IHealthCheck
 {
+    /// <summary>
+    /// The Jira API service for making requests to Jira.
+    /// </summary>
     private readonly IJiraApiService _jiraService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JiraHealthCheck"/> class.
+    /// </summary>
+    /// <param name="jiraService">The Jira API service for making requests to Jira.</param>
     public JiraHealthCheck(IJiraApiService jiraService)
     {
         _jiraService = jiraService;
     }
 
+    /// <summary>
+    /// Checks the health of the Jira API service.
+    /// </summary>
+    /// <param name="context">The health check context.</param>
+    /// <param name="cancellationToken">Cancellation token for the operation.</param>
+    /// <returns>
+    /// A <see cref="HealthCheckResult"/> indicating whether the Jira API is accessible:
+    /// - Healthy if the API is accessible and returns projects
+    /// - Unhealthy if the API is not accessible
+    /// </returns>
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
@@ -306,17 +414,40 @@ builder.Services.AddHealthChecks()
 builder.Services.AddMemoryCache();
 
 // Then in your services, use IMemoryCache
+/// <summary>
+/// Decorator service that adds caching functionality to the analytics service.
+/// Caches analysis results to reduce API calls and improve performance.
+/// </summary>
 public class CachedAnalyticsService : IAnalyticsService
 {
+    /// <summary>
+    /// The decorated analytics service that performs the actual analysis.
+    /// </summary>
     private readonly IAnalyticsService _decorated;
+
+    /// <summary>
+    /// The memory cache for storing cached analysis results.
+    /// </summary>
     private readonly IMemoryCache _cache;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CachedAnalyticsService"/> class.
+    /// </summary>
+    /// <param name="decorated">The decorated analytics service that performs the actual analysis.</param>
+    /// <param name="cache">The memory cache for storing cached analysis results.</param>
     public CachedAnalyticsService(IAnalyticsService decorated, IMemoryCache cache)
     {
         _decorated = decorated;
         _cache = cache;
     }
 
+    /// <summary>
+    /// Analyzes sprints for a project, using cached results when available.
+    /// Results are cached for 30 minutes to reduce API calls to Jira.
+    /// </summary>
+    /// <param name="projectKey">The Jira project key to analyze.</param>
+    /// <param name="sprintCount">Number of sprints to analyze.</param>
+    /// <returns>A <see cref="ProjectAnalysis"/> containing the analysis results.</returns>
     public async Task<ProjectAnalysis> AnalyzeSprints(string projectKey, int sprintCount)
     {
         var cacheKey = $"Analytics_{projectKey}_{sprintCount}";
