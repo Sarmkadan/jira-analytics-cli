@@ -15,7 +15,7 @@ namespace JiraAnalyticsCli.Tests.Utils;
 /// project keys, URLs, emails, sprint IDs, story points, date ranges, percentages,
 /// string truncation, CSV sanitization, and progress bar generation.
 /// </summary>
-public class ValidationHelpersTests
+public partial class ValidationHelpersTests
 {
     // -------------------------------------------------------------------------
     // IsValidJiraIssueKey
