@@ -233,6 +233,42 @@ dotnet run -c Release --project benchmarks/jira-analytics-cli.Benchmarks/jira-an
 | CacheGet (hit) — expiry check + JSON deserialise | 1,962.95 ns | 48.701 ns | 142.831 ns | 0.1640 | 1376 B |
 | CacheContains — expiry check only, no deserialise | 49.26 ns | 0.933 ns | 0.827 ns | - | - |
 
+## JiraApiException
+
+The `JiraApiException` is a custom exception thrown when communication with the Jira REST API fails. It extends the standard `Exception` class with additional properties to capture HTTP status codes and response content from failed API requests, making it easier to diagnose issues like authentication failures, rate limiting, or invalid queries.
+
+This exception is particularly useful for implementing robust error handling in CLI commands that interact with Jira's API, allowing you to provide meaningful error messages to users based on the specific failure scenario.
+
+### Usage Example
+
+```csharp
+try
+{
+    var client = new JiraClient("https://your-instance.atlassian.net", "your-api-token");
+    var sprints = await client.GetSprintsAsync("PROJ", 5);
+}
+catch (JiraApiException ex) when (ex.StatusCode == 401)
+{
+    Console.Error.WriteLine($"Authentication failed: {ex.Message}");
+    Console.Error.WriteLine($"Status Code: {ex.StatusCode}");
+    Console.Error.WriteLine($"Response: {ex.ResponseContent}");
+    return 1;
+}
+catch (JiraApiException ex)
+{
+    Console.Error.WriteLine($"Jira API request failed: {ex.Message}");
+    if (ex.StatusCode.HasValue)
+    {
+        Console.Error.WriteLine($"HTTP Status: {ex.StatusCode}");
+    }
+    if (!string.IsNullOrEmpty(ex.ResponseContent))
+    {
+        Console.Error.WriteLine($"Response Content:\n{ex.ResponseContent}");
+    }
+    return 1;
+}
+```
+
 ## License
 
 MIT - Copyright (c) 2026 Vladyslav Zaiets
