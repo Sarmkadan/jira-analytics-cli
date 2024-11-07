@@ -3,25 +3,28 @@
 // CTO & Software Architect
 //
 // Validation extensions for CollectionExtensions class
-// =====================================================================
+// Provides validation methods for parameters used in CollectionExtensions extension methods
+// =============================================================================
 
 using System.Collections;
 
 namespace JiraAnalyticsCli.Utils;
 
 /// <summary>
-/// Provides validation methods for collection operations to ensure proper usage
-/// and detect common issues with collection operations.
+/// Validation helpers for CollectionExtensions operations.
+/// Provides methods to validate parameters used by CollectionExtensions extension methods.
 /// </summary>
 public static class CollectionExtensionsValidation
 {
     /// <summary>
-    /// Validates collection parameters for common issues like null collections,
-    /// empty collections, or collections with null elements.
+    /// Validates a collection source for common issues like null collections or empty collections.
+    /// This helps prevent InvalidOperationException when calling CollectionExtensions methods.
     /// </summary>
+    /// <typeparam name="T">The type of elements in the collection</typeparam>
     /// <param name="source">The collection to validate</param>
-    /// <returns>List of validation problems; empty if valid</returns>
-    public static IReadOnlyList<string> Validate(this IEnumerable? source)
+    /// <returns>An empty list if valid, otherwise a list of human-readable problem descriptions</returns>
+    /// <exception cref="ArgumentNullException">Thrown if source is null</exception>
+    public static IReadOnlyList<string> Validate<T>(this IEnumerable<T> source)
     {
         ArgumentNullException.ThrowIfNull(source);
 
@@ -36,11 +39,13 @@ public static class CollectionExtensionsValidation
     }
 
     /// <summary>
-    /// Determines whether the collection is valid (non-null and non-empty).
+    /// Determines whether the collection source is valid (non-null and non-empty).
     /// </summary>
+    /// <typeparam name="T">The type of elements in the collection</typeparam>
     /// <param name="source">The collection to check</param>
     /// <returns>True if valid; false otherwise</returns>
-    public static bool IsValid(this IEnumerable? source)
+    /// <exception cref="ArgumentNullException">Thrown if source is null</exception>
+    public static bool IsValid<T>(this IEnumerable<T> source)
     {
         return source != null && source switch
         {
@@ -50,13 +55,14 @@ public static class CollectionExtensionsValidation
     }
 
     /// <summary>
-    /// Ensures the collection is valid, throwing an exception if any validation
+    /// Ensures that a collection source is valid, throwing an exception if any validation
     /// problems are found (null or empty collection).
     /// </summary>
+    /// <typeparam name="T">The type of elements in the collection</typeparam>
     /// <param name="source">The collection to validate</param>
     /// <exception cref="ArgumentNullException">Thrown if source is null</exception>
     /// <exception cref="ArgumentException">Thrown if collection is empty</exception>
-    public static void EnsureValid(this IEnumerable source)
+    public static void EnsureValid<T>(this IEnumerable<T> source)
     {
         ArgumentNullException.ThrowIfNull(source);
 
@@ -67,10 +73,11 @@ public static class CollectionExtensionsValidation
     }
 
     /// <summary>
-    /// Validates batch parameters to ensure batch size is positive.
+    /// Validates a batch size parameter to ensure it's positive.
+    /// Batch size must be positive to avoid infinite loops or incorrect batching behavior.
     /// </summary>
     /// <param name="batchSize">The batch size to validate</param>
-    /// <returns>List of validation problems; empty if valid</returns>
+    /// <returns>An empty list if valid, otherwise a list of human-readable problem descriptions</returns>
     public static IReadOnlyList<string> Validate(this int batchSize)
     {
         var problems = new List<string>();
@@ -103,6 +110,101 @@ public static class CollectionExtensionsValidation
         if (batchSize <= 0)
         {
             throw new ArgumentException("Batch size must be positive");
+        }
+    }
+
+    /// <summary>
+    /// Validates a key selector function to ensure it's not null.
+    /// Key selectors are used in GroupByMultiple and DistinctBy operations.
+    /// </summary>
+    /// <typeparam name="TItem">The type of items being processed</typeparam>
+    /// <typeparam name="TKey">The type of keys being selected</typeparam>
+    /// <param name="keySelector">The key selector function to validate</param>
+    /// <returns>An empty list if valid, otherwise a list of human-readable problem descriptions</returns>
+    /// <exception cref="ArgumentNullException">Thrown if keySelector is null</exception>
+    public static IReadOnlyList<string> Validate<TItem, TKey>(this Func<TItem, TKey> keySelector)
+    {
+        ArgumentNullException.ThrowIfNull(keySelector);
+
+        return Array.Empty<string>();
+    }
+
+    /// <summary>
+    /// Determines whether the key selector function is valid (not null).
+    /// </summary>
+    /// <typeparam name="TItem">The type of items being processed</typeparam>
+    /// <typeparam name="TKey">The type of keys being selected</typeparam>
+    /// <param name="keySelector">The key selector function to check</param>
+    /// <returns>True if valid; false otherwise</returns>
+    public static bool IsValid<TItem, TKey>(this Func<TItem, TKey> keySelector)
+    {
+        return keySelector != null;
+    }
+
+    /// <summary>
+    /// Ensures the key selector function is valid, throwing an exception if validation fails.
+    /// </summary>
+    /// <typeparam name="TItem">The type of items being processed</typeparam>
+    /// <typeparam name="TKey">The type of keys being selected</typeparam>
+    /// <param name="keySelector">The key selector function to validate</param>
+    /// <exception cref="ArgumentNullException">Thrown if keySelector is null</exception>
+    public static void EnsureValid<TItem, TKey>(this Func<TItem, TKey> keySelector)
+    {
+        ArgumentNullException.ThrowIfNull(keySelector);
+    }
+
+    /// <summary>
+    /// Validates a list and index for GetAtIndexOrDefault operation.
+    /// Ensures the list is not null and the index is non-negative.
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the list</typeparam>
+    /// <param name="list">The list to validate</param>
+    /// <param name="index">The index to validate</param>
+    /// <returns>An empty list if valid, otherwise a list of human-readable problem descriptions</returns>
+    /// <exception cref="ArgumentNullException">Thrown if list is null</exception>
+    public static IReadOnlyList<string> Validate<T>(this IList<T> list, int index)
+    {
+        ArgumentNullException.ThrowIfNull(list);
+
+        var problems = new List<string>();
+
+        if (index < 0)
+        {
+            problems.Add("Index cannot be negative");
+        }
+
+        return problems.AsReadOnly();
+    }
+
+    /// <summary>
+    /// Determines whether the list and index are valid for GetAtIndexOrDefault operation.
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the list</typeparam>
+    /// <param name="list">The list to check</param>
+    /// <param name="index">The index to check</param>
+    /// <returns>True if valid; false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown if list is null</exception>
+    public static bool IsValid<T>(this IList<T> list, int index)
+    {
+        return list != null && index >= 0;
+    }
+
+    /// <summary>
+    /// Ensures the list and index are valid for GetAtIndexOrDefault operation,
+    /// throwing an exception if validation fails.
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the list</typeparam>
+    /// <param name="list">The list to validate</param>
+    /// <param name="index">The index to validate</param>
+    /// <exception cref="ArgumentNullException">Thrown if list is null</exception>
+    /// <exception cref="ArgumentException">Thrown if index is negative</exception>
+    public static void EnsureValid<T>(this IList<T> list, int index)
+    {
+        ArgumentNullException.ThrowIfNull(list);
+
+        if (index < 0)
+        {
+            throw new ArgumentException("Index cannot be negative");
         }
     }
 }
