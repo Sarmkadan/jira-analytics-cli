@@ -17,15 +17,17 @@ namespace JiraAnalyticsCli.Benchmarks
         /// </summary>
         /// <param name="bench">The benchmark instance.</param>
         /// <param name="issues">The issues to add to the cache.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="bench"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="issues"/> is <c>null</c>.</exception>
         public static void WarmCache(this CacheBenchmarks bench, IEnumerable<JiraIssue> issues)
         {
-            // Ensure any required initialization is performed.
+            ArgumentNullException.ThrowIfNull(bench);
+            ArgumentNullException.ThrowIfNull(issues);
+
             bench.Setup();
 
             foreach (var issue in issues)
             {
-                // Use the issue key as the cache key; the real CacheSet signature
-                // expects a string key and the value to store.
                 bench.CacheSet(issue.Key, issue);
             }
         }
@@ -37,13 +39,14 @@ namespace JiraAnalyticsCli.Benchmarks
         /// <param name="bench">The benchmark instance.</param>
         /// <param name="key">The cache key to test.</param>
         /// <returns>True if the key exists and a non‑null value is returned.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="bench"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
         public static bool VerifyCacheHit(this CacheBenchmarks bench, string key)
         {
-            if (!bench.CacheContains(key))
-                return false;
+            ArgumentNullException.ThrowIfNull(bench);
+            ArgumentNullException.ThrowIfNull(key);
 
-            var value = bench.CacheGet(key);
-            return value != null;
+            return bench.CacheContains(key) && bench.CacheGet(key) is not null;
         }
 
         /// <summary>
@@ -53,10 +56,14 @@ namespace JiraAnalyticsCli.Benchmarks
         /// <param name="bench">The benchmark instance.</param>
         /// <param name="key">The cache key to retrieve.</param>
         /// <returns>The duration of the cache lookup.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="bench"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
         public static TimeSpan MeasureCacheRetrievalTime(this CacheBenchmarks bench, string key)
         {
+            ArgumentNullException.ThrowIfNull(bench);
+            ArgumentNullException.ThrowIfNull(key);
+
             var stopwatch = Stopwatch.StartNew();
-            // The return value is intentionally ignored; the purpose is timing.
             _ = bench.CacheGet(key);
             stopwatch.Stop();
             return stopwatch.Elapsed;
