@@ -1,36 +1,32 @@
 // ... rest of README content ...
-## SprintMetricTests
+## JiraApiServiceTests
 
-The `SprintMetricTests` class provides unit tests for the `SprintMetric` model, verifying critical business logic methods that calculate sprint metrics. These tests validate the behavior of completion rate calculation, health status determination, risk score aggregation, and validation of input parameters.
+The `JiraApiServiceTests` class provides unit tests for the `JiraApiService` class, verifying its behavior under various scenarios, including HTTP status codes, JSON parsing, and request timeouts. These tests ensure that the service correctly handles different error conditions and edge cases.
 
 ### Usage Example
 
 ```csharp
-using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Tests.Services;
+using JiraAnalyticsCli.Services;
 using FluentAssertions;
 
-// Create a test sprint with planned points and completion rate
-var sprint = new SprintMetric
-{
-    PlannedPoints = 100,
-    CompletedPoints = 80,
-    EndDate = DateTime.UtcNow.AddDays(10),
-    StartDate = DateTime.UtcNow.AddDays(-10)
-};
+// Create a test instance of JiraApiService
+var jiraApiService = new JiraApiService();
 
-// Test completion rate calculation
-double completionRate = sprint.GetCompletionRate(); // Returns 80%
+// Test that the service returns null on 401 Unauthorized
+await jiraApiService.GetProjectAsync_Returns_Null_On_401_Unauthorized();
 
-// Test health status determination
-string healthStatus = sprint.GetHealthStatus(); // Returns "Excellent"
+// Test that the service returns null on 403 Forbidden
+await jiraApiService.GetProjectAsync_Returns_Null_On_403_Forbidden();
 
-// Test risk score aggregation
-double riskScore = sprint.GetRiskScore(); // Returns a calculated risk score
+// Test that the service returns null on 429 TooManyRequests
+await jiraApiService.GetProjectAsync_Returns_Null_On_429_TooManyRequests();
+
+// Test that the service returns null on 500 InternalServerError
+await jiraApiService.GetProjectAsync_Returns_Null_On_500_InternalServerError();
 
 // Verify assertions using FluentAssertions
-sprint.GetCompletionRate().Should().BeGreaterThan(0);
-sprint.GetHealthStatus().Should().Be("Excellent");
+jiraApiService.GetProjectAsync_Returns_Null_On_401_Unauthorized().Should().BeNull();
 ```
 
 // ... rest of README content ...
-```
