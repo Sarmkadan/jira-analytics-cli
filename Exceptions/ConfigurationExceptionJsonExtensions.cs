@@ -8,41 +8,40 @@ using System.Text.Json;
 namespace JiraAnalyticsCli.Exceptions;
 
 /// <summary>
-/// Provides System.Text.Json serialization extensions for ConfigurationException
+/// Provides System.Text.Json serialization extensions for <see cref="ConfigurationException"/>
 /// </summary>
 public static class ConfigurationExceptionJsonExtensions
 {
-    private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+    private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.General)
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
+        WriteIndented = false,
+        PropertyNameCaseInsensitive = true
     };
 
     /// <summary>
-    /// Serializes a ConfigurationException to a JSON string
+    /// Serializes a <see cref="ConfigurationException"/> to a JSON string
     /// </summary>
-    /// <param name="value">The exception to serialize</param>
+    /// <param name="value">The exception to serialize. Cannot be null.</param>
     /// <param name="indented">Whether to format the JSON with indentation</param>
     /// <returns>A JSON string representation of the exception</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
     public static string ToJson(this ConfigurationException value, bool indented = false)
-    {
-        if (value == null)
-        {
-            throw new ArgumentNullException(nameof(value));
-        }
-
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
-    }
+        => value is null
+            ? throw new ArgumentNullException(nameof(value))
+            : JsonSerializer.Serialize(value, indented
+                ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
+                : _jsonOptions);
 
     /// <summary>
-    /// Deserializes a ConfigurationException from a JSON string
+    /// Deserializes a <see cref="ConfigurationException"/> from a JSON string
     /// </summary>
     /// <param name="json">The JSON string to deserialize</param>
-    /// <returns>The deserialized ConfigurationException, or null if JSON is invalid</returns>
+    /// <returns>The deserialized <see cref="ConfigurationException"/>, or <see langword="null"/> if JSON is invalid or whitespace</returns>
+    /// <remarks>
+    /// Returns null for invalid JSON, empty strings, or whitespace-only strings.
+    /// For more control over error handling, use <see cref="TryFromJson"/> instead.
+    /// </remarks>
     public static ConfigurationException? FromJson(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -61,11 +60,16 @@ public static class ConfigurationExceptionJsonExtensions
     }
 
     /// <summary>
-    /// Attempts to deserialize a ConfigurationException from a JSON string
+    /// Attempts to deserialize a <see cref="ConfigurationException"/> from a JSON string
     /// </summary>
     /// <param name="json">The JSON string to deserialize</param>
-    /// <param name="value">The deserialized exception, or null if deserialization fails</param>
-    /// <returns>True if deserialization succeeded, false otherwise</returns>
+    /// <param name="value">
+    /// When this method returns, contains the deserialized <see cref="ConfigurationException"/>
+    /// if successful, or <see langword="null"/> if deserialization failed.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the JSON was successfully deserialized; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool TryFromJson(string json, out ConfigurationException? value)
     {
         value = null;
