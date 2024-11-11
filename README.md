@@ -294,6 +294,56 @@ catch (JiraApiException ex)
 }
 ```
 
+## JiraIssueTests
+
+The `JiraIssueTests` class provides unit tests for the `JiraIssue` model, verifying critical business logic methods that calculate issue metrics and priorities. These tests validate the behavior of overdue detection, priority classification, and cycle time calculation to ensure accurate analytics reporting.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using FluentAssertions;
+
+// Create a test issue with a past due date and open status
+var overdueIssue = new JiraIssue
+{
+    Key = "PROJ-123",
+    Summary = "Fix critical authentication bug",
+    Status = "In Progress",
+    Priority = "Critical",
+    DueDate = DateTime.UtcNow.AddDays(-5),
+    CreatedDate = DateTime.UtcNow.AddDays(-30),
+    ResolutionDate = null,
+    StoryPoints = 8
+};
+
+// Test overdue detection
+bool isOverdue = overdueIssue.IsOverdue(); // Returns true
+
+// Test high priority detection
+bool isHighPriority = overdueIssue.IsHighPriority(); // Returns true
+
+// Create a resolved issue for cycle time testing
+var resolvedIssue = new JiraIssue
+{
+    Key = "PROJ-456",
+    Summary = "Implement new API endpoint",
+    Status = "Done",
+    Priority = "Medium",
+    DueDate = DateTime.UtcNow.AddDays(-10),
+    CreatedDate = DateTime.UtcNow.AddDays(-15),
+    ResolutionDate = DateTime.UtcNow.AddDays(-2),
+    StoryPoints = 5
+};
+
+// Test cycle time calculation
+double cycleTime = resolvedIssue.GetCycleTime(); // Returns ~13 days
+
+// Verify assertions using FluentAssertions
+resolvedIssue.IsOverdue().Should().BeFalse();
+resolvedIssue.IsHighPriority().Should().BeFalse();
+```
+
 ## License
 
 MIT - Copyright (c) 2026 Vladyslav Zaiets
