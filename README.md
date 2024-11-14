@@ -33,4 +33,39 @@ formattingHelpersTests.Indent_DefaultSpaces_AddsTwoSpaces();
 formattingHelpersTests.CenterText_ShorterThanWidth_CentersWithPadding();
 ```
 
-// ... rest of README content ...
+## ValidationHelpersTests
+
+The `ValidationHelpersTests` class provides a comprehensive suite of unit tests that validate the correctness of various input validation helpers used throughout the application. It covers scenarios for Jira issue keys, project keys, URLs, email addresses, sprint IDs, story points, date ranges, percentages, string truncation, and CSV sanitization, ensuring that each helper behaves as expected across a range of edge cases.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Tests.Utils;
+
+// Create an instance of the test class
+var validationTests = new ValidationHelpersTests();
+
+// Run a few representative validation tests
+validationTests.IsValidJiraIssueKey_VariousFormats_ReturnsExpected();
+validationTests.IsValidProjectKey_VariousFormats_ReturnsExpected();
+validationTests.IsValidUrl_VariousFormats_ReturnsExpected();
+validationTests.IsValidEmail_VariousFormats_ReturnsExpected();
+validationTests.IsValidSprintId_BoundaryValues_ReturnsExpected();
+validationTests.IsValidStoryPoints_Null_ReturnsTrue();
+validationTests.IsValidStoryPoints_Zero_ReturnsTrue();
+validationTests.IsValidStoryPoints_Negative_ReturnsFalse();
+validationTests.IsValidDateRange_StartBeforeEnd_ReturnsTrue();
+validationTests.IsValidDateRange_StartEqualsEnd_ReturnsFalse();
+validationTests.IsValidDateRange_StartAfterEnd_ReturnsFalse();
+validationTests.IsValidPercentage_BoundaryValues_ReturnsExpected();
+validationTests.TruncateWithEllipsis_NullInput_ReturnsEmpty();
+validationTests.TruncateWithEllipsis_EmptyInput_ReturnsEmpty();
+validationTests.TruncateWithEllipsis_ShortInput_ReturnsUnchanged();
+validationTests.TruncateWithEllipsis_LongInput_TruncatesWithDots();
+validationTests.SanitizeForCsv_NullInput_ReturnsEmpty();
+validationTests.SanitizeForCsv_StringWithCommas_RemovesCommas();
+validationTests.SanitizeForCsv_StringWithNewlines_RemovesNewlines();
+validationTests.SanitizeForCsv_StringWithQuotes_RemovesQuotes();
+```
+
+# ... rest of README content ...
