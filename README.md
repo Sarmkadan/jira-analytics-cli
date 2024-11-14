@@ -1,36 +1,36 @@
 // ... rest of README content ...
-## HtmlReportServiceTests
+## FormattingHelpersTests
 
-The `HtmlReportServiceTests` class provides unit tests for the `HtmlReportService` class, verifying its behavior under various scenarios, including building HTML reports, escaping XSS characters, and handling edge cases. These tests ensure that the service correctly handles different error conditions and edge cases.
+The `FormattingHelpersTests` class provides a set of test methods for verifying the behavior of various formatting helper methods. These methods are designed to format data in a human-readable way, making it easier to understand and work with.
 
 ### Usage Example
 
 ```csharp
-using JiraAnalyticsCli.Tests.Services;
-using JiraAnalyticsCli.Services;
-using FluentAssertions;
+using JiraAnalyticsCli.Tests.Utils;
 
-// Create a test instance of HtmlReportServiceTests
-var htmlReportServiceTests = new HtmlReportServiceTests();
+// Create a test instance of FormattingHelpersTests
+var formattingHelpersTests = new FormattingHelpersTests();
 
-// Test that the service correctly builds HTML with sprint data
-htmlReportServiceTests.BuildHtml_WithSprintData_ContainsProjectKeyInTitle();
+// Test that the `FormatPercentage` method returns a percentage with one decimal place by default
+formattingHelpersTests.FormatPercentage_DefaultPrecision_ReturnsOneDecimalPlace();
 
-// Test that the service escapes XSS characters in project key
-htmlReportServiceTests.BuildHtml_WithXssCharsInProjectKey_EscapesHtml();
+// Test that the `FormatBytes` method returns a human-readable representation of a byte size
+formattingHelpersTests.FormatBytes_VariousSizes_ReturnsHumanReadable();
 
-// Test that the service produces a valid document with no sprints
-htmlReportServiceTests.BuildHtml_WithNoSprints_StillProducesValidDocument();
+// Test that the `CreateTable` method returns an empty table when given null headers
+formattingHelpersTests.CreateTable_NullHeaders_ReturnsEmpty();
 
-// Test that the service includes a performer table in the report
-htmlReportServiceTests.BuildHtml_WithTopPerformers_IncludesPerformerTable();
+// Test that the `FormatStatus` method returns the original status when given a valid status
+formattingHelpersTests.FormatStatus_VariousStatuses_ContainsOriginalStatus();
 
-// Test that the service throws an exception with an invalid sprint count
-await htmlReportServiceTests.GenerateReportAsync_WithInvalidSprintCount_ThrowsArgumentOutOfRangeException();
+// Test that the `RepeatChar` method returns an empty string when given a count of zero
+formattingHelpersTests.RepeatChar_ZeroCount_ReturnsEmpty();
 
-// Test that the service writes a file with HTML content
-await htmlReportServiceTests.GenerateReportAsync_WritesFileWithHtmlContent();
+// Test that the `Indent` method adds two spaces by default
+formattingHelpersTests.Indent_DefaultSpaces_AddsTwoSpaces();
+
+// Test that the `CenterText` method centers text within a given width
+formattingHelpersTests.CenterText_ShorterThanWidth_CentersWithPadding();
 ```
 
 // ... rest of README content ...
-```
