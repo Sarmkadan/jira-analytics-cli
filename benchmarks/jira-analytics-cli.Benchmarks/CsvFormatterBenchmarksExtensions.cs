@@ -4,20 +4,29 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 
+using JiraAnalyticsCli.Models;
+
 namespace JiraAnalyticsCli.Benchmarks
 {
+    /// <summary>
+    /// Extension methods for <see cref="CsvFormatterBenchmarks"/> to provide additional CSV formatting and parsing functionality
+    /// </summary>
     public static class CsvFormatterBenchmarksExtensions
     {
         /// <summary>
         /// Formats the metrics with custom header and ensures consistent column ordering
         /// </summary>
+        /// <param name="formatter">The formatter instance</param>
+        /// <param name="customHeader">The custom header to use</param>
+        /// <param name="includeHeader">Whether to include the header in the output</param>
+        /// <returns>Formatted CSV content with custom header</returns>
+        /// <exception cref="ArgumentNullException">Thrown when formatter is null</exception>
+        /// <exception cref="ArgumentException">Thrown when customHeader is null or whitespace</exception>
         public static string FormatWithHeaders(this CsvFormatterBenchmarks formatter, string customHeader, bool includeHeader = true)
         {
-            if (formatter == null)
-                throw new ArgumentNullException(nameof(formatter));
+            ArgumentNullException.ThrowIfNull(formatter);
 
-            if (string.IsNullOrWhiteSpace(customHeader))
-                throw new ArgumentException("Header cannot be null or whitespace", nameof(customHeader));
+            ArgumentException.ThrowIfNullOrWhiteSpace(customHeader, nameof(customHeader));
 
             var formatted = formatter.Format();
 
@@ -55,18 +64,22 @@ namespace JiraAnalyticsCli.Benchmarks
         /// <summary>
         /// Parses CSV content and returns metrics grouped by sprint name
         /// </summary>
+        /// <param name="formatter">The formatter instance</param>
+        /// <param name="csvContent">The CSV content to parse</param>
+        /// <returns>Dictionary mapping sprint names to their metrics</returns>
+        /// <exception cref="ArgumentNullException">Thrown when formatter is null or csvContent is null</exception>
+        /// <exception cref="ArgumentException">Thrown when csvContent is whitespace</exception>
         public static Dictionary<string, List<SprintMetric>> ParseGroupedBySprint(this CsvFormatterBenchmarks formatter, string csvContent)
         {
-            if (formatter == null)
-                throw new ArgumentNullException(nameof(formatter));
+            ArgumentNullException.ThrowIfNull(formatter);
+            ArgumentNullException.ThrowIfNull(csvContent);
 
-            if (string.IsNullOrWhiteSpace(csvContent))
-                throw new ArgumentException("CSV content cannot be null or whitespace", nameof(csvContent));
+            ArgumentException.ThrowIfNullOrWhiteSpace(csvContent, nameof(csvContent));
 
             var allMetrics = formatter.Parse(csvContent);
 
             return allMetrics
-                .GroupBy(m => m.SprintName)
+                .GroupBy(m => m.SprintName ?? string.Empty)
                 .OrderBy(g => g.Key)
                 .ToDictionary(g => g.Key, g => g.ToList());
         }
@@ -74,12 +87,17 @@ namespace JiraAnalyticsCli.Benchmarks
         /// <summary>
         /// Validates that all metrics have valid numeric values
         /// </summary>
+        /// <param name="formatter">The formatter instance</param>
+        /// <param name="metrics">The metrics to validate</param>
+        /// <returns>True if all metrics are valid; otherwise false</returns>
+        /// <exception cref="ArgumentNullException">Thrown when formatter is null</exception>
+        /// <exception cref="ArgumentNullException">Thrown when metrics is null</exception>
         public static bool ValidateMetricsIntegrity(this CsvFormatterBenchmarks formatter, List<SprintMetric> metrics)
         {
-            if (formatter == null)
-                throw new ArgumentNullException(nameof(formatter));
+            ArgumentNullException.ThrowIfNull(formatter);
+            ArgumentNullException.ThrowIfNull(metrics);
 
-            if (metrics == null || metrics.Count == 0)
+            if (metrics.Count == 0)
                 return false;
 
             return metrics.All(m =>
@@ -93,10 +111,13 @@ namespace JiraAnalyticsCli.Benchmarks
         /// <summary>
         /// Formats metrics as CSV with additional calculated fields
         /// </summary>
+        /// <param name="formatter">The formatter instance</param>
+        /// <param name="includeCompletionRate">Whether to include completion rate in output</param>
+        /// <returns>Formatted CSV content with calculated fields</returns>
+        /// <exception cref="ArgumentNullException">Thrown when formatter is null</exception>
         public static string FormatWithCalculations(this CsvFormatterBenchmarks formatter, bool includeCompletionRate = true)
         {
-            if (formatter == null)
-                throw new ArgumentNullException(nameof(formatter));
+            ArgumentNullException.ThrowIfNull(formatter);
 
             formatter.Setup();
             var metrics = formatter.Parse(formatter.Format());
