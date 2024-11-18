@@ -1,28 +1,56 @@
 using System;
-using System.Text.RegularExpressions;
+using System.Globalization;
+using JiraAnalyticsCli.Utils;
 
-namespace jira_analytics_cli.Benchmarks
+namespace JiraAnalyticsCli.Benchmarks
 {
+    /// <summary>
+    /// Extension methods for string manipulation that provide utilities used in benchmark scenarios.
+    /// </summary>
     public static class StringBenchmarksExtensions
     {
-        public static string ToTitleCase(this StringBenchmarks str)
+        /// <summary>
+        /// Converts the string to title case using invariant culture.
+        /// </summary>
+        /// <param name="str">The input string to convert.</param>
+        /// <returns>The string in title case format.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="str"/> is null.</exception>
+        public static string ToTitleCase(this string str)
         {
-            return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str.ToLower());
+            ArgumentNullException.ThrowIfNull(str);
+
+            return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(str.ToLowerInvariant());
         }
 
-        public static string ReverseString(this StringBenchmarks str)
+        /// <summary>
+        /// Reverses the characters in the string.
+        /// </summary>
+        /// <param name="str">The input string to reverse.</param>
+        /// <returns>The reversed string.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="str"/> is null.</exception>
+        public static string ReverseString(this string str)
         {
-            char[] arr = str.ToCharArray();
+            ArgumentNullException.ThrowIfNull(str);
+
+            var arr = str.ToCharArray();
             Array.Reverse(arr);
             return new string(arr);
         }
 
-        public static bool IsPalindrome(this StringBenchmarks str)
+        /// <summary>
+        /// Determines whether the string is a palindrome (reads the same forwards and backwards).
+        /// </summary>
+        /// <param name="str">The input string to check.</param>
+        /// <returns>True if the string is a palindrome; otherwise, false.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="str"/> is null.</exception>
+        public static bool IsPalindrome(this string str)
         {
-            str = str.RemoveWhitespace;
-            char[] arr = str.ToCharArray();
+            ArgumentNullException.ThrowIfNull(str);
+
+            var normalized = str.RemoveWhitespace();
+            var arr = normalized.ToCharArray();
             Array.Reverse(arr);
-            return new string(arr) == str;
+            return new string(arr) == normalized;
         }
     }
 }
