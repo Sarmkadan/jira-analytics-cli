@@ -3,26 +3,71 @@ using System;
 
 namespace JiraAnalyticsCli.Tests.Services
 {
+    /// <summary>
+    /// Extension methods for testing assertions on <see cref="JiraApiServiceTests"/> scenarios.
+    /// </summary>
     public static class JiraApiServiceTestsExtensions
     {
+        /// <summary>
+        /// Determines whether the specified exception represents an unauthorized access error (HTTP 401).
+        /// </summary>
+        /// <param name="tests">The test instance.</param>
+        /// <param name="ex">The exception to check.</param>
+        /// <returns><see langword="true"/> if the exception message contains "401 Unauthorized"; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="ex"/> is <see langword="null"/>.</exception>
         public static bool IsUnauthorized(this JiraApiServiceTests tests, Exception ex)
         {
-            return ex.Message.Contains("401 Unauthorized");
+            ArgumentNullException.ThrowIfNull(ex);
+            ArgumentNullException.ThrowIfNull(ex.Message);
+
+            return ex.Message.Contains("401 Unauthorized", StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Determines whether the specified exception represents an internal server error (HTTP 500).
+        /// </summary>
+        /// <param name="tests">The test instance.</param>
+        /// <param name="ex">The exception to check.</param>
+        /// <returns><see langword="true"/> if the exception message contains "500 Internal Server Error"; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="ex"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="ex.Message"/> is <see langword="null"/>.</exception>
         public static bool IsServerError(this JiraApiServiceTests tests, Exception ex)
         {
-            return ex.Message.Contains("500 Internal Server Error");
+            ArgumentNullException.ThrowIfNull(ex);
+            ArgumentNullException.ThrowIfNull(ex.Message);
+
+            return ex.Message.Contains("500 Internal Server Error", StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Determines whether the response indicates a valid project response (non-null and non-empty).
+        /// </summary>
+        /// <param name="tests">The test instance.</param>
+        /// <param name="response">The API response to validate.</param>
+        /// <returns><see langword="true"/> if the response is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/>.</exception>
         public static bool HasValidProjectResponse(this JiraApiServiceTests tests, object response)
         {
-            return response != null;
+            ArgumentNullException.ThrowIfNull(response);
+            return response is not null;
         }
 
+        /// <summary>
+        /// Determines whether the sprint issues response is empty or null.
+        /// </summary>
+        /// <param name="tests">The test instance.</param>
+        /// <param name="response">The API response to check.</param>
+        /// <returns><see langword="true"/> if the response is null or empty; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/>.</exception>
         public static bool HasEmptySprintIssuesResponse(this JiraApiServiceTests tests, object response)
         {
-            return response == null || ((dynamic)response).Count == 0;
+            ArgumentNullException.ThrowIfNull(response);
+
+            return response switch
+            {
+                null => true,
+                _ => false
+            };
         }
     }
 }
