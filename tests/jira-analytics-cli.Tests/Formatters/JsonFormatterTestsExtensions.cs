@@ -17,23 +17,27 @@ namespace JiraAnalyticsCli.Tests.Formatters
         /// <param name="json">The JSON string to validate.</param>
         /// <param name="key">The key to check for.</param>
         /// <param name="expectedValue">The expected value for the key.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> or <paramref name="key"/> is null.</exception>
         public static void ShouldContainKeyValue(this JsonFormatterTests test, string json, string key, object expectedValue)
         {
-            json.Should().NotBeNullOrEmpty();
+            ArgumentNullException.ThrowIfNull(json);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(expectedValue);
+
+            json.Should().NotBeEmpty();
             json.Should().Contain($"\"{key}\"");
 
-            var expectedString = expectedValue.ToString();
-            if (expectedValue is string stringValue)
+            switch (expectedValue)
             {
-                json.Should().Contain($"\"{key}\":\"{stringValue}\"");
-            }
-            else if (expectedValue is bool boolValue)
-            {
-                json.Should().Contain($"\"{key}\":{boolValue.ToString().ToLowerInvariant()}");
-            }
-            else
-            {
-                json.Should().Contain($"\"{key}\":{expectedValue}");
+                case string stringValue:
+                    json.Should().Contain($"\"{key}\":\"{stringValue}\"");
+                    break;
+                case bool boolValue:
+                    json.Should().Contain($"\"{key}\":{boolValue.ToString().ToLowerInvariant()}");
+                    break;
+                default:
+                    json.Should().Contain($"\"{key}\":{expectedValue}");
+                    break;
             }
         }
 
@@ -43,9 +47,13 @@ namespace JiraAnalyticsCli.Tests.Formatters
         /// <param name="test">The JsonFormatterTests instance.</param>
         /// <param name="json">The JSON string to validate.</param>
         /// <param name="key">The key to check for.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> or <paramref name="key"/> is null.</exception>
         public static void ShouldContainKey(this JsonFormatterTests test, string json, string key)
         {
-            json.Should().NotBeNullOrEmpty();
+            ArgumentNullException.ThrowIfNull(json);
+            ArgumentNullException.ThrowIfNull(key);
+
+            json.Should().NotBeEmpty();
             json.Should().Contain($"\"{key}\"");
         }
 
@@ -55,9 +63,13 @@ namespace JiraAnalyticsCli.Tests.Formatters
         /// <param name="test">The JsonFormatterTests instance.</param>
         /// <param name="json">The JSON string to validate.</param>
         /// <param name="key">The key to exclude.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> or <paramref name="key"/> is null.</exception>
         public static void ShouldNotContainKey(this JsonFormatterTests test, string json, string key)
         {
-            json.Should().NotBeNullOrEmpty();
+            ArgumentNullException.ThrowIfNull(json);
+            ArgumentNullException.ThrowIfNull(key);
+
+            json.Should().NotBeEmpty();
             json.Should().NotContain($"\"{key}\"");
         }
 
@@ -66,8 +78,10 @@ namespace JiraAnalyticsCli.Tests.Formatters
         /// </summary>
         /// <param name="test">The JsonFormatterTests instance.</param>
         /// <param name="validationResult">The validation result tuple.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="validationResult"/> is default.</exception>
         public static void ShouldBeValidWithNoErrors(this JsonFormatterTests test, (bool isValid, string errors) validationResult)
         {
+            ArgumentNullException.ThrowIfNull(test);
             validationResult.isValid.Should().BeTrue();
             validationResult.errors.Should().BeNullOrEmpty();
         }
@@ -77,8 +91,10 @@ namespace JiraAnalyticsCli.Tests.Formatters
         /// </summary>
         /// <param name="test">The JsonFormatterTests instance.</param>
         /// <param name="validationResult">The validation result tuple.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="validationResult"/> is default.</exception>
         public static void ShouldBeInvalidWithErrors(this JsonFormatterTests test, (bool isValid, string errors) validationResult)
         {
+            ArgumentNullException.ThrowIfNull(test);
             validationResult.isValid.Should().BeFalse();
             validationResult.errors.Should().NotBeNullOrEmpty();
         }
