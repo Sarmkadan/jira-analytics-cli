@@ -5,12 +5,13 @@
 // Extension methods for JiraIssue to provide additional analytics and filtering capabilities
 // =============================================================================
 
-using JiraAnalyticsCli.Models;
+using System;
+using System.Linq;
 
 namespace JiraAnalyticsCli.Models;
 
 /// <summary>
-/// Provides extension methods for JiraIssue to enhance analytics capabilities
+/// Provides extension methods for <see cref="JiraIssue"/> to enhance analytics capabilities
 /// </summary>
 public static class JiraIssueExtensions
 {
@@ -19,8 +20,11 @@ public static class JiraIssueExtensions
     /// </summary>
     /// <param name="issue">The Jira issue</param>
     /// <returns>Number of days since issue was created</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="issue"/> is <see langword="null"/></exception>
     public static int GetAgeInDays(this JiraIssue issue)
     {
+        ArgumentNullException.ThrowIfNull(issue);
+
         if (issue.CreatedDate == default)
             return 0;
 
@@ -33,8 +37,11 @@ public static class JiraIssueExtensions
     /// </summary>
     /// <param name="issue">The Jira issue</param>
     /// <returns>True if issue is blocked, false otherwise</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="issue"/> is <see langword="null"/></exception>
     public static bool IsBlocked(this JiraIssue issue)
     {
+        ArgumentNullException.ThrowIfNull(issue);
+
         // Issues are considered blocked if they're high priority and not in progress
         return issue.IsHighPriority() &&
                !issue.IsInProgress() &&
@@ -47,8 +54,11 @@ public static class JiraIssueExtensions
     /// </summary>
     /// <param name="issue">The Jira issue</param>
     /// <returns>Days remaining until due date (negative if overdue)</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="issue"/> is <see langword="null"/></exception>
     public static int GetDaysUntilDue(this JiraIssue issue)
     {
+        ArgumentNullException.ThrowIfNull(issue);
+
         if (!issue.DueDate.HasValue)
             return int.MaxValue; // No due date = effectively infinite time
 
@@ -61,18 +71,18 @@ public static class JiraIssueExtensions
     /// </summary>
     /// <param name="issue">The Jira issue</param>
     /// <returns>Number of days the issue has been in its current status</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="issue"/> is <see langword="null"/></exception>
     public static int GetStagnationDays(this JiraIssue issue)
     {
+        ArgumentNullException.ThrowIfNull(issue);
+
         // If issue is resolved, stagnation is from last status change to resolution
         if (issue.Status.Equals("Done", StringComparison.OrdinalIgnoreCase) ||
             issue.Status.Equals("Closed", StringComparison.OrdinalIgnoreCase))
         {
-            if (issue.ResolutionDate.HasValue)
-            {
-                return (int)(issue.ResolutionDate.Value - issue.UpdatedDate).TotalDays;
-            }
-
-            return (int)(DateTime.UtcNow - issue.UpdatedDate).TotalDays;
+            return issue.ResolutionDate.HasValue
+                ? (int)(issue.ResolutionDate.Value - issue.UpdatedDate).TotalDays
+                : (int)(DateTime.UtcNow - issue.UpdatedDate).TotalDays;
         }
 
         // For active issues, stagnation is from last update to now
@@ -85,8 +95,13 @@ public static class JiraIssueExtensions
     /// <param name="issue">The Jira issue</param>
     /// <param name="componentName">Component name to check for</param>
     /// <returns>True if issue contains the component, false otherwise</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="issue"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="componentName"/> is <see langword="null"/></exception>
     public static bool HasComponent(this JiraIssue issue, string componentName)
     {
+        ArgumentNullException.ThrowIfNull(issue);
+        ArgumentNullException.ThrowIfNull(componentName);
+
         if (string.IsNullOrWhiteSpace(componentName) || issue.Components == null || issue.Components.Count == 0)
             return false;
 
@@ -99,8 +114,10 @@ public static class JiraIssueExtensions
     /// </summary>
     /// <param name="issue">The Jira issue</param>
     /// <returns>Priority level (1=Critical, 2=Blocker, 3=High, 4=Medium, 5=Low)</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="issue"/> is <see langword="null"/></exception>
     public static int GetPriorityLevel(this JiraIssue issue)
     {
+        ArgumentNullException.ThrowIfNull(issue);
         return issue.Priority switch
         {
             "Critical" => 1,
@@ -117,8 +134,11 @@ public static class JiraIssueExtensions
     /// </summary>
     /// <param name="issue">The Jira issue</param>
     /// <returns>Estimated completion percentage (0-100)</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="issue"/> is <see langword="null"/></exception>
     public static int GetEstimatedCompletionPercentage(this JiraIssue issue)
     {
+        ArgumentNullException.ThrowIfNull(issue);
+
         if (!issue.StoryPoints.HasValue || issue.StoryPoints.Value <= 0)
             return 0;
 
@@ -129,15 +149,12 @@ public static class JiraIssueExtensions
         var expectedDaysPerPoint = Math.Max(1, 10 - issue.StoryPoints.Value);
         var expectedCompletionDays = issue.StoryPoints.Value * expectedDaysPerPoint;
 
-        if (ageInDays >= expectedCompletionDays && issue.IsInProgress())
-            return 90; // Close to done
-
-        if (ageInDays >= expectedCompletionDays * 0.7 && issue.IsInProgress())
-            return 70; // Making good progress
-
-        if (ageInDays >= expectedCompletionDays * 0.4 && issue.IsInProgress())
-            return 40; // Started making progress
-
-        return 5; // Just started
+        return ageInDays switch
+        {
+            var days when days >= expectedCompletionDays && issue.IsInProgress() => 90, // Close to done
+            var days when days >= expectedCompletionDays * 0.7 && issue.IsInProgress() => 70, // Making good progress
+            var days when days >= expectedCompletionDays * 0.4 && issue.IsInProgress() => 40, // Started making progress
+            _ => 5 // Just started
+        };
     }
 }
