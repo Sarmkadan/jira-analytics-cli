@@ -1,7 +1,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,7 +10,7 @@ using JiraAnalyticsCli.Models;
 namespace JiraAnalyticsCli.Models;
 
 /// <summary>
-/// Provides System.Text.Json serialization extensions for SprintMetric type
+/// Provides System.Text.Json serialization extensions for <see cref="SprintMetric"/> type
 /// </summary>
 public static class SprintMetricJsonExtensions
 {
@@ -22,35 +22,26 @@ public static class SprintMetricJsonExtensions
     };
 
     /// <summary>
-    /// Serializes the SprintMetric instance to JSON string
+    /// Serializes the <see cref="SprintMetric"/> instance to JSON string
     /// </summary>
     /// <param name="value">SprintMetric instance to serialize</param>
     /// <param name="indented">Whether to format the JSON with indentation</param>
     /// <returns>JSON string representation</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
     public static string ToJson(this SprintMetric value, bool indented = false)
-    {
-        if (value == null)
-            throw new ArgumentNullException(nameof(value));
-
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions)
-            {
-                WriteIndented = true
-            }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
-    }
+        => value is null
+            ? throw new ArgumentNullException(nameof(value))
+            : JsonSerializer.Serialize(value, indented ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true } : _jsonOptions);
 
     /// <summary>
     /// Deserializes JSON string to SprintMetric instance
     /// </summary>
     /// <param name="json">JSON string to deserialize</param>
     /// <returns>Deserialized SprintMetric instance or null if JSON is invalid</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <c>null</c>.</exception>
     public static SprintMetric? FromJson(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-            return null;
+        ArgumentNullException.ThrowIfNull(json);
 
         try
         {
@@ -68,12 +59,10 @@ public static class SprintMetricJsonExtensions
     /// <param name="json">JSON string to deserialize</param>
     /// <param name="value">Output parameter for the deserialized SprintMetric instance</param>
     /// <returns>True if deserialization succeeded, false otherwise</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <c>null</c>.</exception>
     public static bool TryFromJson(string json, out SprintMetric? value)
     {
-        value = null;
-
-        if (string.IsNullOrWhiteSpace(json))
-            return false;
+        ArgumentNullException.ThrowIfNull(json);
 
         try
         {
@@ -82,6 +71,7 @@ public static class SprintMetricJsonExtensions
         }
         catch (JsonException)
         {
+            value = null;
             return false;
         }
     }
