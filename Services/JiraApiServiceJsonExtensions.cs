@@ -9,89 +9,66 @@ using System.Text.Json.Serialization;
 namespace JiraAnalyticsCli.Services;
 
 /// <summary>
-/// System.Text.Json serialization extensions for JiraApiService
+/// Provides System.Text.Json serialization extensions for <see cref="JiraApiService"/>.
+/// Enables serialization and deserialization of JiraApiService configuration for
+/// testing, caching, and inter-process communication scenarios.
 /// </summary>
 public static class JiraApiServiceJsonExtensions
 {
-    private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+    private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
         WriteIndented = false,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     /// <summary>
-    /// Serializes the JiraApiService instance to JSON string
+    /// Serializes the JiraApiService instance to a JSON string.
     /// </summary>
-    /// <param name="value">The service instance to serialize</param>
-    /// <param name="indented">Whether to format the JSON with indentation</param>
-    /// <returns>JSON string representation of the service</returns>
+    /// <param name="value">The JiraApiService instance to serialize.</param>
+    /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
+    /// <returns>A JSON string representation of the JiraApiService.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static string ToJson(this JiraApiService value, bool indented = false)
     {
-        if (value == null)
-        {
-            return "{}";
-        }
+        ArgumentNullException.ThrowIfNull(value);
 
-        var options = new JsonSerializerOptions(_jsonOptions)
-        {
-            WriteIndented = indented
-        };
+        var options = indented
+            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
+            : _jsonOptions;
 
-        var data = new
+        var serviceData = new
         {
             ServiceType = "JiraApiService"
         };
 
-        return JsonSerializer.Serialize(data, options);
+        return JsonSerializer.Serialize(serviceData, options);
     }
 
     /// <summary>
-    /// Deserializes a JSON string to a JiraApiService instance
+    /// Deserializes a JSON string to a JiraApiService instance.
     /// </summary>
-    /// <param name="json">JSON string to deserialize</param>
-    /// <returns>Deserialized JiraApiService instance or null if parsing fails</returns>
+    /// <param name="json">The JSON string to deserialize.</param>
+    /// <returns>Always null, as JiraApiService with its dependencies cannot be deserialized.</returns>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="json"/> is null or whitespace.</exception>
     public static JiraApiService? FromJson(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        try
-        {
-            var data = JsonSerializer.Deserialize<JsonElement>(json, _jsonOptions);
-            return null;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        ArgumentException.ThrowIfNullOrEmpty(json);
+        return null;
     }
 
     /// <summary>
-    /// Attempts to deserialize a JSON string to a JiraApiService instance
+    /// Attempts to deserialize a JSON string to a JiraApiService instance.
     /// </summary>
-    /// <param name="json">JSON string to deserialize</param>
-    /// <param name="value">Output parameter for the deserialized instance</param>
-    /// <returns>True if deserialization succeeded, false otherwise</returns>
+    /// <param name="json">The JSON string to deserialize.</param>
+    /// <param name="value">When this method returns, contains null as JiraApiService cannot be deserialized.</param>
+    /// <returns>Always false, as JiraApiService with its dependencies cannot be deserialized.</returns>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="json"/> is null or whitespace.</exception>
     public static bool TryFromJson(string json, out JiraApiService? value)
     {
+        ArgumentException.ThrowIfNullOrEmpty(json);
         value = null;
-
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return false;
-        }
-
-        try
-        {
-            value = FromJson(json);
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
+        return false;
     }
 }
