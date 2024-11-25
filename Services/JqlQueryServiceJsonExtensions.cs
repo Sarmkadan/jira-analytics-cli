@@ -11,6 +11,10 @@ namespace JiraAnalyticsCli.Services;
 /// <summary>
 /// Provides System.Text.Json serialization extensions for <see cref="JqlQueryService"/>.
 /// </summary>
+/// <remarks>
+/// This class provides JSON serialization and deserialization for <see cref="JqlQueryService"/> instances
+/// using camelCase property naming and null value suppression for clean serialization output.
+/// </remarks>
 public static class JqlQueryServiceJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
@@ -26,14 +30,19 @@ public static class JqlQueryServiceJsonExtensions
     /// <param name="value">The service instance to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON representation of the service instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static string ToJson(this JqlQueryService value, bool indented = false)
     {
-        if (value is null)
-        {
-            throw new ArgumentNullException(nameof(value));
-        }
+        ArgumentNullException.ThrowIfNull(value);
 
-        return JsonSerializer.Serialize(value, _jsonOptions);
+        var options = indented
+            ? new JsonSerializerOptions(_jsonOptions)
+            {
+                WriteIndented = true
+            }
+            : _jsonOptions;
+
+        return JsonSerializer.Serialize(value, options);
     }
 
     /// <summary>
@@ -41,12 +50,10 @@ public static class JqlQueryServiceJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized service instance, or null if the JSON is invalid.</returns>
+    /// <exception cref="ArgumentException"><paramref name="json"/> is null or whitespace.</exception>
     public static JqlQueryService? FromJson(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            throw new ArgumentException("JSON string cannot be null or empty.", nameof(json));
-        }
+        ArgumentException.ThrowIfNullOrEmpty(json);
 
         try
         {
@@ -64,12 +71,10 @@ public static class JqlQueryServiceJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized service instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentException"><paramref name="json"/> is null or whitespace.</exception>
     public static bool TryFromJson(string json, out JqlQueryService? value)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            throw new ArgumentException("JSON string cannot be null or empty.", nameof(json));
-        }
+        ArgumentException.ThrowIfNullOrEmpty(json);
 
         try
         {
