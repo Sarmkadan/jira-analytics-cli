@@ -21,24 +21,20 @@ public static class XmlFormatterExtensions
     /// <param name="items">Collection of objects to format</param>
     /// <param name="rootElement">Root element name (default: "items")</param>
     /// <returns>Formatted XML string</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="formatter"/> or <paramref name="items"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="rootElement"/> is null or empty.</exception>
     public static string FormatCollection(this XmlFormatter formatter, IEnumerable<object> items, string rootElement = "items")
     {
-        if (formatter == null)
-        {
-            throw new ArgumentNullException(nameof(formatter));
-        }
-
-        if (items == null)
-        {
-            throw new ArgumentNullException(nameof(items));
-        }
+        ArgumentNullException.ThrowIfNull(formatter);
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentException.ThrowIfNullOrEmpty(rootElement);
 
         var root = new XElement(rootElement);
         var index = 0;
 
         foreach (var item in items)
         {
-            var element = formatter.Format(item, "item");
+            var element = formatter.Format(item);
             var xdoc = XDocument.Parse(element);
             var itemElement = xdoc.Root ?? new XElement("item");
             itemElement.SetAttributeValue("index", index++);
@@ -68,12 +64,11 @@ public static class XmlFormatterExtensions
     /// <param name="formatter">The XmlFormatter instance</param>
     /// <param name="xml">XML string to validate</param>
     /// <returns>Tuple with validation result, error message, and line number if available</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="formatter"/> or <paramref name="xml"/> is null.</exception>
     public static (bool IsValid, string? Error, int? LineNumber) ValidateWithDetails(this XmlFormatter formatter, string xml)
     {
-        if (formatter == null)
-        {
-            throw new ArgumentNullException(nameof(formatter));
-        }
+        ArgumentNullException.ThrowIfNull(formatter);
+        ArgumentNullException.ThrowIfNull(xml);
 
         try
         {
@@ -97,12 +92,12 @@ public static class XmlFormatterExtensions
     /// <param name="xml">XML string to query</param>
     /// <param name="xpathExpression">XPath expression to select elements</param>
     /// <returns>Dictionary mapping element names to their values</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="formatter"/>, <paramref name="xml"/>, or <paramref name="xpathExpression"/> is null.</exception>
     public static Dictionary<string, List<string>> SelectValuesByName(this XmlFormatter formatter, string xml, string xpathExpression)
     {
-        if (formatter == null)
-        {
-            throw new ArgumentNullException(nameof(formatter));
-        }
+        ArgumentNullException.ThrowIfNull(formatter);
+        ArgumentNullException.ThrowIfNull(xml);
+        ArgumentNullException.ThrowIfNull(xpathExpression);
 
         var result = new Dictionary<string, List<string>>();
 
@@ -123,9 +118,13 @@ public static class XmlFormatterExtensions
                 values.Add(element.Value ?? string.Empty);
             }
         }
-        catch (Exception ex)
+        catch (XmlException ex)
         {
-            // Return empty dictionary on error
+            throw new ArgumentException("Invalid XML or XPath expression", nameof(xml), ex);
+        }
+        catch (XPathException ex)
+        {
+            throw new ArgumentException("Invalid XPath expression", nameof(xpathExpression), ex);
         }
 
         return result;
@@ -138,12 +137,11 @@ public static class XmlFormatterExtensions
     /// <param name="formatter">The XmlFormatter instance</param>
     /// <param name="xml">XML string to compact</param>
     /// <returns>Compact XML string with minimal whitespace</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="formatter"/> or <paramref name="xml"/> is null.</exception>
     public static string Compact(this XmlFormatter formatter, string xml)
     {
-        if (formatter == null)
-        {
-            throw new ArgumentNullException(nameof(formatter));
-        }
+        ArgumentNullException.ThrowIfNull(formatter);
+        ArgumentNullException.ThrowIfNull(xml);
 
         try
         {
@@ -162,10 +160,9 @@ public static class XmlFormatterExtensions
 
             return stringWriter.ToString();
         }
-        catch (Exception)
+        catch (XmlException ex)
         {
-            // Return original if parsing fails
-            return xml;
+            throw new ArgumentException("Invalid XML content", nameof(xml), ex);
         }
     }
 }
