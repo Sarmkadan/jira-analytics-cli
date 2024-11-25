@@ -35,8 +35,16 @@ public static partial class StringExtensions
     /// Truncates string to maximum length and appends ellipsis if truncated.
     /// Useful for displaying long text in UI with fixed width constraints.
     /// </summary>
+    /// <param name="value">The string to truncate.</param>
+    /// <param name="maxLength">Maximum length before truncation. Must be greater than 0.</param>
+    /// <returns>The truncated string with ellipsis, or the original string if not truncated.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="maxLength"/> is less than 1.
+    /// </exception>
     public static string TruncateWithEllipsis(this string value, int maxLength)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxLength, 1);
+
         if (string.IsNullOrEmpty(value))
             return value;
 
@@ -51,6 +59,8 @@ public static partial class StringExtensions
     /// Removes all whitespace characters from string.
     /// Useful for normalizing project keys or identifiers.
     /// </summary>
+    /// <param name="value">The string to process.</param>
+    /// <returns>The string with all whitespace removed, or the original string if no whitespace present.</returns>
     public static string RemoveWhitespace(this string value)
     {
         if (string.IsNullOrEmpty(value))
@@ -62,7 +72,11 @@ public static partial class StringExtensions
         var hasWhitespace = false;
         foreach (var ch in span)
         {
-            if (char.IsWhiteSpace(ch)) { hasWhitespace = true; break; }
+            if (char.IsWhiteSpace(ch))
+            {
+                hasWhitespace = true;
+                break;
+            }
         }
         if (!hasWhitespace) return value;
 
@@ -88,6 +102,8 @@ public static partial class StringExtensions
     /// Converts string to slug format (lowercase, hyphens instead of spaces).
     /// Useful for generating file names or URL-safe identifiers.
     /// </summary>
+    /// <param name="value">The string to convert to a slug.</param>
+    /// <returns>The slugified string, or empty string if input is null or empty.</returns>
     public static string ToSlug(this string value)
     {
         if (string.IsNullOrEmpty(value))
@@ -105,6 +121,9 @@ public static partial class StringExtensions
     /// Parses boolean from string with support for multiple formats.
     /// More lenient than bool.Parse for user input handling.
     /// </summary>
+    /// <param name="value">The string to parse as boolean.</param>
+    /// <param name="result">Outputs the parsed boolean value.</param>
+    /// <returns>True if parsing succeeded, false otherwise.</returns>
     public static bool TryParseBool(this string value, out bool result)
     {
         result = false;
@@ -114,13 +133,13 @@ public static partial class StringExtensions
 
         var lower = value.ToLowerInvariant().Trim();
 
-        if (lower == "true" || lower == "yes" || lower == "1" || lower == "on" || lower == "y")
+        if (lower is "true" or "yes" or "1" or "on" or "y")
         {
             result = true;
             return true;
         }
 
-        if (lower == "false" || lower == "no" || lower == "0" || lower == "off" || lower == "n")
+        if (lower is "false" or "no" or "0" or "off" or "n")
         {
             result = false;
             return true;
@@ -133,9 +152,17 @@ public static partial class StringExtensions
     /// Repeats string specified number of times.
     /// More convenient than string.Concat or String.Format for repetition.
     /// </summary>
+    /// <param name="value">The string to repeat.</param>
+    /// <param name="count">Number of times to repeat. Must be non-negative.</param>
+    /// <returns>The repeated string, or empty string if count is 0 or negative.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="count"/> is less than 0.
+    /// </exception>
     public static string Repeat(this string value, int count)
     {
-        if (count <= 0)
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        if (count == 0 || string.IsNullOrEmpty(value))
             return string.Empty;
 
         var builder = new StringBuilder(value.Length * count);
@@ -152,10 +179,16 @@ public static partial class StringExtensions
     /// Checks if string matches a pattern using wildcard matching.
     /// Supports ? (single char) and * (multiple chars) wildcards.
     /// </summary>
+    /// <param name="value">The string to match against the pattern.</param>
+    /// <param name="pattern">The wildcard pattern to match. Supports ? and * wildcards.</param>
+    /// <returns>True if the string matches the pattern; otherwise false.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="value"/> or <paramref name="pattern"/> is null.
+    /// </exception>
     public static bool MatchesPattern(this string value, string pattern)
     {
-        if (value == null || pattern == null)
-            return value == pattern;
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(pattern);
 
         // GetOrAdd compiles the Regex once per unique pattern, then reuses it on every
         // subsequent call — eliminates regex construction and JIT cost at runtime.
@@ -176,9 +209,12 @@ public static partial class StringExtensions
     /// Gets common prefix shared between two strings.
     /// Useful for finding common parts in identifiers or file paths.
     /// </summary>
+    /// <param name="str1">The first string.</param>
+    /// <param name="str2">The second string.</param>
+    /// <returns>The longest common prefix of both strings, or empty string if either is null.</returns>
     public static string GetCommonPrefix(this string str1, string str2)
     {
-        if (str1 == null || str2 == null)
+        if (str1 is null || str2 is null)
             return string.Empty;
 
         var span1 = str1.AsSpan();
@@ -200,6 +236,8 @@ public static partial class StringExtensions
     /// Escapes special characters for safe SQL/database use (basic escaping).
     /// Note: Use parameterized queries when possible instead of this method.
     /// </summary>
+    /// <param name="value">The string to escape for SQL.</param>
+    /// <returns>The escaped string, or the original string if null/empty.</returns>
     public static string EscapeForSql(this string value)
     {
         if (string.IsNullOrEmpty(value))
