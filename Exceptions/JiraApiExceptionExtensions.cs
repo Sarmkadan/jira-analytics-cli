@@ -11,7 +11,7 @@ namespace JiraAnalyticsCli.Exceptions
         /// Determines whether the exception represents a server error (HTTP 5xx status code).
         /// </summary>
         /// <param name="exception">The exception to check. Must not be null.</param>
-        /// <returns>True if the exception has a server error status code; otherwise, false.</returns>
+        /// <returns>True if the exception has a server error status code (500-599); otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="exception"/> is null.</exception>
         public static bool IsServerError(this JiraApiException exception)
         {
@@ -23,7 +23,12 @@ namespace JiraAnalyticsCli.Exceptions
         /// Gets a human-readable summary of the Jira API error.
         /// </summary>
         /// <param name="exception">The exception containing error details. Must not be null.</param>
-        /// <returns>A formatted error summary string.</returns>
+        /// <returns>
+        /// A formatted error summary string containing:
+        /// - "Jira API error with no status code" if no status code is present
+        /// - "Jira API error {statusCode}: {first 100 chars of response content}..." if response content exists
+        /// - "Jira API error {statusCode}" otherwise
+        /// </returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="exception"/> is null.</exception>
         public static string GetErrorSummary(this JiraApiException exception)
         {
@@ -42,7 +47,7 @@ namespace JiraAnalyticsCli.Exceptions
         /// Determines whether the exception represents a client error (HTTP 4xx status code).
         /// </summary>
         /// <param name="exception">The exception to check. Must not be null.</param>
-        /// <returns>True if the exception has a client error status code; otherwise, false.</returns>
+        /// <returns>True if the exception has a client error status code (400-499); otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="exception"/> is null.</exception>
         public static bool IsClientError(this JiraApiException exception)
         {
