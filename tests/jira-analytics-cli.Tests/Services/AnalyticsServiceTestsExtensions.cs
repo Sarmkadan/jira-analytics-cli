@@ -1,16 +1,16 @@
 namespace JiraAnalyticsCli.Tests.Services
 {
     /// <summary>
-    /// Extension methods for validating analytics service test results.
-    /// Provides helper methods to verify expected counts and conditions in test assertions.
+    /// Provides extension methods for <see cref="AnalyticsServiceTests"/> to validate test results.
+    /// These methods help verify expected counts and conditions in analytics service test assertions.
     /// </summary>
     public static class AnalyticsServiceTestsExtensions
     {
         /// <summary>
-        /// Gets the expected overdue count for an empty project.
+        /// Gets the expected count of overdue issues for an empty project.
         /// </summary>
-        /// <param name="serviceTests">The test instance.</param>
-        /// <returns>The expected count of overdue issues (0 for empty projects).</returns>
+        /// <param name="serviceTests">The test instance providing context for the validation.</param>
+        /// <returns>Zero, as an empty project has no overdue issues.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceTests"/> is null.</exception>
         public static int GetExpectedOverdueCountForEmptyProject(this AnalyticsServiceTests serviceTests)
         {
@@ -19,10 +19,10 @@ namespace JiraAnalyticsCli.Tests.Services
         }
 
         /// <summary>
-        /// Gets the expected critical count for an empty project.
+        /// Gets the expected count of critical overdue issues for an empty project.
         /// </summary>
-        /// <param name="serviceTests">The test instance.</param>
-        /// <returns>The expected count of critical overdue issues (0 for empty projects).</returns>
+        /// <param name="serviceTests">The test instance providing context for the validation.</param>
+        /// <returns>Zero, as an empty project has no critical overdue issues.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceTests"/> is null.</exception>
         public static int GetExpectedCriticalCountForEmptyProject(this AnalyticsServiceTests serviceTests)
         {
@@ -31,11 +31,11 @@ namespace JiraAnalyticsCli.Tests.Services
         }
 
         /// <summary>
-        /// Determines whether the actual overdue count matches the expected count.
+        /// Determines whether the expected overdue count is valid (non-negative).
         /// </summary>
-        /// <param name="serviceTests">The test instance.</param>
-        /// <param name="expectedCount">The expected count of overdue issues.</param>
-        /// <returns>True if the counts match; otherwise, false.</returns>
+        /// <param name="serviceTests">The test instance providing context for the validation.</param>
+        /// <param name="expectedCount">The expected count of overdue issues to validate.</param>
+        /// <returns>True if <paramref name="expectedCount"/> is non-negative; otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceTests"/> is null.</exception>
         public static bool HasExpectedOverdueCount(this AnalyticsServiceTests serviceTests, int expectedCount)
         {
@@ -44,11 +44,11 @@ namespace JiraAnalyticsCli.Tests.Services
         }
 
         /// <summary>
-        /// Determines whether the actual critical count matches the expected count.
+        /// Determines whether the expected critical overdue count is valid (non-negative).
         /// </summary>
-        /// <param name="serviceTests">The test instance.</param>
-        /// <param name="expectedCount">The expected count of critical overdue issues.</param>
-        /// <returns>True if the counts match; otherwise, false.</returns>
+        /// <param name="serviceTests">The test instance providing context for the validation.</param>
+        /// <param name="expectedCount">The expected count of critical overdue issues to validate.</param>
+        /// <returns>True if <paramref name="expectedCount"/> is non-negative; otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceTests"/> is null.</exception>
         public static bool HasExpectedCriticalCount(this AnalyticsServiceTests serviceTests, int expectedCount)
         {
