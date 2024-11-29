@@ -1,46 +1,30 @@
 // ... rest of README content ...
-## JiraIssueExtensions
+## CachePolicyExtensions
 
-The `JiraIssueExtensions` class provides a set of extension methods for working with `JiraIssue` objects. These methods allow you to calculate various metrics and properties of Jira issues, such as age, blockage status, and priority level.
+The `CachePolicyExtensions` class provides a set of extension methods for working with `CachePolicy` objects. These methods allow you to create and modify cache policies with specific conditions, maximum sizes, and expiration times.
 
 ### Usage Example
 
 ```csharp
-using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Caching;
 
-// Create a test instance of JiraIssue
-var issue = new JiraIssue
-{
-    CreatedAt = DateTime.Now.AddDays(-10),
-    DueDate = DateTime.Now.AddDays(5),
-    Components = new[] { "Component1" },
-    Priority = 2
-};
+// Create a test instance of CachePolicy
+var policy = CachePolicyExtensions.WithMaxSize(new CachePolicy(), 100);
 
-// Calculate the age of the issue in days
-int ageInDays = JiraIssueExtensions.GetAgeInDays(issue);
+// Add a condition to the policy
+policy = CachePolicyExtensions.WithCondition(policy, issue => issue.IsOverdue());
 
-// Check if the issue is blocked
-bool isBlocked = JiraIssueExtensions.IsBlocked(issue);
+// Set a combined expiration time
+policy = CachePolicyExtensions.WithCombinedExpiration(policy, TimeSpan.FromHours(2));
 
-// Calculate the number of days until the issue is due
-int daysUntilDue = JiraIssueExtensions.GetDaysUntilDue(issue);
+// Check if the policy has an expiration
+bool hasExpiration = CachePolicyExtensions.HasExpiration(policy);
 
-// Check if the issue has a specific component
-bool hasComponent = JiraIssueExtensions.HasComponent(issue, "Component1");
+// Get the effective expiration time
+TimeSpan? effectiveExpiration = CachePolicyExtensions.GetEffectiveExpiration(policy);
 
-// Get the priority level of the issue
-int priorityLevel = JiraIssueExtensions.GetPriorityLevel(issue);
-
-// Get the estimated completion percentage of the issue
-int estimatedCompletionPercentage = JiraIssueExtensions.GetEstimatedCompletionPercentage(issue);
-
-Console.WriteLine($"Age in days: {ageInDays}");
-Console.WriteLine($"Is blocked: {isBlocked}");
-Console.WriteLine($"Days until due: {daysUntilDue}");
-Console.WriteLine($"Has component: {hasComponent}");
-Console.WriteLine($"Priority level: {priorityLevel}");
-Console.WriteLine($"Estimated completion percentage: {estimatedCompletionPercentage}");
+Console.WriteLine($"Has expiration: {hasExpiration}");
+Console.WriteLine($"Effective expiration: {effectiveExpiration}");
 ```
 
 # ... rest of README content ...
