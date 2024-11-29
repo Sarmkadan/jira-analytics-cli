@@ -3,6 +3,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
 using System.Text;
 using JiraAnalyticsCli.Models;
 using Microsoft.Extensions.Logging;
@@ -149,7 +150,7 @@ public class ReportService : IReportService
         // Key Metrics
         sb.AppendLine("  <div class=\"metrics\">");
         sb.AppendLine("    <div class=\"metric-card\">");
-        sb.AppendLine("      <div class=\"metric-value\">" + analysis.AverageVelocity.ToString("F2") + "</div>");
+        sb.AppendLine("      <div class=\"metric-value\">" + analysis.AverageVelocity.ToString("F2", CultureInfo.InvariantCulture) + "</div>");
         sb.AppendLine("      <div class=\"metric-label\">Average Velocity (pts/sprint)</div>");
         sb.AppendLine("    </div>");
 

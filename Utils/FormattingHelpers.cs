@@ -3,6 +3,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
+
 namespace JiraAnalyticsCli.Utils;
 
 /// <summary>
@@ -15,7 +17,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string FormatPercentage(double value, int decimalPlaces = 1)
     {
-        return value.ToString($"F{decimalPlaces}") + "%";
+        return value.ToString($"F{decimalPlaces}", CultureInfo.InvariantCulture) + "%";
     }
 
     /// <summary>
@@ -23,7 +25,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string FormatNumber(int value)
     {
-        return value.ToString("N0");
+        return value.ToString("N0", CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -31,7 +33,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string FormatDecimal(double value, int decimalPlaces = 2)
     {
-        return value.ToString($"F{decimalPlaces}");
+        return value.ToString($"F{decimalPlaces}", CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -39,7 +41,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string FormatDate(DateTime date, string format = "yyyy-MM-dd")
     {
-        return date.ToString(format);
+        return date.ToString(format, CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -47,7 +49,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string FormatDateTime(DateTime dateTime, string format = "yyyy-MM-dd HH:mm:ss")
     {
-        return dateTime.ToString(format);
+        return dateTime.ToString(format, CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -65,7 +67,7 @@ public static class FormattingHelpers
             len = len / 1024;
         }
 
-        return $"{len:0.##} {sizes[order]}";
+        return $"{len.ToString("0.##", CultureInfo.InvariantCulture)} {sizes[order]}";
     }
 
     /// <summary>
