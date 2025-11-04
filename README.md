@@ -1,310 +1,900 @@
 # Jira Analytics CLI
 
-A powerful command-line tool for advanced Jira analytics, sprint metrics, team performance analysis, and professional burndown chart generation.
+A production-grade .NET command-line tool for advanced Jira analytics, sprint metrics analysis, team performance tracking, burndown chart generation, and professional data export. Designed for engineering managers, scrum masters, and data analysts who need deep insights into team velocity, individual developer load, and sprint health.
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage Examples](#usage-examples)
+- [CLI Reference](#cli-reference)
+- [API Reference](#api-reference)
+- [Data Models](#data-models)
+- [Services](#services)
+- [Integration](#integration)
+- [Troubleshooting](#troubleshooting)
+- [Performance & Optimization](#performance--optimization)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
-- **Sprint Analytics**: Analyze sprint velocity, completion rates, and historical trends
-- **Team Metrics**: Track developer productivity, workload distribution, and performance rankings
-- **Burndown Charts**: Generate detailed burndown visualizations using SkiaSharp
-- **Quality Metrics**: Monitor defect rates, quality scores, and high-risk areas
-- **Overdue Tracking**: Identify and report on overdue issues and blockers
-- **Multi-Format Export**: Export analytics as PNG, PDF, JSON, CSV, or formatted text
-- **Real-time Integration**: Direct Jira API integration with Atlassian Cloud and Server
+### Core Analytics
+- **Sprint Velocity Analysis**: Track velocity trends across multiple sprints with statistical analysis
+- **Team Metrics**: Monitor developer productivity, workload distribution, and performance rankings
+- **Cycle Time Tracking**: Measure time from issue creation to resolution for quality improvement
+- **Quality Metrics**: Defect rates, quality scores, and risk assessment
+- **Overdue Tracking**: Identify and report on overdue issues, blockers, and at-risk items
 
-## Project Structure
+### Visualization & Export
+- **Burndown Charts**: Generate detailed sprint burndown charts using SkiaSharp with point accuracy
+- **Multi-Format Export**: PNG, JPEG, PDF (via SkiaSharp), JSON, CSV, and formatted text
+- **Professional Reports**: Formatted text and HTML reports with tables, metrics, and trends
+- **Custom Metrics**: Calculate and export custom metrics for business intelligence tools
 
+### Integration
+- **Jira Cloud & Server**: Full support for Atlassian Cloud and on-premise instances
+- **REST API v3**: Uses modern Jira REST API v3 with full async/await support
+- **Real-time Data**: Caching strategy with configurable expiration for optimal performance
+- **Webhook Ready**: Foundation for real-time metric synchronization
+
+### Developer Experience
+- **Modern CLI**: System.CommandLine 2.0 with intuitive command structure
+- **Dependency Injection**: Microsoft.Extensions DI for testable, modular code
+- **Structured Logging**: Microsoft.Extensions.Logging with console output
+- **Configuration Options**: JSON files, environment variables, and CLI arguments
+- **Error Handling**: Comprehensive exception handling with detailed error messages
+
+## Quick Start
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/sarmkadan/jira-analytics-cli.git
+cd jira-analytics-cli
+
+# Build the project
+dotnet build -c Release
+
+# Publish for single-file executable
+dotnet publish -c Release -o ./dist --self-contained -p:PublishSingleFile=true
 ```
-jira-analytics-cli/
-├── Program.cs                      # CLI entry point and command definitions
-├── Models/                         # Domain models
-│   ├── JiraIssue.cs              # Issue representation with metrics
-│   ├── Sprint.cs                 # Sprint with analytics capabilities
-│   ├── Developer.cs              # Team member and productivity tracking
-│   ├── SprintMetric.cs           # Aggregated sprint metrics
-│   ├── BurndownSnapshot.cs       # Point-in-time burndown data
-│   └── JiraProject.cs            # Project with team and sprint data
-├── Services/                      # Business logic layer
-│   ├── IJiraApiService.cs        # Jira API interface
-│   ├── JiraApiService.cs         # HTTP client for Jira REST API
-│   ├── IAnalyticsService.cs      # Analytics calculation interface
-│   ├── AnalyticsService.cs       # Metrics and trend calculations
-│   ├── IReportService.cs         # Report generation interface
-│   ├── ReportService.cs          # Text and HTML report generation
-│   ├── IExportService.cs         # Export interface
-│   └── ExportService.cs          # PNG/PDF/JSON/CSV export with SkiaSharp
-├── Repositories/                 # Data access layer
-│   ├── IIssueRepository.cs       # Issue data interface
-│   ├── IssueRepository.cs        # In-memory issue cache
-│   ├── ISprintRepository.cs      # Sprint data interface
-│   ├── SprintRepository.cs       # In-memory sprint cache
-│   ├── IMetricsRepository.cs     # Metrics data interface
-│   └── MetricsRepository.cs      # Historical metrics storage
-├── Configuration/                # App configuration
-│   ├── ICliConfig.cs             # Configuration interface
-│   ├── CliConfig.cs              # Configuration implementation
-│   └── AppConfigurationProvider.cs # Loads from JSON and env vars
-├── Exceptions/                   # Custom exceptions
-│   ├── JiraApiException.cs       # API communication errors
-│   └── ConfigurationException.cs # Configuration errors
-├── Constants/                    # Constants and enums
-│   └── Constants.cs              # App-wide constants and enums
-├── Utils/                        # Utility extensions
-│   ├── DateTimeExtensions.cs     # Date/time helpers
-│   ├── ValidationHelpers.cs      # Data validation utilities
-│   └── FormattingHelpers.cs      # Output formatting utilities
-├── JiraAnalyticsCli.csproj       # Project file (.NET 10)
-├── appsettings.json              # Configuration template
-├── LICENSE                       # MIT License
-└── .gitignore                    # Git ignore patterns
+
+### Basic Usage
+
+```bash
+# Set up your Jira credentials
+export JIRA_BASE_URL="https://your-instance.atlassian.net"
+export JIRA_API_TOKEN="your-api-token"
+
+# Run analytics for the last 5 sprints
+jira-analytics-cli analytics -p MYPROJECT -s 5 -o report.txt
+
+# Export as JSON for data analysis
+jira-analytics-cli export -p MYPROJECT -f json -o metrics.json
+
+# Generate a burndown chart
+jira-analytics-cli burndown -p MYPROJECT --sprint-id 42 -o burndown.png
 ```
 
 ## Architecture
 
-### Layered Architecture
-- **Presentation Layer**: Program.cs with System.CommandLine CLI
-- **Service Layer**: Business logic for analytics and calculations
-- **Repository Layer**: Data access and caching
-- **Model Layer**: Domain entities with validation
-- **Utility Layer**: Helpers for dates, validation, and formatting
+### Layered Architecture Design
 
-### Key Design Patterns
-- **Dependency Injection**: Microsoft.Extensions.DependencyInjection
+```
+┌─────────────────────────────────────────────────────┐
+│         Presentation Layer (CLI)                    │
+│    System.CommandLine + ConsoleInterface            │
+├─────────────────────────────────────────────────────┤
+│         Service Layer                               │
+│  Analytics | Report | Export | JiraApi              │
+├─────────────────────────────────────────────────────┤
+│         Repository Layer                            │
+│  Issue | Sprint | Metrics (with caching)            │
+├─────────────────────────────────────────────────────┤
+│         Model Layer                                 │
+│  JiraIssue | Sprint | Developer | Metrics           │
+├─────────────────────────────────────────────────────┤
+│         Utility & Support Layer                     │
+│  Configuration | Logging | Validation | Formatting  │
+└─────────────────────────────────────────────────────┘
+```
+
+### Design Patterns
+
 - **Repository Pattern**: Abstracted data access with in-memory caching
+- **Dependency Injection**: Full DI container for loose coupling and testability
+- **Async/Await**: Non-blocking I/O throughout the application
 - **Strategy Pattern**: Multiple export formats handled polymorphically
 - **Factory Pattern**: Service instantiation via DI container
-- **Async/Await**: Non-blocking API calls and I/O operations
+- **Observer Pattern**: Event bus for domain events (foundation for webhooks)
+- **Middleware Pattern**: Request/response pipeline with logging, error handling, rate limiting
+
+### Directory Structure
+
+```
+jira-analytics-cli/
+├── Program.cs                      # CLI entry point and root command builder
+├── Models/                         # Domain models with validation
+│   ├── JiraIssue.cs              # Issue with cycle time and metrics
+│   ├── Sprint.cs                 # Sprint lifecycle and velocity
+│   ├── Developer.cs              # Team member performance tracking
+│   ├── SprintMetric.cs           # Aggregated sprint analytics
+│   ├── BurndownSnapshot.cs       # Point-in-time burndown data
+│   └── JiraProject.cs            # Project hierarchy
+├── Services/                      # Business logic layer
+│   ├── JiraApiService.cs         # Jira REST API v3 integration
+│   ├── AnalyticsService.cs       # Metrics calculation and trends
+│   ├── ReportService.cs          # Report generation
+│   └── ExportService.cs          # Multi-format export
+├── Repositories/                 # Data access layer
+│   ├── IssueRepository.cs        # Issue caching and queries
+│   ├── SprintRepository.cs       # Sprint lifecycle management
+│   └── MetricsRepository.cs      # Historical metrics storage
+├── Configuration/                # App configuration
+│   ├── AppConfigurationProvider.cs # Config loading
+│   ├── CliConfig.cs              # Config model
+│   └── FeatureFlags.cs           # Feature toggles
+├── Middleware/                   # Request/response pipeline
+│   ├── ErrorHandlingMiddleware.cs
+│   ├── RequestLoggingMiddleware.cs
+│   ├── RateLimitMiddleware.cs
+│   └── PipelineBuilder.cs
+├── Exceptions/                   # Custom exceptions
+│   ├── JiraApiException.cs
+│   └── ConfigurationException.cs
+├── Integration/                  # External integrations
+│   ├── HttpClientFactory.cs
+│   ├── JiraApiClient.cs
+│   └── WebhookHandler.cs
+├── Formatters/                   # Output formatting
+│   ├── JsonFormatter.cs
+│   ├── CsvFormatter.cs
+│   ├── MarkdownFormatter.cs
+│   └── XmlFormatter.cs
+├── Caching/                      # Caching infrastructure
+│   ├── CacheManager.cs
+│   ├── InMemoryCache.cs
+│   └── CachePolicy.cs
+├── Events/                       # Domain events
+│   ├── DomainEvent.cs
+│   ├── EventBus.cs
+│   └── EventSubscriber.cs
+├── BackgroundTasks/              # Async task processing
+│   ├── BackgroundTaskRunner.cs
+│   ├── MetricSyncTask.cs
+│   └── ReportGenerationTask.cs
+├── Performance/                  # Diagnostics and metrics
+│   ├── MetricsCollector.cs
+│   └── DiagnosticsService.cs
+├── Utils/                        # Utility extensions
+│   ├── DateTimeExtensions.cs
+│   ├── ValidationHelpers.cs
+│   ├── FormattingHelpers.cs
+│   ├── CollectionExtensions.cs
+│   ├── StringExtensions.cs
+│   ├── HttpClientExtensions.cs
+│   ├── JsonConverterUtils.cs
+│   └── PerformanceHelpers.cs
+├── Cli/                          # CLI infrastructure
+│   ├── CommandParser.cs
+│   ├── CommandDefinitions.cs
+│   └── ConsoleInterface.cs
+├── Constants/                    # App constants and enums
+│   └── Constants.cs
+├── Configuration/
+│   └── ServiceCollectionExtensions.cs
+├── JiraAnalyticsCli.csproj       # Project file (.NET 10)
+├── appsettings.json              # Configuration template
+├── LICENSE                       # MIT License
+├── .gitignore                    # Git ignore patterns
+├── .editorconfig                 # Editor configuration
+├── Dockerfile                    # Container image
+├── docker-compose.yml            # Local development setup
+├── Makefile                      # Build automation
+├── CHANGELOG.md                  # Version history
+├── docs/                         # Documentation
+│   ├── getting-started.md
+│   ├── architecture.md
+│   ├── api-reference.md
+│   ├── deployment.md
+│   └── faq.md
+└── examples/                     # Example scripts and programs
+    ├── analyze-recent-sprints.sh
+    ├── velocity-report.sh
+    ├── developer-load-analysis.sh
+    ├── export-csv.sh
+    ├── burndown-png.sh
+    ├── AnalyticsClient.cs
+    ├── Example.VelocityTrending.cs
+    └── Example.ExportPipeline.cs
+```
 
 ## Installation
 
 ### Prerequisites
-- .NET 10 SDK or later
-- A valid Jira instance (Cloud or Server)
-- Jira API token for authentication
 
-### Build from Source
+- **.NET 10 SDK** or later ([download](https://dotnet.microsoft.com/download/dotnet))
+- **Jira Cloud or Server** instance with API access
+- **Jira API Token** from [account settings](https://id.atlassian.com/manage-profile/security/api-tokens)
+- **bash/zsh** for shell examples (optional)
+
+### From Source
 
 ```bash
 git clone https://github.com/sarmkadan/jira-analytics-cli.git
 cd jira-analytics-cli
+
+# Build in Release mode for optimizations
 dotnet build -c Release
-dotnet publish -c Release -o ./dist
+
+# Publish as self-contained executable
+dotnet publish -c Release -o ./dist --self-contained -p:PublishSingleFile=true
+
+# The executable is now at ./dist/jira-analytics-cli (or .exe on Windows)
+./dist/jira-analytics-cli --help
+```
+
+### Via Docker
+
+```bash
+# Build Docker image
+docker build -t jira-analytics-cli .
+
+# Run container with environment variables
+docker run --rm \
+  -e JIRA_BASE_URL="https://your-instance.atlassian.net" \
+  -e JIRA_API_TOKEN="your-token" \
+  -v $(pwd)/output:/app/output \
+  jira-analytics-cli analytics -p MYPROJECT -s 5 -o /app/output/report.txt
+```
+
+### Using Docker Compose
+
+```bash
+# Set your credentials in .env or export them
+export JIRA_BASE_URL="https://your-instance.atlassian.net"
+export JIRA_API_TOKEN="your-token"
+
+# Run with docker-compose
+docker-compose up -d
+docker-compose exec app jira-analytics-cli analytics -p MYPROJECT -s 5
 ```
 
 ## Configuration
 
 ### Environment Variables
 
+The application reads configuration from environment variables, which override values in appsettings.json:
+
 ```bash
-export JIRA_BASE_URL="https://your-jira-instance.atlassian.net"
-export JIRA_API_TOKEN="your-api-token-here"
-export JIRA_DEFAULT_PROJECT="PROJ"
+# Jira Integration (required)
+export JIRA_BASE_URL="https://your-instance.atlassian.net"
+export JIRA_API_TOKEN="your-api-token"
+
+# Optional Jira Configuration
+export JIRA_DEFAULT_PROJECT="MYPROJECT"
+export JIRA_REQUEST_TIMEOUT_SECONDS=30
+export JIRA_MAX_RETRIES=3
+
+# Caching
 export CACHE_EXPIRATION_MINUTES=15
-export DETAILED_LOGGING=false
+export CACHE_MAX_ITEMS=1000
+
+# Feature Configuration
 export DEFAULT_SPRINT_COUNT=5
-export EXPORT_FORMAT=txt
+export ENABLE_DETAILED_LOGGING=false
+export EXPORT_FORMAT=json
+
+# Performance
+export ENABLE_METRICS_COLLECTION=true
+export MAX_CONCURRENT_REQUESTS=5
 ```
 
 ### Configuration File (appsettings.json)
 
 ```json
 {
-  "jiraBaseUrl": "https://your-jira-instance.atlassian.net",
-  "jiraApiToken": "your-api-token",
-  "defaultProject": "PROJ",
-  "cacheExpirationMinutes": 15,
-  "enableDetailedLogging": false,
-  "defaultSprintCount": 5,
-  "exportFormat": "txt"
+  "jiraConfiguration": {
+    "baseUrl": "https://your-instance.atlassian.net",
+    "apiToken": "your-api-token",
+    "defaultProject": "MYPROJECT",
+    "requestTimeoutSeconds": 30,
+    "maxRetries": 3
+  },
+  "caching": {
+    "expirationMinutes": 15,
+    "maxItems": 1000
+  },
+  "features": {
+    "defaultSprintCount": 5,
+    "enableDetailedLogging": false,
+    "exportFormat": "json"
+  },
+  "performance": {
+    "enableMetricsCollection": true,
+    "maxConcurrentRequests": 5
+  }
 }
 ```
 
-## Usage
+## Usage Examples
+
+### Example 1: Basic Sprint Analysis
+
+```bash
+jira-analytics-cli analytics -p BACKEND -s 3
+```
+
+Analyzes the last 3 sprints for the BACKEND project and prints results to console.
+
+### Example 2: Generate Report with Output File
+
+```bash
+jira-analytics-cli analytics -p MYPROJECT -s 5 -o sprint-report.txt
+cat sprint-report.txt
+```
+
+Analyzes 5 sprints and saves the formatted report to a file.
+
+### Example 3: Export as JSON
+
+```bash
+jira-analytics-cli export -p MYPROJECT -f json -o metrics.json
+jq '.sprints[0].velocity' metrics.json
+```
+
+Exports complete metrics in JSON format for processing with jq or other tools.
+
+### Example 4: CSV Export for Excel
+
+```bash
+jira-analytics-cli export -p MYPROJECT -f csv -o metrics.csv
+# Open in Excel, Google Sheets, or process with Python pandas
+```
+
+### Example 5: Burndown Chart Generation
+
+```bash
+jira-analytics-cli burndown -p MYPROJECT --sprint-id 42 -o sprint-42-burndown.png
+# Display the image or include in reports
+open sprint-42-burndown.png  # macOS
+feh sprint-42-burndown.png   # Linux
+```
+
+### Example 6: Batch Processing Multiple Projects
+
+```bash
+for project in BACKEND FRONTEND DEVOPS MOBILE; do
+  jira-analytics-cli analytics -p "$project" -s 5 -o "${project}-metrics.txt"
+done
+```
+
+### Example 7: Performance Tracking
+
+```bash
+# Generate reports weekly for trend analysis
+while true; do
+  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+  jira-analytics-cli analytics -p MYPROJECT -s 8 -o "reports/analytics_${TIMESTAMP}.txt"
+  sleep 604800  # Wait 1 week
+done
+```
+
+### Example 8: CI/CD Integration
+
+```yaml
+# In your CI/CD pipeline
+- name: Generate Jira Analytics
+  run: |
+    jira-analytics-cli analytics -p ${{ env.JIRA_PROJECT }} -s 5 -o report.txt
+    jira-analytics-cli export -p ${{ env.JIRA_PROJECT }} -f json -o metrics.json
+- name: Archive Reports
+  uses: actions/upload-artifact@v3
+  with:
+    name: jira-reports
+    path: |
+      report.txt
+      metrics.json
+```
+
+### Example 9: Developer Load Analysis
+
+```bash
+# Export full metrics and analyze developer distribution
+jira-analytics-cli export -p MYPROJECT -f json -o metrics.json
+
+# Use Python to analyze developer load
+python3 << 'EOF'
+import json
+with open('metrics.json') as f:
+    data = json.load(f)
+    for dev in data['developers']:
+        completion_rate = dev['completionRate']
+        print(f"{dev['name']}: {completion_rate:.1%} completion rate")
+EOF
+```
+
+### Example 10: Email Report Automation
+
+```bash
+#!/bin/bash
+# Generate report and email it
+jira-analytics-cli analytics -p MYPROJECT -s 5 -o /tmp/report.txt
+
+# Send via mail command or sendmail
+cat /tmp/report.txt | mail -s "Weekly Jira Analytics" team@example.com
+```
+
+## CLI Reference
+
+### Global Options
+
+```
+--help, -h          Show help information
+--version, -v       Show version
+```
 
 ### Analytics Command
 
-Analyze sprint metrics and team performance:
+Analyze sprint metrics and generate detailed reports.
 
 ```bash
-jira-analytics-cli analytics -p MYPROJECT -s 5 -o report.txt
+jira-analytics-cli analytics [OPTIONS]
 ```
 
-Options:
-- `-p, --project`: Jira project key (required)
-- `-s, --sprints`: Number of recent sprints to analyze (default: 5)
-- `-o, --output`: Output file path (optional, prints to console if not specified)
+**Options:**
+
+| Option | Short | Type | Required | Description |
+|--------|-------|------|----------|-------------|
+| `--project` | `-p` | string | Yes | Jira project key (e.g., BACKEND, MYPROJECT) |
+| `--sprints` | `-s` | int | No | Number of recent sprints to analyze (default: 5) |
+| `--output` | `-o` | string | No | Output file path; if omitted, prints to console |
+
+**Examples:**
+
+```bash
+jira-analytics-cli analytics -p MYPROJECT
+jira-analytics-cli analytics -p BACKEND -s 10 -o report.txt
+jira-analytics-cli analytics --project=MYPROJECT --sprints=3
+```
 
 ### Export Command
 
-Export analytics data in various formats:
+Export analytics data in various formats.
 
 ```bash
-jira-analytics-cli export -p MYPROJECT -f png -o velocity-chart.png
-jira-analytics-cli export -p MYPROJECT -f json -o analytics.json
-jira-analytics-cli export -p MYPROJECT -f csv -o metrics.csv
+jira-analytics-cli export [OPTIONS]
 ```
 
-Options:
-- `-p, --project`: Jira project key (required)
-- `-f, --format`: Export format: png, jpg, pdf, json, csv (required)
-- `-o, --output`: Output file path (required)
+**Options:**
+
+| Option | Short | Type | Required | Description |
+|--------|-------|------|----------|-------------|
+| `--project` | `-p` | string | Yes | Jira project key |
+| `--format` | `-f` | string | Yes | Export format: json, csv, png, jpg, pdf |
+| `--output` | `-o` | string | Yes | Output file path |
+
+**Supported Formats:**
+
+- `json` - JSON structure with full metrics
+- `csv` - Comma-separated values for spreadsheets
+- `png` - PNG image (for charts and burndowns)
+- `jpg` - JPEG image (lossy compression)
+- `pdf` - PDF document (via SkiaSharp)
+
+**Examples:**
+
+```bash
+jira-analytics-cli export -p MYPROJECT -f json -o metrics.json
+jira-analytics-cli export -p MYPROJECT -f csv -o metrics.csv
+jira-analytics-cli export -p MYPROJECT -f png -o velocity-chart.png
+```
 
 ### Burndown Command
 
-Generate burndown chart for a specific sprint:
+Generate sprint burndown charts.
 
 ```bash
-jira-analytics-cli burndown -p MYPROJECT --sprint-id 123 -o burndown.png
+jira-analytics-cli burndown [OPTIONS]
 ```
 
-Options:
-- `-p, --project`: Jira project key (required)
-- `--sprint-id`: Jira sprint ID (required)
-- `-o, --output`: Output image path (required)
+**Options:**
 
-## Model Details
+| Option | Short | Type | Required | Description |
+|--------|-------|------|----------|-------------|
+| `--project` | `-p` | string | Yes | Jira project key |
+| `--sprint-id` | | int | Yes | Jira sprint ID |
+| `--output` | `-o` | string | Yes | Output image file path |
+
+**Examples:**
+
+```bash
+jira-analytics-cli burndown -p MYPROJECT --sprint-id 42 -o burndown.png
+jira-analytics-cli burndown --project=BACKEND --sprint-id=100 --output=burn.png
+```
+
+## API Reference
+
+The CLI uses the following Jira REST API v3 endpoints:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `/rest/api/3/projects/{projectKeyOrId}` | Get project details |
+| `/rest/api/3/board/{boardId}/sprint` | List sprints |
+| `/rest/api/3/search` | Search issues with JQL |
+| `/rest/api/3/issue/{issueIdOrKey}` | Get issue details |
+| `/rest/api/3/users` | List team members |
+
+See [Jira REST API 3 documentation](https://developer.atlassian.com/cloud/jira/rest/v3/) for full reference.
+
+## Data Models
 
 ### JiraIssue
-- Issue key, ID, summary, description
-- Status, type, priority, assignee
-- Story points, due date, creation/resolution dates
-- Methods: `IsOverdue()`, `IsHighPriority()`, `GetCycleTime()`, `Validate()`
+
+Represents a single issue with metrics and lifecycle tracking.
+
+```csharp
+public class JiraIssue
+{
+    public string Key { get; set; }           // Issue key (e.g., PROJ-123)
+    public string Summary { get; set; }       // Issue title
+    public string Type { get; set; }          // Bug, Story, Task, etc.
+    public string Status { get; set; }        // To Do, In Progress, Done
+    public string? Assignee { get; set; }     // Developer assigned
+    public int StoryPoints { get; set; }      // Estimation
+    public DateTime CreatedDate { get; set; }
+    public DateTime? ResolvedDate { get; set; }
+    public DateTime? DueDate { get; set; }
+    
+    // Key methods:
+    public bool IsOverdue() { }                // Check if past due date
+    public bool IsHighPriority() { }           // Check priority level
+    public TimeSpan GetCycleTime() { }         // Created to resolved duration
+    public void Validate() { }                 // Validate data integrity
+}
+```
 
 ### Sprint
-- ID, name, state (Open/Active/Closed)
-- Start/end/complete dates, goal
-- Collection of issues
-- Methods: `GetVelocity()`, `GetCompletedStoryPoints()`, `GetOverdueIssues()`
+
+Represents a single sprint with metrics and issue tracking.
+
+```csharp
+public class Sprint
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string State { get; set; }         // Open, Active, Closed
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public DateTime? CompleteDate { get; set; }
+    public string Goal { get; set; }
+    public List<JiraIssue> Issues { get; set; }
+    
+    // Key methods:
+    public int GetVelocity() { }               // Completed story points
+    public int GetCompletedStoryPoints() { }   // Total completed
+    public List<JiraIssue> GetOverdueIssues() { } // Filter overdue
+}
+```
 
 ### Developer
-- Key, name, email, join date
-- Assigned issues and metrics
-- Methods: `GetProductivity()`, `GetCompletionRate()`, `GetAverageCycleTime()`
+
+Represents a team member with performance metrics.
+
+```csharp
+public class Developer
+{
+    public string Key { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public DateTime JoinDate { get; set; }
+    public List<JiraIssue> AssignedIssues { get; set; }
+    
+    // Key methods:
+    public decimal GetProductivity() { }       // Issues completed per sprint
+    public decimal GetCompletionRate() { }     // % of assigned issues completed
+    public TimeSpan GetAverageCycleTime() { }  // Average issue duration
+}
+```
 
 ### SprintMetric
-- Planned/completed story points, issue counts
-- Quality score, defect rate, risk score
-- Methods: `GetVelocity()`, `GetHealthStatus()`, `GetQualityScore()`
+
+Aggregated analytics for a sprint.
+
+```csharp
+public class SprintMetric
+{
+    public int PlannedStoryPoints { get; set; }
+    public int CompletedStoryPoints { get; set; }
+    public int TotalIssues { get; set; }
+    public int CompletedIssues { get; set; }
+    public decimal QualityScore { get; set; }  // 0-100
+    public decimal DefectRate { get; set; }    // % of issues that are bugs
+    public decimal RiskScore { get; set; }     // Overdue items, blockers
+    
+    // Key methods:
+    public int GetVelocity() { }               // Completed story points
+    public string GetHealthStatus() { }        // Healthy, At Risk, Critical
+    public decimal GetQualityScore() { }       // Quality rating
+}
+```
 
 ### BurndownSnapshot
-- Timestamp, remaining/completed story points
-- Issue counts and scope changes
-- Methods: `GetBurndownPercentage()`, `IsOnTrack()`, `GetProjectedCompletion()`
+
+Point-in-time burndown data for tracking sprint progress.
+
+```csharp
+public class BurndownSnapshot
+{
+    public DateTime Timestamp { get; set; }
+    public int RemainingStoryPoints { get; set; }
+    public int CompletedStoryPoints { get; set; }
+    public int TotalIssues { get; set; }
+    public int CompletedIssues { get; set; }
+    
+    // Key methods:
+    public decimal GetBurndownPercentage() { } // % of work completed
+    public bool IsOnTrack() { }                // Compared to ideal line
+    public DateTime? GetProjectedCompletion() { } // ETA based on trend
+}
+```
 
 ## Services
 
 ### JiraApiService
-- Fetches projects, sprints, issues, team members
-- Handles Jira REST API v3 communication
-- Connection verification with exponential backoff retry
+
+Handles all communication with Jira REST API v3.
+
+```csharp
+public interface IJiraApiService
+{
+    Task<JiraProject> GetProjectAsync(string projectKey);
+    Task<List<Sprint>> GetSprintsAsync(string projectKey, int limit = 50);
+    Task<List<JiraIssue>> GetIssuesAsync(string jql, int maxResults = 100);
+    Task<JiraIssue> GetIssueAsync(string issueKey);
+    Task<List<Developer>> GetTeamAsync(string projectKey);
+    Task VerifyConnectionAsync();
+}
+```
 
 ### AnalyticsService
-- Analyzes sprint velocity and trends
-- Calculates team metrics and performance
-- Quality analysis with defect tracking
-- Overdue issue detection
+
+Calculates metrics, trends, and analytics.
+
+```csharp
+public interface IAnalyticsService
+{
+    Task<ProjectAnalysis> AnalyzeSprints(string projectKey, int sprintCount);
+    Task<SprintMetric> AnalyzeSprint(Sprint sprint);
+    List<SprintMetric> CalculateTrends(List<SprintMetric> metrics);
+    List<Developer> RankDevelopers(List<JiraIssue> issues);
+    List<JiraIssue> FindOverdueIssues(List<JiraIssue> issues);
+}
+```
 
 ### ReportService
-- Generates formatted text reports
-- Creates HTML reports with styling
-- Produces burndown charts using SkiaSharp
-- Summary report generation
+
+Generates formatted reports for different audiences.
+
+```csharp
+public interface IReportService
+{
+    string GenerateReport(ProjectAnalysis analysis);
+    string GenerateHtmlReport(ProjectAnalysis analysis);
+    Task GenerateBurndownChart(string projectKey, int sprintId, string outputPath);
+    string GenerateSummaryReport(ProjectAnalysis analysis);
+}
+```
 
 ### ExportService
-- PNG/JPG image export with SkiaSharp
-- JSON serialization with Newtonsoft.Json
-- CSV export with proper escaping
-- Burndown chart visualization
 
-## Repository Layer
+Exports data to multiple formats.
 
-### IssueRepository
-- In-memory caching of issues
-- Query by key, project, sprint
-- Overdue and high-priority filters
-- Batch operations for bulk saves
+```csharp
+public interface IExportService
+{
+    Task ExportAnalytics(string projectKey, string format, string outputPath);
+    Task ExportAsJson(ProjectAnalysis analysis, string outputPath);
+    Task ExportAsCsv(ProjectAnalysis analysis, string outputPath);
+    Task ExportAsPng(ProjectAnalysis analysis, string outputPath);
+    Task ExportAsPdf(ProjectAnalysis analysis, string outputPath);
+}
+```
 
-### SprintRepository
-- Sprint lifecycle management (Open/Active/Closed)
-- Recent sprint queries
-- Active sprint detection
-- Historical sprint retrieval
+## Integration
 
-### MetricsRepository
-- Historical metrics storage
-- Burndown snapshot tracking
-- Project and sprint-specific metrics
-- Trend analysis data
+### Jira Cloud Setup
 
-## Technologies
+1. **Create API Token**:
+   - Go to [Account Settings](https://id.atlassian.com/manage-profile/security/api-tokens)
+   - Click "Create API Token"
+   - Copy the token securely
 
-- **.NET 10**: Latest long-term support framework
-- **System.CommandLine 2.0**: Modern CLI argument parsing
-- **SkiaSharp 2.88**: High-performance graphics for charts
-- **Newtonsoft.Json 13.0**: JSON serialization
-- **Microsoft.Extensions**: Logging and dependency injection
-- **C# 13**: Latest language features (nullable reference types, records)
+2. **Configure Environment**:
+   ```bash
+   export JIRA_BASE_URL="https://your-workspace.atlassian.net"
+   export JIRA_API_TOKEN="your-api-token"
+   ```
 
-## Code Statistics
+3. **Test Connection**:
+   ```bash
+   jira-analytics-cli analytics -p TEST -s 1
+   ```
 
-- **Files**: 32
-- **Lines of Code**: 3,880+
-- **Classes**: 25+
-- **Interfaces**: 8
-- **Test Coverage**: Foundation for integration tests
+### Jira Server Setup
 
-## Error Handling
+For on-premise Jira Server instances:
 
-- **JiraApiException**: API communication failures with HTTP status codes
-- **ConfigurationException**: Invalid or missing configuration
-- **Validation**: Domain model validation with detailed error messages
-- **Logging**: Structured logging with Microsoft.Extensions.Logging
+1. **Create API Token** in Jira user settings
+2. **Set Base URL** to your Jira server address:
+   ```bash
+   export JIRA_BASE_URL="https://jira.your-company.com"
+   ```
+3. **Configure authentication** with your credentials
 
-## Performance Considerations
+### CI/CD Integration Examples
 
-- In-memory caching with configurable expiration
-- Concurrent dictionary for thread-safe repositories
-- Async/await throughout for non-blocking I/O
-- Lazy-loaded relationships on demand
-- HTTP client connection pooling
+**GitHub Actions:**
 
-## Security
+```yaml
+- name: Run Jira Analytics
+  env:
+    JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+    JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+  run: |
+    jira-analytics-cli analytics -p ${{ env.PROJECT }} -s 5
+```
 
-- API token stored in environment variables, not committed
-- HTTPS enforced for Jira API communication
-- Input validation on all public methods
-- CSV sanitization to prevent injection
-- No sensitive data in logs by default
+**GitLab CI:**
 
-## Future Enhancements (Phase 2+)
+```yaml
+jira_analytics:
+  script:
+    - jira-analytics-cli analytics -p $JIRA_PROJECT -s 5 -o report.txt
+  artifacts:
+    paths:
+      - report.txt
+```
 
-- Database persistence (SQL Server, PostgreSQL)
-- Real-time webhook integration
-- Historical trends and forecasting
-- Custom metric definitions
-- Web API and dashboard
-- Multi-team support
-- Advanced filtering and search
-- Jira Cloud and Server support
+## Troubleshooting
+
+### Authentication Errors
+
+**Error**: `401 Unauthorized`
+
+**Solutions**:
+1. Verify API token is correct and not expired
+2. Check JIRA_BASE_URL is set correctly
+3. Ensure token has API access permission
+4. Try regenerating the token in account settings
+
+### Connection Errors
+
+**Error**: `Unable to connect to Jira instance`
+
+**Solutions**:
+1. Verify network connectivity: `curl https://your-instance.atlassian.net`
+2. Check firewall rules allow HTTPS to Jira
+3. Verify JIRA_BASE_URL is reachable
+4. Check proxy settings if behind corporate firewall
+
+### Missing Data
+
+**Problem**: Analytics show no sprints or issues
+
+**Solutions**:
+1. Verify project key is correct: `jira-analytics-cli analytics -p WRONG`
+2. Check project has active sprints in Jira
+3. Verify user has permission to view project
+4. Check that issues are assigned to sprints
+
+### Performance Issues
+
+**Problem**: Command runs slowly
+
+**Solutions**:
+1. Reduce sprint count: `-s 3` instead of `-s 10`
+2. Disable detailed logging: `ENABLE_DETAILED_LOGGING=false`
+3. Increase cache expiration: `CACHE_EXPIRATION_MINUTES=30`
+4. Check network latency to Jira
+5. Verify Jira API is not rate-limited
+
+### Export Errors
+
+**Problem**: Export fails or output is empty
+
+**Solutions**:
+1. Verify output directory exists and is writable
+2. Check disk space for image exports
+3. Try simpler format first (JSON before PNG)
+4. Check file permissions: `chmod 755 output-dir`
+
+## Performance & Optimization
+
+### Caching Strategy
+
+The application caches:
+- Sprint data (configurable expiration, default 15 minutes)
+- Issue details (cached after fetch)
+- Developer information (refreshed per session)
+
+### Configuration for Scale
+
+For large projects (1000+ issues):
+
+```bash
+export CACHE_EXPIRATION_MINUTES=30
+export CACHE_MAX_ITEMS=5000
+export MAX_CONCURRENT_REQUESTS=3
+export JIRA_REQUEST_TIMEOUT_SECONDS=60
+```
+
+### Async/Await Usage
+
+All I/O operations use async/await for non-blocking execution. The CLI properly handles task synchronization without deadlocks.
+
+### Metrics Collection
+
+Enable performance diagnostics:
+
+```bash
+export ENABLE_METRICS_COLLECTION=true
+```
+
+## Contributing
+
+This is a solo open-source project. Contributions are welcome via pull requests for:
+
+- Bug fixes and stability improvements
+- Performance optimizations
+- Additional export formats
+- Documentation enhancements
+- Feature requests and discussions
+
+### Development Setup
+
+```bash
+# Clone and setup
+git clone https://github.com/sarmkadan/jira-analytics-cli.git
+cd jira-analytics-cli
+
+# Install dependencies and build
+dotnet restore
+dotnet build
+
+# Run tests (when available)
+dotnet test
+
+# Format code
+dotnet format
+
+# Run locally for development
+dotnet run -- analytics -p MYPROJECT -s 3
+```
+
+### Code Style
+
+- C# 13 with latest language features
+- Nullable reference types enabled
+- Async/await throughout
+- Dependency injection for testability
+- XML documentation on public APIs
 
 ## License
 
 MIT License - Copyright (c) 2026 Vladyslav Zaiets
 
-## Author
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limited to the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-Vladyslav Zaiets
-- Website: https://sarmkadan.com
-- Email: rutova2@gmail.com
-
-## Contributing
-
-This is a solo open-source project. Contributions via pull requests are welcome for:
-- Bug fixes
-- Performance improvements
-- Documentation enhancements
-- Additional export formats
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 ---
 
-**Note**: This project is in active development. Phase 1 focuses on core architecture and APIs.
+**Built by [Vladyslav Zaiets](https://sarmkadan.com) - CTO & Software Architect**
+
+[Portfolio](https://sarmkadan.com) | [GitHub](https://github.com/sarmkadan) | [Telegram](https://t.me/sarmkadan)
