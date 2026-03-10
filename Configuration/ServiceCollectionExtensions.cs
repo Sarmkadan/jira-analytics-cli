@@ -15,6 +15,8 @@ using JiraAnalyticsCli.Filters;
 using JiraAnalyticsCli.Converters;
 using JiraAnalyticsCli.BackgroundTasks;
 using JiraAnalyticsCli.Events;
+using JiraAnalyticsCli.Services;
+using JiraAnalyticsCli.Repositories;
 
 namespace JiraAnalyticsCli.Configuration;
 
@@ -189,6 +191,19 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Registers sprint comparison and team velocity trend services.
+    /// </summary>
+    public static IServiceCollection AddSprintComparisonServices(this IServiceCollection services)
+    {
+        services.AddSingleton<ISprintComparisonService>(sp => new SprintComparisonService(
+            sp.GetRequiredService<ISprintRepository>(),
+            sp.GetRequiredService<IMetricsRepository>(),
+            sp.GetRequiredService<ILogger<SprintComparisonService>>()));
+
+        return services;
+    }
+
+    /// <summary>
     /// Convenience method to register all Phase 2 services at once.
     /// </summary>
     public static IServiceCollection AddPhase2Services(
@@ -208,7 +223,8 @@ public static class ServiceCollectionExtensions
             .AddConverterServices()
             .AddBackgroundTaskServices()
             .AddEventServices()
-            .AddFeatureFlagServices();
+            .AddFeatureFlagServices()
+            .AddSprintComparisonServices();
 
         return services;
     }
