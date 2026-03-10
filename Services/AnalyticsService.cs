@@ -3,6 +3,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Collections.Frozen;
 using JiraAnalyticsCli.Models;
 using JiraAnalyticsCli.Repositories;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,17 @@ namespace JiraAnalyticsCli.Services;
 /// </summary>
 public class AnalyticsService : IAnalyticsService
 {
+    // FrozenDictionary is optimised for read-heavy workloads: its internal layout allows
+    // the JIT to generate branchless lookups, outperforming a switch on string keys.
+    private static readonly FrozenDictionary<string, int> _healthScoreMap =
+        new Dictionary<string, int>(4)
+        {
+            ["Excellent"] = 4,
+            ["Healthy"]   = 3,
+            ["At Risk"]   = 2,
+            ["Critical"]  = 1
+        }.ToFrozenDictionary();
+
     private readonly IJiraApiService _jiraService;
     private readonly IMetricsRepository _metricsRepository;
     private readonly ILogger<AnalyticsService> _logger;
@@ -82,17 +94,8 @@ public class AnalyticsService : IAnalyticsService
                         result.TrendPercentage = ((newVelocity - oldVelocity) / oldVelocity) * 100;
                 }
 
-                var healthScores = result.Metrics.Select(m =>
-                {
-                    var score = m.GetHealthStatus();
-                    return score switch
-                    {
-                        "Excellent" => 4,
-                        "Healthy" => 3,
-                        "At Risk" => 2,
-                        _ => 1
-                    };
-                }).Average();
+                var healthScores = result.Metrics
+                    .Average(m => _healthScoreMap.GetValueOrDefault(m.GetHealthStatus(), 1));
 
                 result.OverallHealth = healthScores switch
                 {

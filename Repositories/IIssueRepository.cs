@@ -8,15 +8,18 @@ using JiraAnalyticsCli.Models;
 namespace JiraAnalyticsCli.Repositories;
 
 /// <summary>
-/// Repository interface for issue data access
+/// Repository interface for issue data access.
+/// Methods return ValueTask because implementations operate on in-memory stores
+/// and complete synchronously — ValueTask avoids the Task/state-machine allocation
+/// that would be incurred by async Task on every call.
 /// </summary>
 public interface IIssueRepository
 {
-    Task<JiraIssue?> GetByKeyAsync(string issueKey);
-    Task<List<JiraIssue>> GetByProjectAsync(string projectKey);
-    Task<List<JiraIssue>> GetBySprintAsync(int sprintId);
-    Task<List<JiraIssue>> GetOverdueAsync(string projectKey);
-    Task<List<JiraIssue>> GetHighPriorityAsync(string projectKey);
-    Task SaveAsync(JiraIssue issue);
-    Task SaveRangeAsync(List<JiraIssue> issues);
+    ValueTask<JiraIssue?> GetByKeyAsync(string issueKey);
+    ValueTask<List<JiraIssue>> GetByProjectAsync(string projectKey);
+    ValueTask<List<JiraIssue>> GetBySprintAsync(int sprintId);
+    ValueTask<List<JiraIssue>> GetOverdueAsync(string projectKey);
+    ValueTask<List<JiraIssue>> GetHighPriorityAsync(string projectKey);
+    ValueTask SaveAsync(JiraIssue issue);
+    ValueTask SaveRangeAsync(List<JiraIssue> issues);
 }

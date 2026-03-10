@@ -3,6 +3,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -12,8 +14,23 @@ namespace JiraAnalyticsCli.Utils;
 /// Extension methods for string manipulation and formatting.
 /// Provides safe parsing, cleaning, and transformation utilities.
 /// </summary>
-public static class StringExtensions
+public static partial class StringExtensions
 {
+    // Source-generated regex patterns are emitted as DFA state machines at compile time —
+    // no runtime Regex compilation, no heap allocation for the Regex object itself.
+    [GeneratedRegex(@"\s+", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex WhitespaceRegex();
+
+    [GeneratedRegex(@"[^a-z0-9\s\-]", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SlugInvalidCharsRegex();
+
+    [GeneratedRegex(@"-+", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SlugMultipleHyphensRegex();
+
+    // Dynamic wildcard patterns cannot be source-generated, so cache compiled instances
+    // keyed on the raw pattern string to avoid re-compilation on repeated calls.
+    private static readonly ConcurrentDictionary<string, Regex> _patternCache = new();
+
     /// <summary>
     /// Truncates string to maximum length and appends ellipsis if truncated.
     /// Useful for displaying long text in UI with fixed width constraints.
@@ -26,7 +43,8 @@ public static class StringExtensions
         if (value.Length <= maxLength)
             return value;
 
-        return value.Substring(0, Math.Max(0, maxLength - 1)) + "…";
+        // string.Concat(ReadOnlySpan, string) avoids the intermediate Substring allocation.
+        return string.Concat(value.AsSpan(0, Math.Max(0, maxLength - 1)), "…");
     }
 
     /// <summary>
@@ -35,7 +53,35 @@ public static class StringExtensions
     /// </summary>
     public static string RemoveWhitespace(this string value)
     {
-        return Regex.Replace(value, @"\s+", string.Empty);
+        if (string.IsNullOrEmpty(value))
+            return value;
+
+        var span = value.AsSpan();
+
+        // Fast path: return the original reference when there is nothing to remove.
+        var hasWhitespace = false;
+        foreach (var ch in span)
+        {
+            if (char.IsWhiteSpace(ch)) { hasWhitespace = true; break; }
+        }
+        if (!hasWhitespace) return value;
+
+        // Rent a suitably-sized buffer from the shared pool to avoid a per-call heap allocation.
+        var buffer = ArrayPool<char>.Shared.Rent(value.Length);
+        try
+        {
+            var writeIdx = 0;
+            foreach (var ch in span)
+            {
+                if (!char.IsWhiteSpace(ch))
+                    buffer[writeIdx++] = ch;
+            }
+            return new string(buffer, 0, writeIdx);
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(buffer);
+        }
     }
 
     /// <summary>
@@ -48,9 +94,9 @@ public static class StringExtensions
             return string.Empty;
 
         var slug = value.ToLowerInvariant();
-        slug = Regex.Replace(slug, @"[^a-z0-9\s-]", string.Empty);
-        slug = Regex.Replace(slug, @"\s+", "-");
-        slug = Regex.Replace(slug, "-+", "-");
+        slug = SlugInvalidCharsRegex().Replace(slug, string.Empty);
+        slug = WhitespaceRegex().Replace(slug, "-");
+        slug = SlugMultipleHyphensRegex().Replace(slug, "-");
 
         return slug.Trim('-');
     }
@@ -111,11 +157,19 @@ public static class StringExtensions
         if (value == null || pattern == null)
             return value == pattern;
 
-        var regexPattern = "^" + Regex.Escape(pattern)
-            .Replace("\\?", ".")
-            .Replace("\\*", ".*") + "$";
+        // GetOrAdd compiles the Regex once per unique pattern, then reuses it on every
+        // subsequent call — eliminates regex construction and JIT cost at runtime.
+        var regex = _patternCache.GetOrAdd(pattern, static p =>
+        {
+            var regexPattern = "^" + Regex.Escape(p)
+                .Replace("\\?", ".")
+                .Replace("\\*", ".*") + "$";
+            return new Regex(regexPattern,
+                RegexOptions.IgnoreCase | RegexOptions.Compiled,
+                matchTimeout: TimeSpan.FromSeconds(1));
+        });
 
-        return Regex.IsMatch(value, regexPattern, RegexOptions.IgnoreCase);
+        return regex.IsMatch(value);
     }
 
     /// <summary>
@@ -127,15 +181,19 @@ public static class StringExtensions
         if (str1 == null || str2 == null)
             return string.Empty;
 
-        var minLength = Math.Min(str1.Length, str2.Length);
+        var span1 = str1.AsSpan();
+        var span2 = str2.AsSpan();
+        var minLength = Math.Min(span1.Length, span2.Length);
 
-        for (int i = 0; i < minLength; i++)
+        int i;
+        for (i = 0; i < minLength; i++)
         {
-            if (str1[i] != str2[i])
-                return str1.Substring(0, i);
+            if (span1[i] != span2[i])
+                break;
         }
 
-        return str1.Substring(0, minLength);
+        // One Substring call at the end rather than one on every early-exit branch.
+        return str1.Substring(0, i);
     }
 
     /// <summary>
