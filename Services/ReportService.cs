@@ -239,7 +239,6 @@ public class ReportService : IReportService
         if (sprint.StartDate.HasValue && sprint.EndDate.HasValue)
         {
             var current = sprint.StartDate.Value;
-            var completed = 0;
 
             while (current <= sprint.EndDate.Value)
             {

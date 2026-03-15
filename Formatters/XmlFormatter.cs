@@ -4,6 +4,7 @@
 // =============================================================================
 
 using System.Xml;
+using System.Xml.XPath;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 
@@ -123,7 +124,7 @@ public class XmlFormatter
             {
                 if (element.HasElements)
                 {
-                    values.Add(element.Value);
+                    values.Add(element.Value ?? string.Empty);
                 }
                 else
                 {
@@ -144,7 +145,7 @@ public class XmlFormatter
     {
         var root = new XElement(rootElement);
 
-        if (data is IDictionary dict)
+        if (data is System.Collections.IDictionary dict)
         {
             foreach (var key in dict.Keys)
             {
@@ -153,7 +154,7 @@ public class XmlFormatter
                 root.Add(element);
             }
         }
-        else if (data is IEnumerable enumerable and not string)
+        else if (data is System.Collections.IEnumerable enumerable and not string)
         {
             var i = 0;
             foreach (var item in enumerable)
@@ -202,7 +203,7 @@ public class XmlFormatter
         {
             element.Value = dt.ToString("O");
         }
-        else if (value is IDictionary dict)
+        else if (value is System.Collections.IDictionary dict)
         {
             foreach (var key in dict.Keys)
             {
@@ -210,7 +211,7 @@ public class XmlFormatter
                 element.Add(child);
             }
         }
-        else if (value is IEnumerable enumerable and not string)
+        else if (value is System.Collections.IEnumerable enumerable and not string)
         {
             var i = 0;
             foreach (var item in enumerable)
