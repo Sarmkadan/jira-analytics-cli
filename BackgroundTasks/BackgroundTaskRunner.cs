@@ -3,6 +3,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+#nullable enable
+
 using Microsoft.Extensions.Logging;
 
 namespace JiraAnalyticsCli.BackgroundTasks;
