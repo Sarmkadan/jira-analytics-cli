@@ -31,7 +31,7 @@ public class CacheManager
     {
         if (!_stores.ContainsKey(storeName))
         {
-            _stores[storeName] = new InMemoryCache(_logger);
+            _stores[storeName] = new InMemoryCache(new Microsoft.Extensions.Logging.Abstractions.NullLogger<InMemoryCache>());
             _logger.LogDebug("Created cache store: {StoreName}", storeName);
         }
 
