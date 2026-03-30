@@ -131,6 +131,16 @@ public class CommandParser
             new[] { "-p", "--project" },
             "Jira project key") { IsRequired = true };
 
+        // Fix: Add project key validation for consistency
+        projectOption.AddValidator(result =>
+        {
+            var value = result.GetValueForOption(projectOption);
+            if (string.IsNullOrWhiteSpace(value))
+                result.ErrorMessage = "Project key cannot be empty";
+            if (value?.Length > 10)
+                result.ErrorMessage = "Project key seems invalid (max 10 chars)";
+        });
+
         var formatOption = new Option<string>(
             new[] { "-f", "--format" },
             () => "json",
@@ -163,6 +173,16 @@ public class CommandParser
             new[] { "-p", "--project" },
             "Jira project key") { IsRequired = true };
 
+        // Fix: Add project key validation for consistency
+        projectOption.AddValidator(result =>
+        {
+            var value = result.GetValueForOption(projectOption);
+            if (string.IsNullOrWhiteSpace(value))
+                result.ErrorMessage = "Project key cannot be empty";
+            if (value?.Length > 10)
+                result.ErrorMessage = "Project key seems invalid (max 10 chars)";
+        });
+
         var sprintOption = new Option<int>(
             new[] { "-s", "--sprint-id" },
             "Sprint ID") { IsRequired = true };
@@ -192,6 +212,16 @@ public class CommandParser
         var projectOption = new Option<string>(
             new[] { "-p", "--project" },
             "Jira project key") { IsRequired = true };
+
+        // Fix: Add project key validation for consistency
+        projectOption.AddValidator(result =>
+        {
+            var value = result.GetValueForOption(projectOption);
+            if (string.IsNullOrWhiteSpace(value))
+                result.ErrorMessage = "Project key cannot be empty";
+            if (value?.Length > 10)
+                result.ErrorMessage = "Project key seems invalid (max 10 chars)";
+        });
 
         var developerOption = new Option<string>(
             new[] { "-d", "--developer" },
