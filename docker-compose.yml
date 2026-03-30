@@ -1,0 +1,82 @@
+# =============================================================================
+# Author: Vladyslav Zaiets | https://sarmkadan.com
+# CTO & Software Architect
+# =============================================================================
+# Docker Compose configuration for Jira Analytics CLI
+# Used for local development and testing with container environment
+# =============================================================================
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jira-analytics-cli:latest
+    container_name: jira-analytics-cli
+
+    # Environment variables for Jira configuration
+    environment:
+      # Required - set these in .env file or export them
+      JIRA_BASE_URL: ${JIRA_BASE_URL:-https://your-instance.atlassian.net}
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN:-your-token}
+
+      # Optional - Jira configuration
+      JIRA_DEFAULT_PROJECT: ${JIRA_DEFAULT_PROJECT:-MYPROJECT}
+      JIRA_REQUEST_TIMEOUT_SECONDS: 30
+      JIRA_MAX_RETRIES: 3
+
+      # Optional - Caching configuration
+      CACHE_EXPIRATION_MINUTES: 15
+      CACHE_MAX_ITEMS: 1000
+
+      # Optional - Feature configuration
+      DEFAULT_SPRINT_COUNT: 5
+      ENABLE_DETAILED_LOGGING: false
+
+      # Optional - Performance configuration
+      ENABLE_METRICS_COLLECTION: true
+      MAX_CONCURRENT_REQUESTS: 5
+
+    # Volume mounts
+    volumes:
+      # Output directory for reports
+      - ./output:/app/output
+      # Configuration file (optional)
+      - ./appsettings.json:/app/appsettings.json:ro
+
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+        reservations:
+          cpus: '1'
+          memory: 256M
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Named volumes (optional)
+volumes:
+  output:
+    driver: local
+
+# Network configuration
+networks:
+  default:
+    name: jira-analytics-network
+    driver: bridge
