@@ -114,7 +114,7 @@ public static class PerformanceHelpers
     {
         var totalMemory = GC.GetTotalMemory(false);
         var process = Process.GetCurrentProcess();
-        var availableMemory = GC.GetGCMemoryInfo().TotalCommittedSize;
+        var availableMemory = GC.GetGCMemoryInfo().TotalCommittedBytes;
 
         var percentUsed = (totalMemory / (double)availableMemory) * 100;
         return percentUsed > thresholdPercent;

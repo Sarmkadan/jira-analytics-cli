@@ -133,8 +133,8 @@ public class AppConfigurationProvider : IConfigurationProvider
             if (root.TryGetProperty("cacheExpirationMinutes", out var cacheMinutes) && cacheMinutes.TryGetInt32(out var minutes))
                 config.CacheExpirationMinutes = minutes;
 
-            if (root.TryGetProperty("enableDetailedLogging", out var logging) && logging.TryGetBoolean(out var enabled))
-                config.EnableDetailedLogging = enabled;
+            if (root.TryGetProperty("enableDetailedLogging", out var logging) && (logging.ValueKind == JsonValueKind.True || logging.ValueKind == JsonValueKind.False))
+                config.EnableDetailedLogging = logging.GetBoolean();
 
             if (root.TryGetProperty("defaultSprintCount", out var sprintCount) && sprintCount.TryGetInt32(out var count))
                 config.DefaultSprintCount = count;
