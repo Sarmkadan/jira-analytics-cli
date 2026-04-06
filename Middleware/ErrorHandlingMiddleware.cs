@@ -61,7 +61,7 @@ public class ErrorHandlingMiddleware
             context.Exception = ex;
             context.SetItem("ErrorType", "unhandled");
             context.SetItem("ErrorMessage", "An unexpected error occurred");
-            context.SetItem("StackTrace", ex.StackTrace);
+            context.SetItem("StackTrace", ex.StackTrace ?? string.Empty);
         }
     }
 }

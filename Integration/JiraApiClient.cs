@@ -47,7 +47,7 @@ public class JiraApiClient
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Failed to search Jira issues");
-            throw new JiraApiException($"Jira API error: {ex.Message}", ex.StatusCode);
+            throw new JiraApiException($"Jira API error: {ex.Message}", ex);
         }
     }
 
@@ -65,12 +65,12 @@ public class JiraApiClient
             _logger.LogDebug("Fetching issue: {IssueKey}", issueKey);
 
             var result = await _httpClient.GetWithRetryAsync<dynamic>(url, _logger);
-            return result;
+            return result!;
         }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Failed to get issue {IssueKey}", issueKey);
-            throw new JiraApiException($"Failed to fetch issue: {ex.Message}", ex.StatusCode);
+            throw new JiraApiException($"Failed to fetch issue: {ex.Message}", ex);
         }
     }
 
@@ -90,7 +90,7 @@ public class JiraApiClient
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Failed to get sprints for board {BoardId}", boardId);
-            throw new JiraApiException($"Failed to fetch sprints: {ex.Message}", ex.StatusCode);
+            throw new JiraApiException($"Failed to fetch sprints: {ex.Message}", ex);
         }
     }
 
@@ -139,7 +139,7 @@ public class JiraApiClient
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Failed to get boards");
-            throw new JiraApiException($"Failed to fetch boards: {ex.Message}", ex.StatusCode);
+            throw new JiraApiException($"Failed to fetch boards: {ex.Message}", ex);
         }
     }
 }

@@ -35,13 +35,13 @@ public class ExportService : IExportService
         {
             var analysis = await _analyticsService.AnalyzeSprints(projectKey, 5);
 
-            await format.ToLower() switch
+            await (format.ToLower() switch
             {
                 "png" or "jpg" => ExportAsImage(analysis, format, outputPath),
                 "json" => ExportAsJson(analysis, outputPath),
                 "csv" => ExportAnalyticsAsCsv(analysis, outputPath),
                 _ => throw new NotSupportedException($"Format {format} is not supported")
-            };
+            });
 
             _logger.LogInformation("Analytics exported successfully to {OutputPath}", outputPath);
         }
@@ -93,12 +93,12 @@ public class ExportService : IExportService
         {
             var teamAnalysis = await _analyticsService.AnalyzeTeam(projectKey);
 
-            await format.ToLower() switch
+            await (format.ToLower() switch
             {
                 "json" => ExportAsJson(teamAnalysis, outputPath),
                 "csv" => ExportTeamAsCsv(teamAnalysis, outputPath),
                 _ => throw new NotSupportedException($"Format {format} is not supported")
-            };
+            });
 
             _logger.LogInformation("Team metrics exported to {OutputPath}", outputPath);
         }
@@ -204,12 +204,12 @@ public class ExportService : IExportService
                 var y = height - 100 - barHeight;
 
                 paint.Color = new SKColor(52, 152, 219);
-                canvas.DrawRect(x, y, barWidth - 10, barHeight, paint);
+                canvas.DrawRect((float)x, (float)y, (float)(barWidth - 10), (float)barHeight, paint);
 
                 paint.Color = SKColors.Black;
                 paint.TextSize = 12;
-                canvas.DrawText(metric.SprintName, x + 5, height - 50, paint);
-                canvas.DrawText(velocity.ToString("F1"), x + 5, y - 10, paint);
+                canvas.DrawText(metric.SprintName, (float)(x + 5), (float)(height - 50), paint);
+                canvas.DrawText(velocity.ToString("F1"), (float)(x + 5), (float)(y - 10), paint);
             }
 
             // Save image
