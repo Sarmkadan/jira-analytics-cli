@@ -31,7 +31,7 @@ public class JiraApiClient
     /// Searches for Jira issues using JQL with automatic retry and pagination.
     /// Handles rate limiting and connection errors gracefully.
     /// </summary>
-    public async Task<IEnumerable<dynamic>> SearchIssuesAsync(string jql, int startAt = 0, int maxResults = 50)
+    public async Task<IEnumerable<dynamic>> SearchIssuesAsync(string jql, int startAt = 0, int maxResults = 1000)
     {
         if (string.IsNullOrEmpty(jql))
             throw new ArgumentException("JQL query cannot be empty", nameof(jql));
