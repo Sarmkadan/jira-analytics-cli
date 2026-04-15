@@ -37,6 +37,11 @@
     <Compile Include="..\..\Repositories\IMetricsRepository.cs" />
     <Compile Include="..\..\Repositories\IIssueRepository.cs" />
     <Compile Include="..\..\Repositories\ISprintRepository.cs" />
+    <Compile Include="..\..\Utils\DateTimeExtensions.cs" />
+    <Compile Include="..\..\Utils\FormattingHelpers.cs" />
+    <Compile Include="..\..\Utils\ValidationHelpers.cs" />
+    <Compile Include="..\..\Caching\InMemoryCache.cs" />
+    <Compile Include="..\..\Caching\CachePolicy.cs" />
   </ItemGroup>
 
 </Project>
