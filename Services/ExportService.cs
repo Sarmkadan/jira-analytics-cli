@@ -38,6 +38,7 @@ public class ExportService : IExportService
             await (format.ToLower() switch
             {
                 "png" or "jpg" => ExportAsImage(analysis, format, outputPath),
+                "svg" => ExportAsImageSvg(analysis, outputPath),
                 "json" => ExportAsJson(analysis, outputPath),
                 "csv" => ExportAnalyticsAsCsv(analysis, outputPath),
                 _ => throw new NotSupportedException($"Format {format} is not supported")
@@ -67,11 +68,16 @@ public class ExportService : IExportService
 
             var burndownData = await _jiraService.GetBurndownDataAsync(sprintId);
 
-            if (format.ToLower() is "png" or "jpg")
+            var fmt = format.ToLower();
+            if (fmt is "png" or "jpg")
             {
                 await DrawBurndownChart(sprint, burndownData, format, outputPath);
             }
-            else if (format.ToLower() == "json")
+            else if (fmt == "svg")
+            {
+                await DrawBurndownChartSvg(sprint, burndownData, outputPath);
+            }
+            else if (fmt == "json")
             {
                 await ExportAsJson(burndownData, outputPath);
             }
@@ -331,6 +337,15 @@ public class ExportService : IExportService
 
         var xScale = (width - 2 * padding) / (double)burndowns.Count;
         var maxPoints = burndowns.Max(b => b.TotalStoryPoints);
+
+        // When no work has been estimated, render a flat line at the baseline
+        if (maxPoints <= 0)
+        {
+            var flatY = (float)(height - padding);
+            canvas.DrawLine(padding, flatY, width - padding, flatY, burndownPaint);
+            return;
+        }
+
         var yScale = (height - 2 * padding) / (double)maxPoints;
 
         for (int i = 0; i < burndowns.Count - 1; i++)
@@ -347,6 +362,101 @@ public class ExportService : IExportService
             canvas.DrawLine((float)x1, (float)y1, (float)x2, (float)y2, burndownPaint);
         }
     }
+
+    private async Task ExportAsImageSvg(SprintAnalysisResult analysis, string outputPath)
+    {
+        _logger.LogInformation("Generating SVG velocity chart for analytics");
+
+        try
+        {
+            const int width = 1200;
+            const int height = 800;
+
+            using var stream = File.OpenWrite(outputPath);
+            var bounds = new SKRect(0, 0, width, height);
+            using var canvas = SKSvgCanvas.Create(bounds, stream);
+
+            canvas.DrawColor(SKColors.White);
+
+            using var paint = new SKPaint
+            {
+                Color = SKColors.Black,
+                TextSize = 32,
+                IsAntialias = true
+            };
+            canvas.DrawText("Sprint Velocity Chart", 50, 50, paint);
+
+            paint.TextSize = 14;
+            paint.Color = new SKColor(52, 152, 219);
+
+            var barWidth = (width - 100) / (analysis.Metrics.Count + 1);
+            var maxVelocity = analysis.Metrics.Any() ? analysis.Metrics.Max(m => m.GetVelocity()) : 1;
+            if (maxVelocity <= 0) maxVelocity = 1;
+
+            for (int i = 0; i < analysis.Metrics.Count; i++)
+            {
+                var metric = analysis.Metrics[i];
+                var velocity = metric.GetVelocity();
+                var barHeight = (velocity / maxVelocity) * (height - 200);
+
+                var x = 50 + (i + 1) * barWidth;
+                var y = height - 100 - barHeight;
+
+                paint.Color = new SKColor(52, 152, 219);
+                canvas.DrawRect((float)x, (float)y, (float)(barWidth - 10), (float)barHeight, paint);
+
+                paint.Color = SKColors.Black;
+                paint.TextSize = 12;
+                canvas.DrawText(metric.SprintName, (float)(x + 5), (float)(height - 50), paint);
+                canvas.DrawText(velocity.ToString("F1"), (float)(x + 5), (float)(y - 10), paint);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating SVG image");
+            throw;
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task DrawBurndownChartSvg(Sprint sprint, List<BurndownSnapshot> burndowns, string outputPath)
+    {
+        _logger.LogInformation("Drawing SVG burndown chart for sprint {SprintId}", sprint.Id);
+
+        try
+        {
+            const int width = 1200;
+            const int height = 800;
+            const int padding = 80;
+
+            using var stream = File.OpenWrite(outputPath);
+            var bounds = new SKRect(0, 0, width, height);
+            using var canvas = SKSvgCanvas.Create(bounds, stream);
+
+            canvas.DrawColor(SKColors.White);
+
+            using var titlePaint = new SKPaint
+            {
+                Color = SKColors.Black,
+                TextSize = 28,
+                IsAntialias = true
+            };
+            canvas.DrawText($"Burndown Chart - {sprint.Name}", padding, 40, titlePaint);
+
+            DrawChartAxes(canvas, padding, width, height);
+            DrawIdealBurndownLine(canvas, sprint, padding, width, height);
+            DrawActualBurndown(canvas, burndowns, padding, width, height);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error drawing SVG burndown");
+            throw;
+        }
+
+        await Task.CompletedTask;
+    }
+
 
     private async Task ExportAnalyticsAsCsv(SprintAnalysisResult analysis, string outputPath)
     {
