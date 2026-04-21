@@ -144,7 +144,7 @@ public class CommandParser
         var formatOption = new Option<string>(
             new[] { "-f", "--format" },
             () => "json",
-            "Export format: json, csv, xml, markdown");
+            "Export format: json, csv, xml, markdown, svg");
 
         var outputOption = new Option<string>(
             new[] { "-o", "--output" },
@@ -153,7 +153,7 @@ public class CommandParser
         formatOption.AddValidator(result =>
         {
             var value = result.GetValueForOption(formatOption);
-            var validFormats = new[] { "json", "csv", "xml", "markdown" };
+            var validFormats = new[] { "json", "csv", "xml", "markdown", "svg" };
             if (!validFormats.Contains(value?.ToLower()))
                 result.ErrorMessage = $"Invalid format. Valid options: {string.Join(", ", validFormats)}";
         });
@@ -191,6 +191,19 @@ public class CommandParser
             new[] { "-o", "--output" },
             "Output image path") { IsRequired = true };
 
+        var formatOption = new Option<string>(
+            new[] { "-f", "--format" },
+            () => "png",
+            "Output format: png, svg, json (default: png)");
+
+        formatOption.AddValidator(result =>
+        {
+            var value = result.GetValueForOption(formatOption);
+            var validFormats = new[] { "png", "svg", "json" };
+            if (!validFormats.Contains(value?.ToLower()))
+                result.ErrorMessage = $"Invalid format. Valid options: {string.Join(", ", validFormats)}";
+        });
+
         sprintOption.AddValidator(result =>
         {
             var value = result.GetValueForOption(sprintOption);
@@ -201,6 +214,7 @@ public class CommandParser
         cmd.AddOption(projectOption);
         cmd.AddOption(sprintOption);
         cmd.AddOption(outputOption);
+        cmd.AddOption(formatOption);
 
         return cmd;
     }
@@ -232,9 +246,28 @@ public class CommandParser
             () => 30,
             "Analysis period in days");
 
+        var workingHoursOption = new Option<int>(
+            new[] { "--working-hours" },
+            () => 8,
+            "Working hours per day used to calculate per-developer capacity (default: 8)");
+
+        workingHoursOption.AddValidator(result =>
+        {
+            var value = result.GetValueForOption(workingHoursOption);
+            if (value < 1 || value > 24)
+                result.ErrorMessage = "Working hours must be between 1 and 24";
+        });
+
+        var excludeWeekendsOption = new Option<bool>(
+            new[] { "--exclude-weekends" },
+            () => false,
+            "Exclude weekends when computing developer capacity");
+
         cmd.AddOption(projectOption);
         cmd.AddOption(developerOption);
         cmd.AddOption(periodOption);
+        cmd.AddOption(workingHoursOption);
+        cmd.AddOption(excludeWeekendsOption);
 
         return cmd;
     }
