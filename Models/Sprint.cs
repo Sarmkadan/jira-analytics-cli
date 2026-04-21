@@ -65,16 +65,32 @@ public class Sprint
         return (int)(EndDate.Value - StartDate.Value).TotalDays;
     }
 
+    /// <summary>
+    /// Issue types counted toward story point totals. Sub-tasks are excluded to
+    /// prevent double-counting when parent issues also carry estimates.
+    /// </summary>
+    public static readonly IReadOnlySet<string> CountableIssueTypes =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Story", "Epic", "Task", "Feature", "Improvement", "New Feature"
+        };
+
+    private static bool IsCountableIssueType(string issueType) =>
+        !string.Equals(issueType, "Sub-task", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(issueType, "Subtask", StringComparison.OrdinalIgnoreCase);
+
     public int GetPlannedStoryPoints()
     {
-        // Sum of story points for all issues in the sprint
-        return Issues.Sum(i => i.StoryPoints ?? 0);
+        // Sum of story points for non-sub-task issues only to avoid double-counting
+        return Issues.Where(i => IsCountableIssueType(i.IssueType))
+                     .Sum(i => i.StoryPoints ?? 0);
     }
 
     public int GetCompletedStoryPoints()
     {
-        // Sum of story points for completed issues
+        // Sum of story points for completed non-sub-task issues
         return Issues.Where(i => i.Status is "Done" or "Closed")
+                     .Where(i => IsCountableIssueType(i.IssueType))
                      .Sum(i => i.StoryPoints ?? 0);
     }
 
