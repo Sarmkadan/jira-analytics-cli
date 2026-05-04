@@ -98,6 +98,10 @@ public class CommandParser
             new[] { "-d", "--detailed" },
             "Include detailed burndown data");
 
+        var outputDirOption = new Option<string>(
+            new[] { "--output-dir" },
+            "Directory to save reports to (created if it does not exist)");
+
         // Add validators
         projectOption.AddValidator(result =>
         {
@@ -119,6 +123,7 @@ public class CommandParser
         cmd.AddOption(sprintsOption);
         cmd.AddOption(outputOption);
         cmd.AddOption(detailedOption);
+        cmd.AddOption(outputDirOption);
 
         return cmd;
     }
@@ -150,6 +155,10 @@ public class CommandParser
             new[] { "-o", "--output" },
             "Output file path") { IsRequired = true };
 
+        var outputDirOption = new Option<string>(
+            new[] { "--output-dir" },
+            "Directory to save reports to (created if it does not exist)");
+
         formatOption.AddValidator(result =>
         {
             var value = result.GetValueForOption(formatOption);
@@ -161,6 +170,7 @@ public class CommandParser
         cmd.AddOption(projectOption);
         cmd.AddOption(formatOption);
         cmd.AddOption(outputOption);
+        cmd.AddOption(outputDirOption);
 
         return cmd;
     }
@@ -191,6 +201,10 @@ public class CommandParser
             new[] { "-o", "--output" },
             "Output image path") { IsRequired = true };
 
+        var outputDirOption = new Option<string>(
+            new[] { "--output-dir" },
+            "Directory to save reports to (created if it does not exist)");
+
         var formatOption = new Option<string>(
             new[] { "-f", "--format" },
             () => "png",
@@ -215,6 +229,7 @@ public class CommandParser
         cmd.AddOption(sprintOption);
         cmd.AddOption(outputOption);
         cmd.AddOption(formatOption);
+        cmd.AddOption(outputDirOption);
 
         return cmd;
     }

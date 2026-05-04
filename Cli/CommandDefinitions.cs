@@ -64,6 +64,12 @@ public class CommandDefinitions
             public const string Description = "Include detailed analysis data";
         }
 
+        public class OutputDirOption
+        {
+            public const string Long = "--output-dir";
+            public const string Description = "Directory to save reports to (created if it does not exist; defaults to current directory)";
+        }
+
         public class VerboseOption
         {
             public const string Short = "-v";
