@@ -1,4 +1,75 @@
 // ... rest of README content ...
+
+## Developer
+
+The `Developer` class represents a developer or team member with their work metrics, including assigned issues, sprint metrics, and various performance calculations. It provides comprehensive methods for tracking developer productivity, completion rates, and capacity planning.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using System;
+
+// Create a developer instance
+var developer = new Developer
+{
+    Key = "DEV-001",
+    Name = "John Doe",
+    Email = "john.doe@example.com",
+    DisplayName = "John D.",
+    Active = true,
+    JoinDate = new DateTime(2025, 1, 15)
+};
+
+// Assign some issues
+developer.AssignedIssues.Add(new JiraIssue
+{
+    Key = "PROJ-123",
+    Summary = "Implement login page",
+    Status = "Done",
+    StoryPoints = 5,
+    Priority = "High",
+    DueDate = DateTime.UtcNow.AddDays(14)
+});
+
+developer.AssignedIssues.Add(new JiraIssue
+{
+    Key = "PROJ-456",
+    Summary = "Fix authentication bug",
+    Status = "In Progress",
+    StoryPoints = 3,
+    Priority = "Critical",
+    DueDate = DateTime.UtcNow.AddDays(7)
+});
+
+// Calculate metrics
+int totalIssues = developer.GetTotalAssignedIssues();
+int completedIssues = developer.GetCompletedIssues();
+int inProgressIssues = developer.GetInProgressIssues();
+int totalStoryPoints = developer.GetTotalStoryPoints();
+int completedStoryPoints = developer.GetCompletedStoryPoints();
+
+double completionRate = developer.GetCompletionRate();
+double avgIssuesPerDay = developer.GetAverageIssuesPerDay();
+double productivity = developer.GetProductivity();
+
+Console.WriteLine($"Developer: {developer.DisplayName}");
+Console.WriteLine($"Total issues: {totalIssues}");
+Console.WriteLine($"Completed: {completedIssues}");
+Console.WriteLine($"In progress: {inProgressIssues}");
+Console.WriteLine($"Completion rate: {completionRate:F1}%");
+Console.WriteLine($"Productivity: {productivity:F2} story points/day");
+
+// Calculate capacity for a sprint
+var sprintStart = new DateTime(2026, 6, 1);
+var sprintEnd = new DateTime(2026, 6, 14);
+double availableHours = developer.GetAvailableHours(sprintStart, sprintEnd);
+double loadFactor = developer.GetLoadFactor(sprintStart, sprintEnd);
+
+Console.WriteLine($"Available hours: {availableHours}");
+Console.WriteLine($"Load factor: {loadFactor:F2} story points/hour");
+```
+
 ## CachePolicyExtensions
 
 The `CachePolicyExtensions` class provides a set of extension methods for working with `CachePolicy` objects. These methods allow you to create and modify cache policies with specific conditions, maximum sizes, and expiration times.
