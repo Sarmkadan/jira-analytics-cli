@@ -3,9 +3,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace JiraAnalyticsCli.Integration;
 
@@ -46,12 +45,14 @@ public class WebhookHandler
 
         try
         {
-            var jObject = JObject.Parse(payload);
+            using var doc = JsonDocument.Parse(payload);
+            var root = doc.RootElement;
+
             var webhookEvent = new WebhookEvent
             {
-                EventType = jObject["webhookEvent"]?.ToString() ?? string.Empty,
+                EventType = root.TryGetProperty("webhookEvent", out var et) ? et.GetString() ?? string.Empty : string.Empty,
                 Timestamp = DateTime.UtcNow,
-                Payload = jObject,
+                Payload = root.Clone(),
                 RawPayload = payload
             };
 
@@ -110,13 +111,21 @@ public class WebhookHandler
     {
         public string EventType { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; }
-        public JObject Payload { get; set; } = new();
+        public JsonElement Payload { get; set; }
         public string RawPayload { get; set; } = string.Empty;
 
         public T? GetPayloadValue<T>(string path)
         {
-            var token = Payload.SelectToken(path);
-            return token?.ToObject<T>();
+            var parts = path.Split('.');
+            var current = Payload;
+
+            foreach (var part in parts)
+            {
+                if (!current.TryGetProperty(part, out current))
+                    return default;
+            }
+
+            return current.Deserialize<T>();
         }
     }
 }

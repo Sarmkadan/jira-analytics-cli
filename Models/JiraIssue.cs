@@ -4,7 +4,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
 
@@ -14,60 +14,60 @@ namespace JiraAnalyticsCli.Models;
 public class JiraIssue
 {
     [Required]
-    [JsonProperty("key")]
+    [JsonPropertyName("key")]
     public string Key { get; set; } = string.Empty;
 
     [Required]
-    [JsonProperty("id")]
+    [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
 
     [Required]
-    [JsonProperty("summary")]
+    [JsonPropertyName("summary")]
     public string Summary { get; set; } = string.Empty;
 
-    [JsonProperty("description")]
+    [JsonPropertyName("description")]
     public string? Description { get; set; }
 
     [Required]
-    [JsonProperty("status")]
+    [JsonPropertyName("status")]
     public string Status { get; set; } = string.Empty;
 
     [Required]
-    [JsonProperty("type")]
+    [JsonPropertyName("type")]
     public string IssueType { get; set; } = string.Empty;
 
-    [JsonProperty("assignee")]
+    [JsonPropertyName("assignee")]
     public string? Assignee { get; set; }
 
-    [JsonProperty("priority")]
+    [JsonPropertyName("priority")]
     public string Priority { get; set; } = "Medium";
 
-    [JsonProperty("storyPoints")]
+    [JsonPropertyName("storyPoints")]
     public int? StoryPoints { get; set; }
 
-    [JsonProperty("dueDate")]
+    [JsonPropertyName("dueDate")]
     public DateTime? DueDate { get; set; }
 
     [Required]
-    [JsonProperty("created")]
+    [JsonPropertyName("created")]
     public DateTime CreatedDate { get; set; }
 
-    [JsonProperty("updated")]
+    [JsonPropertyName("updated")]
     public DateTime UpdatedDate { get; set; }
 
-    [JsonProperty("resolutionDate")]
+    [JsonPropertyName("resolutionDate")]
     public DateTime? ResolutionDate { get; set; }
 
-    [JsonProperty("labels")]
+    [JsonPropertyName("labels")]
     public List<string> Labels { get; set; } = new();
 
-    [JsonProperty("components")]
+    [JsonPropertyName("components")]
     public List<string> Components { get; set; } = new();
 
-    [JsonProperty("projectKey")]
+    [JsonPropertyName("projectKey")]
     public string ProjectKey { get; set; } = string.Empty;
 
-    [JsonProperty("sprintId")]
+    [JsonPropertyName("sprintId")]
     public int? SprintId { get; set; }
 
     public bool IsOverdue()

@@ -4,7 +4,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
 
@@ -14,32 +14,32 @@ namespace JiraAnalyticsCli.Models;
 public class BurndownSnapshot
 {
     [Required]
-    [JsonProperty("timestamp")]
+    [JsonPropertyName("timestamp")]
     public DateTime Timestamp { get; set; }
 
     [Required]
-    [JsonProperty("sprintId")]
+    [JsonPropertyName("sprintId")]
     public int SprintId { get; set; }
 
-    [JsonProperty("remainingStoryPoints")]
+    [JsonPropertyName("remainingStoryPoints")]
     public int RemainingStoryPoints { get; set; }
 
-    [JsonProperty("completedStoryPoints")]
+    [JsonPropertyName("completedStoryPoints")]
     public int CompletedStoryPoints { get; set; }
 
-    [JsonProperty("totalStoryPoints")]
+    [JsonPropertyName("totalStoryPoints")]
     public int TotalStoryPoints { get; set; }
 
-    [JsonProperty("remainingIssueCount")]
+    [JsonPropertyName("remainingIssueCount")]
     public int RemainingIssueCount { get; set; }
 
-    [JsonProperty("completedIssueCount")]
+    [JsonPropertyName("completedIssueCount")]
     public int CompletedIssueCount { get; set; }
 
-    [JsonProperty("totalIssueCount")]
+    [JsonPropertyName("totalIssueCount")]
     public int TotalIssueCount { get; set; }
 
-    [JsonProperty("scopeChanges")]
+    [JsonPropertyName("scopeChanges")]
     public int ScopeChanges { get; set; }
 
     public double GetBurndownPercentage()
