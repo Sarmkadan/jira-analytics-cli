@@ -976,6 +976,6 @@ The above copyright notice and this permission notice shall be included in all c
 
 ---
 
-**Built by [Vladyslav Zaiets](https://sarmkadan.com) - CTO & Software Architect**
+**Built by [Vladyslav Zaiets](https://sarmkadan.com)**
 
 [Portfolio](https://sarmkadan.com) | [GitHub](https://github.com/sarmkadan) | [Telegram](https://t.me/sarmkadan)
