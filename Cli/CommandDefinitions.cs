@@ -13,11 +13,14 @@ public class CommandDefinitions
 {
     public static class Verbs
     {
-        public const string Analytics = "analytics";
-        public const string Export = "export";
-        public const string Burndown = "burndown";
-        public const string Developer = "developer";
-        public const string Health = "health";
+        public const string Analytics    = "analytics";
+        public const string Export       = "export";
+        public const string Burndown     = "burndown";
+        public const string Developer    = "developer";
+        public const string Health       = "health";
+        public const string Jql          = "jql";
+        public const string Report       = "report";
+        public const string TeamCompare  = "team-compare";
     }
 
     public static class Options
@@ -148,6 +151,54 @@ Verify Jira instance connectivity and authentication status.
 
 Examples:
   jira-analytics health
+";
+        }
+
+        public class JqlCommand
+        {
+            public const string Name = "jql";
+            public const string Description = "Execute a custom JQL query and display results";
+            public const string HelpText = @"
+Run any JQL (Jira Query Language) query and display or export matching issues.
+Supports pagination via --start-at and output as plain text or JSON.
+
+Examples:
+  jira-analytics jql -q ""project = PROJ AND status = 'In Progress'""
+  jira-analytics jql -q ""assignee = john.doe AND sprint in openSprints()"" -n 20
+  jira-analytics jql -q ""priority = Critical ORDER BY created DESC"" -f json -o critical.json
+  jira-analytics jql -q ""project = PROJ"" -n 50 --start-at 50
+";
+        }
+
+        public class ReportCommand
+        {
+            public const string Name = "report";
+            public const string Description = "Generate a self-contained HTML analytics report";
+            public const string HelpText = @"
+Generate a responsive, self-contained HTML report for a project covering sprint velocity,
+completion rates, team workload, and top performers.  The output file can be opened
+directly in any browser without additional dependencies.
+
+Examples:
+  jira-analytics report -p PROJ -o report.html
+  jira-analytics report -p PROJ -s 10 -o reports/sprint-report.html
+  jira-analytics report -p PROJ --output-dir ./reports
+";
+        }
+
+        public class TeamCompareCommand
+        {
+            public const string Name = "team-compare";
+            public const string Description = "Compare metrics across multiple Jira projects side by side";
+            public const string HelpText = @"
+Compare sprint velocity, completion rates, defect rates, and cycle times across
+two or more Jira projects.  Results are ranked to highlight the fastest, highest
+quality, and most consistent team.
+
+Examples:
+  jira-analytics team-compare -p PROJ1,PROJ2
+  jira-analytics team-compare -p ALPHA,BETA,GAMMA -s 10
+  jira-analytics team-compare -p PROJ1,PROJ2 -f json -o comparison.json
 ";
         }
     }

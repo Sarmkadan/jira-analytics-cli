@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using JiraAnalyticsCli.Configuration;
 using JiraAnalyticsCli.Services;
 using JiraAnalyticsCli.Repositories;
-
 namespace JiraAnalyticsCli;
 
 class Program
@@ -77,6 +76,9 @@ class Program
         services.AddSingleton<IAnalyticsService, AnalyticsService>();
         services.AddSingleton<IReportService, ReportService>();
         services.AddSingleton<IExportService, ExportService>();
+        services.AddSingleton<IJqlQueryService, JqlQueryService>();
+        services.AddSingleton<IHtmlReportService, HtmlReportService>();
+        services.AddSingleton<ITeamComparisonService, TeamComparisonService>();
     }
 
     static RootCommand BuildRootCommand(IServiceProvider serviceProvider)
@@ -187,6 +189,138 @@ class Program
         rootCommand.AddCommand(analyticsCommand);
         rootCommand.AddCommand(exportCommand);
         rootCommand.AddCommand(burndownCommand);
+
+        // JQL query command
+        var jqlCommand         = new Command("jql", "Execute a custom JQL query and display results");
+        var jqlQueryOpt        = new Option<string>(new[] { "-q", "--query" }, "JQL query string") { IsRequired = true };
+        var jqlMaxResultsOpt   = new Option<int>(new[] { "-n", "--max-results" }, () => 50, "Maximum number of results to return");
+        var jqlStartAtOpt      = new Option<int>(new[] { "--start-at" }, () => 0, "Zero-based index of the first result (pagination)");
+        var jqlOutputOpt       = new Option<string>(new[] { "-o", "--output" }, "Output file path (omit to print to console)");
+        var jqlFormatOpt       = new Option<string>(new[] { "-f", "--format" }, () => "text", "Output format: text or json");
+        jqlCommand.AddOption(jqlQueryOpt);
+        jqlCommand.AddOption(jqlMaxResultsOpt);
+        jqlCommand.AddOption(jqlStartAtOpt);
+        jqlCommand.AddOption(jqlOutputOpt);
+        jqlCommand.AddOption(jqlFormatOpt);
+
+        jqlCommand.SetHandler(async (query, maxResults, startAt, output, format) =>
+        {
+            var jqlService = serviceProvider.GetRequiredService<IJqlQueryService>();
+            var logger     = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+            try
+            {
+                var result = await jqlService.ExecuteQueryAsync(new JqlQueryRequest
+                {
+                    Jql        = query,
+                    MaxResults = maxResults,
+                    StartAt    = startAt
+                });
+
+                string content = format.Equals("json", StringComparison.OrdinalIgnoreCase)
+                    ? System.Text.Json.JsonSerializer.Serialize(result, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })
+                    : JqlQueryService.FormatAsText(result);
+
+                if (!string.IsNullOrEmpty(output))
+                {
+                    var dir = Path.GetDirectoryName(output);
+                    if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                    await File.WriteAllTextAsync(output, content, System.Text.Encoding.UTF8);
+                    logger.LogInformation("JQL results written to {Output}", output);
+                }
+                else
+                {
+                    Console.WriteLine(content);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "JQL command failed");
+                throw;
+            }
+        }, jqlQueryOpt, jqlMaxResultsOpt, jqlStartAtOpt, jqlOutputOpt, jqlFormatOpt);
+
+        // HTML report command
+        var reportCommand        = new Command("report", "Generate a self-contained HTML analytics report");
+        var reportProjectOpt     = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
+        var reportSprintsOpt     = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include");
+        var reportOutputOpt      = new Option<string>(new[] { "-o", "--output" }, "Output HTML file path");
+        var reportOutputDirOpt   = new Option<string>(new[] { "--output-dir" }, "Directory to save the report (created if needed)");
+        reportCommand.AddOption(reportProjectOpt);
+        reportCommand.AddOption(reportSprintsOpt);
+        reportCommand.AddOption(reportOutputOpt);
+        reportCommand.AddOption(reportOutputDirOpt);
+
+        reportCommand.SetHandler(async (project, sprints, output, outputDir) =>
+        {
+            var htmlService = serviceProvider.GetRequiredService<IHtmlReportService>();
+            var logger      = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+            try
+            {
+                var resolvedOutput = ResolveOutputPath(output, outputDir, $"{project}-report.html");
+                if (string.IsNullOrEmpty(resolvedOutput))
+                    resolvedOutput = $"{project}-report.html";
+
+                logger.LogInformation("Generating HTML report for {Project} to {Output}", project, resolvedOutput);
+                await htmlService.GenerateReportAsync(project, sprints, resolvedOutput);
+                logger.LogInformation("HTML report written to {Output}", resolvedOutput);
+                Console.WriteLine($"HTML report saved to: {resolvedOutput}");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Report command failed");
+                throw;
+            }
+        }, reportProjectOpt, reportSprintsOpt, reportOutputOpt, reportOutputDirOpt);
+
+        // Team comparison command
+        var teamCompareCommand      = new Command("team-compare", "Compare metrics across multiple Jira projects side by side");
+        var teamCompareProjectsOpt  = new Option<string>(new[] { "-p", "--projects" }, "Comma-separated list of project keys to compare") { IsRequired = true };
+        var teamCompareSprintsOpt   = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints per project");
+        var teamCompareOutputOpt    = new Option<string>(new[] { "-o", "--output" }, "Output file path (omit to print to console)");
+        var teamCompareFormatOpt    = new Option<string>(new[] { "-f", "--format" }, () => "text", "Output format: text or json");
+        teamCompareCommand.AddOption(teamCompareProjectsOpt);
+        teamCompareCommand.AddOption(teamCompareSprintsOpt);
+        teamCompareCommand.AddOption(teamCompareOutputOpt);
+        teamCompareCommand.AddOption(teamCompareFormatOpt);
+
+        teamCompareCommand.SetHandler(async (projects, sprints, output, format) =>
+        {
+            var comparisonService = serviceProvider.GetRequiredService<ITeamComparisonService>();
+            var logger            = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+            try
+            {
+                var keys   = projects.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var report = await comparisonService.CompareTeamsAsync(keys, sprints);
+
+                string content = format.Equals("json", StringComparison.OrdinalIgnoreCase)
+                    ? System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })
+                    : TeamComparisonService.FormatAsText(report);
+
+                if (!string.IsNullOrEmpty(output))
+                {
+                    var dir = Path.GetDirectoryName(output);
+                    if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                    await File.WriteAllTextAsync(output, content, System.Text.Encoding.UTF8);
+                    logger.LogInformation("Team comparison report written to {Output}", output);
+                }
+                else
+                {
+                    Console.WriteLine(content);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "team-compare command failed");
+                throw;
+            }
+        }, teamCompareProjectsOpt, teamCompareSprintsOpt, teamCompareOutputOpt, teamCompareFormatOpt);
+
+        rootCommand.AddCommand(jqlCommand);
+        rootCommand.AddCommand(reportCommand);
+        rootCommand.AddCommand(teamCompareCommand);
 
         return rootCommand;
     }

@@ -35,6 +35,12 @@
     <Compile Include="..\..\Services\IAnalyticsService.cs" />
     <Compile Include="..\..\Services\IJiraApiService.cs" />
     <Compile Include="..\..\Services\AnalyticsService.cs" />
+    <Compile Include="..\..\Services\IJqlQueryService.cs" />
+    <Compile Include="..\..\Services\JqlQueryService.cs" />
+    <Compile Include="..\..\Services\IHtmlReportService.cs" />
+    <Compile Include="..\..\Services\HtmlReportService.cs" />
+    <Compile Include="..\..\Services\ITeamComparisonService.cs" />
+    <Compile Include="..\..\Services\TeamComparisonService.cs" />
     <Compile Include="..\..\Repositories\IMetricsRepository.cs" />
     <Compile Include="..\..\Repositories\IIssueRepository.cs" />
     <Compile Include="..\..\Repositories\ISprintRepository.cs" />
