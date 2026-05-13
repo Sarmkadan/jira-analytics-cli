@@ -86,7 +86,7 @@ jobs:
           tar -czf ../releases/jira-analytics-cli-macos-arm64.tar.gz macos-arm64/
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-artifacts
           path: releases/
