@@ -35,6 +35,9 @@ A production-grade .NET command-line tool for advanced Jira analytics, sprint me
 - **Cycle Time Tracking**: Measure time from issue creation to resolution for quality improvement
 - **Quality Metrics**: Defect rates, quality scores, and risk assessment
 - **Overdue Tracking**: Identify and report on overdue issues, blockers, and at-risk items
+- **Custom JQL Queries**: Execute any JQL query directly and display or export the matching issues
+- **HTML Report Export**: Generate self-contained, browser-ready HTML analytics reports with embedded styling
+- **Team Comparison**: Compare sprint velocity, quality, and consistency across multiple projects side by side
 
 ### Visualization & Export
 - **Burndown Charts**: Generate detailed sprint burndown charts using SkiaSharp with point accuracy
@@ -496,6 +499,52 @@ jira-analytics-cli analytics -p MYPROJECT -s 5 -o /tmp/report.txt
 cat /tmp/report.txt | mail -s "Weekly Jira Analytics" team@example.com
 ```
 
+### Example 11: Custom JQL Query
+
+Run any Jira Query Language expression and display or save the results.
+
+```bash
+# Print all critical open bugs to the terminal
+jira-analytics-cli jql -q "project = PROJ AND issuetype = Bug AND priority = Critical AND status != Done"
+
+# Export issues assigned to a user as JSON
+jira-analytics-cli jql -q "assignee = john.doe AND sprint in openSprints()" -f json -o open-issues.json
+
+# Paginate through a large result set (50 results per page)
+jira-analytics-cli jql -q "project = PROJ ORDER BY created DESC" -n 50
+jira-analytics-cli jql -q "project = PROJ ORDER BY created DESC" -n 50 --start-at 50
+```
+
+### Example 12: Generate an HTML Report
+
+Produce a standalone HTML file that can be opened in any browser or shared via email.
+
+```bash
+# Basic HTML report for the last 5 sprints
+jira-analytics-cli report -p MYPROJECT -o report.html
+
+# Analyse 10 sprints and save to a reports directory
+jira-analytics-cli report -p BACKEND -s 10 --output-dir ./reports
+
+# Open immediately (macOS / Linux)
+jira-analytics-cli report -p MYPROJECT -o report.html && open report.html
+```
+
+### Example 13: Team Comparison
+
+Compare two or more projects side by side and see which team leads on velocity, quality, and consistency.
+
+```bash
+# Compare two teams, last 5 sprints
+jira-analytics-cli team-compare -p BACKEND,FRONTEND
+
+# Compare three teams over 10 sprints
+jira-analytics-cli team-compare -p ALPHA,BETA,GAMMA -s 10
+
+# Export comparison as JSON for further processing
+jira-analytics-cli team-compare -p PROJ1,PROJ2 -f json -o comparison.json
+```
+
 ## CLI Reference
 
 ### Global Options
@@ -612,6 +661,98 @@ jira-analytics-cli developer [OPTIONS]
 ```bash
 jira-analytics-cli developer -p MYPROJECT
 jira-analytics-cli developer -p MYPROJECT -d alice --working-hours 6 --exclude-weekends
+```
+
+### JQL Command
+
+Execute a custom JQL query and display or export matching issues.
+
+```bash
+jira-analytics-cli jql [OPTIONS]
+```
+
+**Options:**
+
+| Option | Short | Type | Required | Description |
+|--------|-------|------|----------|-------------|
+| `--query` | `-q` | string | Yes | JQL query string |
+| `--max-results` | `-n` | int | No | Maximum results per page (default: 50) |
+| `--start-at` | | int | No | Zero-based index for pagination (default: 0) |
+| `--format` | `-f` | string | No | Output format: `text` (default) or `json` |
+| `--output` | `-o` | string | No | Output file path; if omitted, prints to console |
+
+**Examples:**
+
+```bash
+# Print all open bugs for a project
+jira-analytics-cli jql -q "project = PROJ AND issuetype = Bug AND status != Done"
+
+# Export critical issues as JSON
+jira-analytics-cli jql -q "priority = Critical ORDER BY created DESC" -f json -o critical.json
+
+# Paginate: second page of 25 results
+jira-analytics-cli jql -q "project = PROJ ORDER BY updated DESC" -n 25 --start-at 25
+```
+
+### Report Command
+
+Generate a self-contained HTML analytics report.
+
+```bash
+jira-analytics-cli report [OPTIONS]
+```
+
+**Options:**
+
+| Option | Short | Type | Required | Description |
+|--------|-------|------|----------|-------------|
+| `--project` | `-p` | string | Yes | Jira project key |
+| `--sprints` | `-s` | int | No | Number of recent sprints to include (default: 5) |
+| `--output` | `-o` | string | No | Output HTML file path |
+| `--output-dir` | | string | No | Directory to write the report to |
+
+The generated HTML file is fully self-contained (embedded CSS, no external dependencies) and opens
+directly in any browser.  It includes:
+- KPI summary cards (velocity, trend, health, issues delivered)
+- Sprint breakdown table with completion progress bars
+- Team workload distribution chart
+- Top performers table
+
+**Examples:**
+
+```bash
+jira-analytics-cli report -p MYPROJECT -o sprint-report.html
+jira-analytics-cli report -p BACKEND -s 10 --output-dir ./reports
+```
+
+### Team Compare Command
+
+Compare metrics across multiple Jira projects side by side.
+
+```bash
+jira-analytics-cli team-compare [OPTIONS]
+```
+
+**Options:**
+
+| Option | Short | Type | Required | Description |
+|--------|-------|------|----------|-------------|
+| `--projects` | `-p` | string | Yes | Comma-separated list of project keys |
+| `--sprints` | `-s` | int | No | Recent sprints per project (default: 5) |
+| `--format` | `-f` | string | No | Output format: `text` (default) or `json` |
+| `--output` | `-o` | string | No | Output file path; if omitted, prints to console |
+
+The report ranks teams on three dimensions and awards icons in the text view:
+- ⚡ Fastest team — highest average velocity
+- ✅ Highest quality — lowest defect rate
+- 🎯 Most consistent — highest sprint completion rate
+
+**Examples:**
+
+```bash
+jira-analytics-cli team-compare -p BACKEND,FRONTEND
+jira-analytics-cli team-compare -p ALPHA,BETA,GAMMA -s 10
+jira-analytics-cli team-compare -p PROJ1,PROJ2 -f json -o comparison.json
 ```
 
 ## API Reference
