@@ -39,7 +39,7 @@ public class AnalyticsServiceTests
             .Setup(s => s.GetProjectIssuesAsync("EMPTY"))
             .ReturnsAsync(new List<JiraIssue>());
 
-        var result = await _sut.AnalyzeOverdueIssues("EMPTY");
+        var result = await _sut.AnalyzeOverdueIssues("EMPTY").ConfigureAwait(false);
 
         result.TotalOverdueCount.Should().Be(0);
         result.CriticalCount.Should().Be(0);
@@ -85,7 +85,7 @@ public class AnalyticsServiceTests
             .Setup(s => s.GetProjectIssuesAsync("PROJ"))
             .ReturnsAsync(issues);
 
-        var result = await _sut.AnalyzeOverdueIssues("PROJ");
+        var result = await _sut.AnalyzeOverdueIssues("PROJ").ConfigureAwait(false);
 
         result.TotalOverdueCount.Should().Be(1);
         result.Issues.Should().ContainSingle(i => i.Key == "PROJ-1");
@@ -126,7 +126,7 @@ public class AnalyticsServiceTests
             .Setup(s => s.GetProjectIssuesAsync("PROJ"))
             .ReturnsAsync(issues);
 
-        var result = await _sut.AnalyzeOverdueIssues("PROJ");
+        var result = await _sut.AnalyzeOverdueIssues("PROJ").ConfigureAwait(false);
 
         result.TotalOverdueCount.Should().Be(3);
         result.CriticalCount.Should().Be(2);

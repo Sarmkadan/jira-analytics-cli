@@ -34,7 +34,7 @@ public class JiraApiService : IJiraApiService
         try
         {
             _logger.LogInformation("Fetching project {ProjectKey}", projectKey);
-            var response = await _httpClient.GetAsync($"/rest/api/3/projects/{projectKey}");
+            var response = await _httpClient.GetAsync($"/rest/api/3/projects/{projectKey}").ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -42,7 +42,7 @@ public class JiraApiService : IJiraApiService
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -79,7 +79,7 @@ public class JiraApiService : IJiraApiService
         try
         {
             _logger.LogInformation("Fetching sprints for project {ProjectKey}", projectKey);
-            var response = await _httpClient.GetAsync($"/rest/api/3/projects/{projectKey}/sprints");
+            var response = await _httpClient.GetAsync($"/rest/api/3/projects/{projectKey}/sprints").ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -87,7 +87,7 @@ public class JiraApiService : IJiraApiService
                 return sprints;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -129,7 +129,7 @@ public class JiraApiService : IJiraApiService
         try
         {
             _logger.LogInformation("Fetching sprint {SprintId}", sprintId);
-            var response = await _httpClient.GetAsync($"/rest/api/3/sprints/{sprintId}");
+            var response = await _httpClient.GetAsync($"/rest/api/3/sprints/{sprintId}").ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -137,7 +137,7 @@ public class JiraApiService : IJiraApiService
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var sprintData = doc.RootElement;
 
@@ -168,7 +168,7 @@ public class JiraApiService : IJiraApiService
         {
             _logger.LogInformation("Fetching issues for sprint {SprintId}", sprintId);
             var jql = $"sprint = {sprintId} ORDER BY created DESC";
-            var response = await _httpClient.GetAsync($"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100");
+            var response = await _httpClient.GetAsync($"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100").ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -176,7 +176,7 @@ public class JiraApiService : IJiraApiService
                 return issues;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -209,11 +209,11 @@ public class JiraApiService : IJiraApiService
         {
             _logger.LogInformation("Fetching issues for project {ProjectKey}", projectKey);
             var jql = $"project = {projectKey} ORDER BY created DESC";
-            var response = await _httpClient.GetAsync($"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100");
+            var response = await _httpClient.GetAsync($"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100").ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode) return issues;
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -245,7 +245,7 @@ public class JiraApiService : IJiraApiService
         try
         {
             _logger.LogInformation("Fetching team for project {ProjectKey}", projectKey);
-            var response = await _httpClient.GetAsync($"/rest/api/3/projects/{projectKey}/components");
+            var response = await _httpClient.GetAsync($"/rest/api/3/projects/{projectKey}/components").ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -270,10 +270,10 @@ public class JiraApiService : IJiraApiService
         ArgumentNullException.ThrowIfNullOrWhiteSpace(issueKey, nameof(issueKey));
         try
         {
-            var response = await _httpClient.GetAsync($"/rest/api/3/issues/{issueKey}");
+            var response = await _httpClient.GetAsync($"/rest/api/3/issues/{issueKey}").ConfigureAwait(false);
             if (!response.IsSuccessStatusCode) return null;
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             return ParseIssueData(doc.RootElement, 0);
         }
@@ -309,7 +309,7 @@ public class JiraApiService : IJiraApiService
         try
         {
             _logger.LogInformation("Verifying Jira API connection");
-            var response = await _httpClient.GetAsync("/rest/api/3/myself");
+            var response = await _httpClient.GetAsync("/rest/api/3/myself").ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
             {

@@ -46,7 +46,7 @@ public class AnalyticsService : IAnalyticsService
         try
         {
             // Fetch sprints
-            var sprints = await _jiraService.GetProjectSprintsAsync(projectKey);
+            var sprints = await _jiraService.GetProjectSprintsAsync(projectKey).ConfigureAwait(false);
             var recentSprints = sprints
                 .Where(s => s.IsClosed())
                 .OrderByDescending(s => s.EndDate)
@@ -56,7 +56,7 @@ public class AnalyticsService : IAnalyticsService
             // Analyze each sprint
             foreach (var sprint in recentSprints)
             {
-                var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id);
+                var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id).ConfigureAwait(false);
                 sprint.Issues.AddRange(issues);
 
                 var metric = new SprintMetric
@@ -125,8 +125,8 @@ public class AnalyticsService : IAnalyticsService
 
         try
         {
-            var team = await _jiraService.GetProjectTeamAsync(projectKey);
-            var issues = await _jiraService.GetProjectIssuesAsync(projectKey);
+            var team = await _jiraService.GetProjectTeamAsync(projectKey).ConfigureAwait(false);
+            var issues = await _jiraService.GetProjectIssuesAsync(projectKey).ConfigureAwait(false);
 
             // Assign issues to team members
             foreach (var issue in issues)
@@ -169,12 +169,12 @@ public class AnalyticsService : IAnalyticsService
 
         try
         {
-            var sprints = await _jiraService.GetProjectSprintsAsync(projectKey);
+            var sprints = await _jiraService.GetProjectSprintsAsync(projectKey).ConfigureAwait(false);
             var allIssues = new List<JiraIssue>();
 
             foreach (var sprint in sprints.Where(s => s.IsClosed()))
             {
-                var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id);
+                var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id).ConfigureAwait(false);
                 allIssues.AddRange(issues);
             }
 
@@ -217,7 +217,7 @@ public class AnalyticsService : IAnalyticsService
 
         try
         {
-            var sprints = await _jiraService.GetProjectSprintsAsync(projectKey);
+            var sprints = await _jiraService.GetProjectSprintsAsync(projectKey).ConfigureAwait(false);
             var recentSprints = sprints
                 .Where(s => s.IsClosed())
                 .OrderBy(s => s.EndDate)
@@ -226,7 +226,7 @@ public class AnalyticsService : IAnalyticsService
 
             foreach (var sprint in recentSprints)
             {
-                var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id);
+                var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id).ConfigureAwait(false);
                 sprint.Issues.AddRange(issues);
 
                 var velocity = sprint.GetVelocity();
@@ -283,7 +283,7 @@ public class AnalyticsService : IAnalyticsService
 
         try
         {
-            var issues = await _jiraService.GetProjectIssuesAsync(projectKey);
+            var issues = await _jiraService.GetProjectIssuesAsync(projectKey).ConfigureAwait(false);
             var overdueIssues = issues.Where(i => i.IsOverdue()).ToList();
 
             result.Issues = overdueIssues;

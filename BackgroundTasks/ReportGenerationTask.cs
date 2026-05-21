@@ -98,7 +98,7 @@ public class ReportGenerationTask
 
                     if (projectConfig.SendNotification)
                     {
-                        await SendNotificationAsync(projectConfig.ProjectKey, filePath, cancellationToken);
+                        await SendNotificationAsync(projectConfig.ProjectKey, filePath, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (Exception ex)
@@ -109,7 +109,7 @@ public class ReportGenerationTask
                 // Add delay between projects
                 if (_config.Projects.Count > 1)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+                    await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
                 }
             }
 

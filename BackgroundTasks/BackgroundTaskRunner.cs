@@ -55,7 +55,7 @@ public class BackgroundTaskRunner : IDisposable
                         _logger.LogInformation("Executing recurring task: {TaskName}", taskName);
                         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-                        await action(_cancellationTokenSource.Token);
+                        await action(_cancellationTokenSource.Token).ConfigureAwait(false);
 
                         stopwatch.Stop();
                         taskInfo.LastExecutedAt = now;
@@ -69,7 +69,7 @@ public class BackgroundTaskRunner : IDisposable
                             stopwatch.ElapsedMilliseconds);
                     }
 
-                    await Task.Delay(1000, _cancellationTokenSource.Token);
+                    await Task.Delay(1000, _cancellationTokenSource.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -111,12 +111,12 @@ public class BackgroundTaskRunner : IDisposable
                 _logger.LogInformation("Waiting to execute one-time task: {TaskName} (delay: {DelaySeconds}s)",
                     taskName, delay.TotalSeconds);
 
-                await Task.Delay(delay, _cancellationTokenSource.Token);
+                await Task.Delay(delay, _cancellationTokenSource.Token).ConfigureAwait(false);
 
                 _logger.LogInformation("Executing one-time task: {TaskName}", taskName);
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-                await action(_cancellationTokenSource.Token);
+                await action(_cancellationTokenSource.Token).ConfigureAwait(false);
 
                 stopwatch.Stop();
                 taskInfo.LastExecutedAt = DateTime.UtcNow;
@@ -153,7 +153,7 @@ public class BackgroundTaskRunner : IDisposable
             {
                 try
                 {
-                    await taskInfo.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    await taskInfo.Task.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
                 }
                 catch (TimeoutException)
                 {
@@ -190,7 +190,7 @@ public class BackgroundTaskRunner : IDisposable
         _cancellationTokenSource.Cancel();
 
         var tasks = _tasks.Values.Select(t => t.Task).Where(t => t != null).Cast<Task>();
-        await Task.WhenAll(tasks);
+        await Task.WhenAll(tasks).ConfigureAwait(false);
 
         _tasks.Clear();
         _logger.LogInformation("All background tasks stopped");

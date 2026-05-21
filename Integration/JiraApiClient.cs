@@ -41,7 +41,7 @@ public class JiraApiClient
             var url = $"{IssuesEndpoint}?jql={Uri.EscapeDataString(jql)}&startAt={startAt}&maxResults={maxResults}";
             _logger.LogDebug("Searching Jira issues with JQL: {Jql}", jql);
 
-            var result = await _httpClient.GetWithRetryAsync<dynamic>(url, _logger);
+            var result = await _httpClient.GetWithRetryAsync<dynamic>(url, _logger).ConfigureAwait(false);
             return result as IEnumerable<dynamic> ?? new List<dynamic>();
         }
         catch (HttpRequestException ex)
@@ -64,7 +64,7 @@ public class JiraApiClient
             var url = $"/rest/api/3/issue/{Uri.EscapeDataString(issueKey)}";
             _logger.LogDebug("Fetching issue: {IssueKey}", issueKey);
 
-            var result = await _httpClient.GetWithRetryAsync<dynamic>(url, _logger);
+            var result = await _httpClient.GetWithRetryAsync<dynamic>(url, _logger).ConfigureAwait(false);
             return result!;
         }
         catch (HttpRequestException ex)
@@ -84,7 +84,7 @@ public class JiraApiClient
             var url = $"/rest/api/3/board/{boardId}/sprint?state={state}";
             _logger.LogDebug("Fetching sprints for board {BoardId}", boardId);
 
-            var result = await _httpClient.GetWithRetryAsync<dynamic>(url, _logger);
+            var result = await _httpClient.GetWithRetryAsync<dynamic>(url, _logger).ConfigureAwait(false);
             return result as IEnumerable<dynamic> ?? new List<dynamic>();
         }
         catch (HttpRequestException ex)
@@ -103,7 +103,7 @@ public class JiraApiClient
         try
         {
             _logger.LogDebug("Checking Jira API connectivity");
-            var response = await _httpClient.GetAsync("/rest/api/3/myself");
+            var response = await _httpClient.GetAsync("/rest/api/3/myself").ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
             {
@@ -133,7 +133,7 @@ public class JiraApiClient
                 url += $"?projectKey={Uri.EscapeDataString(projectKey)}";
 
             _logger.LogDebug("Fetching boards");
-            var result = await _httpClient.GetWithRetryAsync<dynamic>(url, _logger);
+            var result = await _httpClient.GetWithRetryAsync<dynamic>(url, _logger).ConfigureAwait(false);
             return result as IEnumerable<dynamic> ?? new List<dynamic>();
         }
         catch (HttpRequestException ex)
