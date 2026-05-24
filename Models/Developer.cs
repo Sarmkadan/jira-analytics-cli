@@ -86,6 +86,41 @@ public class Developer
         return GetCompletedIssues() / daysActive;
     }
 
+    /// <summary>
+    /// Calculates available capacity in hours over the given date range.
+    /// When <paramref name="excludeWeekends"/> is true, Saturday and Sunday are not counted.
+    /// </summary>
+    public double GetAvailableHours(DateTime start, DateTime end, int workingHoursPerDay = 8, bool excludeWeekends = false)
+    {
+        if (end <= start) return 0;
+
+        if (!excludeWeekends)
+            return (end - start).TotalDays * workingHoursPerDay;
+
+        double workingDays = 0;
+        var current = start.Date;
+        var endDate = end.Date;
+        while (current <= endDate)
+        {
+            if (current.DayOfWeek != DayOfWeek.Saturday && current.DayOfWeek != DayOfWeek.Sunday)
+                workingDays++;
+            current = current.AddDays(1);
+        }
+
+        return workingDays * workingHoursPerDay;
+    }
+
+    /// <summary>
+    /// Calculates story points completed per available working hour over the given period.
+    /// </summary>
+    public double GetLoadFactor(DateTime start, DateTime end, int workingHoursPerDay = 8, bool excludeWeekends = false)
+    {
+        var availableHours = GetAvailableHours(start, end, workingHoursPerDay, excludeWeekends);
+        if (availableHours <= 0) return 0;
+
+        return GetCompletedStoryPoints() / availableHours;
+    }
+
     public double GetAverageStoryPointsPerIssue()
     {
         var completed = GetCompletedIssues();
