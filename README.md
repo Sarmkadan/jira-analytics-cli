@@ -1,8 +1,8 @@
-[![Build](https://github.com/sarmkadan/jira-analytics-cli/actions/workflows/build.yml/badge.svg)](https://github.com/sarmkadan/jira-analytics-cli/actions/workflows/build.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
-
 # Jira Analytics CLI
+
+![CI](https://github.com/sarmkadan/jira-analytics-cli/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/github/license/sarmkadan/jira-analytics-cli)
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
 
 A production-grade .NET command-line tool for advanced Jira analytics, sprint metrics analysis, team performance tracking, burndown chart generation, and professional data export. Designed for engineering managers, scrum masters, and data analysts who need deep insights into team velocity, individual developer load, and sprint health.
 
