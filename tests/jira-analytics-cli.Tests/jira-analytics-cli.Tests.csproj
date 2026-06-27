@@ -51,6 +51,7 @@
     <Compile Include="..\..\Caching\CachePolicy.cs" />
     <Compile Include="..\..\Services\JiraApiService.cs" />
     <Compile Include="..\..\Configuration\ICliConfig.cs" />
+    <Compile Include="..\..\Formatters\JsonFormatter.cs" />
   </ItemGroup>
 
 </Project>
