@@ -103,14 +103,97 @@ Options: `-p/--projects` (comma-separated, required), `-s/--sprints` (default 5)
 
 ## Docker
 
+Build and run the CLI using Docker:
+
+### Build the Docker image
+
 ```bash
+# Build the image
 docker build -t jira-analytics-cli .
+
+# Or use docker-compose for easier management
+docker-compose build
+```
+
+### Run with environment variables
+
+```bash
+# Quick run - outputs to console
 docker run --rm \
   -e JIRA_BASE_URL="https://your-instance.atlassian.net" \
-  -e JIRA_API_TOKEN="your-token" \
+  -e JIRA_API_TOKEN="your-api-token" \
+  jira-analytics-cli analytics -p MYPROJECT
+
+# Run with output file
+docker run --rm \
+  -e JIRA_BASE_URL="https://your-instance.atlassian.net" \
+  -e JIRA_API_TOKEN="your-api-token" \
   -v $(pwd)/output:/app/output \
   jira-analytics-cli analytics -p MYPROJECT -o /app/output/report.txt
 ```
+
+### Using docker-compose
+
+```bash
+# Start the service (creates output directory automatically)
+docker-compose up -d
+
+# Run analytics command
+docker-compose run --rm app analytics -p MYPROJECT -s 5 -o /app/output/report.txt
+
+# Run export command
+docker-compose run --rm app export -p MYPROJECT -f json -o /app/output/metrics.json
+
+# Run burndown chart generation
+docker-compose run --rm app burndown -p MYPROJECT --sprint-id 42 -o /app/output/burndown.png
+
+# Run HTML report generation
+docker-compose run --rm app report -p MYPROJECT -o /app/output/report.html
+
+# Run JQL query
+docker-compose run --rm app jql -q "project = MYPROJECT AND status = Done" -n 50
+
+# Run team comparison
+docker-compose run --rm app team-compare -p PROJ1,PROJ2,PROJ3 -s 5
+```
+
+### Configuration
+
+Create a `.env` file for persistent configuration:
+
+```bash
+# .env
+JIRA_BASE_URL=https://your-instance.atlassian.net
+JIRA_API_TOKEN=your-api-token
+JIRA_DEFAULT_PROJECT=MYPROJECT
+DEFAULT_SPRINT_COUNT=5
+ENABLE_DETAILED_LOGGING=true
+```
+
+Then run:
+
+```bash
+docker-compose --env-file .env up -d
+```
+
+### Available Commands in Docker
+
+All CLI commands work the same way in Docker as they do when installed directly:
+
+- `analytics` - Sprint velocity and metrics
+- `export` - Export data to JSON, CSV, or images
+- `burndown` - Generate burndown charts
+- `report` - Generate HTML reports
+- `jql` - Execute custom JQL queries
+- `team-compare` - Compare metrics across projects
+
+### Notes
+
+- The container runs as a non-root user for security
+- Output files are saved to the `./output` directory (mounted as volume)
+- The image uses Alpine-based runtime for minimal size (~50MB)
+- Self-contained build ensures no external dependencies needed
+- Health checks verify the CLI is functioning properly
 
 ## Usage Examples
 

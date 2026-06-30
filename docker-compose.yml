@@ -1,10 +1,10 @@
 # =============================================================================
 # Author: Vladyslav Zaiets | https://sarmkadan.com
 # CTO & Software Architect
-# =============================================================================
+# =====================================================================
 # Docker Compose configuration for Jira Analytics CLI
-# Used for local development and testing with container environment
-# =============================================================================
+# Supports development, testing, and production-like environments
+# =====================================================================
 
 version: '3.8'
 
@@ -17,40 +17,52 @@ services:
     container_name: jira-analytics-cli
 
     # Environment variables for Jira configuration
+    # Set these in .env file or export them before running
     environment:
-      # Required - set these in .env file or export them
+      # Required - Jira connection
       JIRA_BASE_URL: ${JIRA_BASE_URL:-https://your-instance.atlassian.net}
-      JIRA_API_TOKEN: ${JIRA_API_TOKEN:-your-token}
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN:-your-api-token}
 
       # Optional - Jira configuration
       JIRA_DEFAULT_PROJECT: ${JIRA_DEFAULT_PROJECT:-MYPROJECT}
-      JIRA_REQUEST_TIMEOUT_SECONDS: 30
-      JIRA_MAX_RETRIES: 3
+      JIRA_REQUEST_TIMEOUT_SECONDS: ${JIRA_REQUEST_TIMEOUT_SECONDS:-30}
+      JIRA_MAX_RETRIES: ${JIRA_MAX_RETRIES:-3}
 
       # Optional - Caching configuration
-      CACHE_EXPIRATION_MINUTES: 15
-      CACHE_MAX_ITEMS: 1000
+      CACHE_EXPIRATION_MINUTES: ${CACHE_EXPIRATION_MINUTES:-15}
+      CACHE_MAX_ITEMS: ${CACHE_MAX_ITEMS:-1000}
 
       # Optional - Feature configuration
-      DEFAULT_SPRINT_COUNT: 5
-      ENABLE_DETAILED_LOGGING: false
+      DEFAULT_SPRINT_COUNT: ${DEFAULT_SPRINT_COUNT:-5}
+      ENABLE_DETAILED_LOGGING: ${ENABLE_DETAILED_LOGGING:-false}
 
       # Optional - Performance configuration
-      ENABLE_METRICS_COLLECTION: true
-      MAX_CONCURRENT_REQUESTS: 5
+      ENABLE_METRICS_COLLECTION: ${ENABLE_METRICS_COLLECTION:-true}
+      MAX_CONCURRENT_REQUESTS: ${MAX_CONCURRENT_REQUESTS:-5}
 
-    # Volume mounts
+      # Optional - Output configuration
+      OUTPUT_DIR: ${OUTPUT_DIR:-/app/output}
+
+      # .NET runtime configuration
+      DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: "true"
+      DOTNET_ROOT: /usr/share/dotnet
+
+    # Volume mounts for persistent storage
     volumes:
-      # Output directory for reports
-      - ./output:/app/output
-      # Configuration file (optional)
-      - ./appsettings.json:/app/appsettings.json:ro
+      # Output directory for reports and exports
+      - ${HOST_OUTPUT_DIR:-./output}:/app/output
+      # Optional: Mount configuration file for custom settings
+      - ${HOST_CONFIG_FILE:-./appsettings.json}:/app/appsettings.json:ro
+
+    # Port mapping (CLI apps typically don't expose ports, but included for flexibility)
+    ports:
+      - "8080:8080"
 
     # Keep container running for interactive use
     stdin_open: true
     tty: true
 
-    # Resource limits
+    # Resource limits for production
     deploy:
       resources:
         limits:
@@ -63,20 +75,51 @@ services:
     # Restart policy
     restart: unless-stopped
 
-    # Logging configuration
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    # Health monitoring
+    healthcheck:
+      test: ["CMD", "/app/JiraAnalyticsCli", "--version"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
 
-# Named volumes (optional)
+    # Network configuration
+    networks:
+      - jira-analytics-network
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Read-only filesystem for security (except output directory)
+    read_only: true
+
+  # Optional Redis service for caching (uncomment if needed)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: jira-analytics-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - jira-analytics-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 3
+
+# Named volumes for persistent storage
 volumes:
   output:
     driver: local
+  # redis_data:
+  #   driver: local
 
 # Network configuration
 networks:
-  default:
-    name: jira-analytics-network
+  jira-analytics-network:
     driver: bridge
+    name: jira-analytics-network
