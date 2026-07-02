@@ -215,6 +215,24 @@ dotnet build
 dotnet test
 ```
 
+## Benchmarks
+
+Performance benchmarks are implemented using [BenchmarkDotNet](https://benchmarkdotnet.org/) to track critical path performance and memory allocations.
+
+### Running Benchmarks
+
+```bash
+dotnet run -c Release --project benchmarks/jira-analytics-cli.Benchmarks/jira-analytics-cli.Benchmarks.csproj
+```
+
+### Current Results
+
+| Method | Mean | Error | StdDev | Gen0 | Allocated |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| CacheSet — JSON serialise + ConcurrentDictionary write | 1,582.68 ns | 31.172 ns | 45.692 ns | 0.1621 | 1368 B |
+| CacheGet (hit) — expiry check + JSON deserialise | 1,962.95 ns | 48.701 ns | 142.831 ns | 0.1640 | 1376 B |
+| CacheContains — expiry check only, no deserialise | 49.26 ns | 0.933 ns | 0.827 ns | - | - |
+
 ## License
 
 MIT - Copyright (c) 2026 Vladyslav Zaiets
