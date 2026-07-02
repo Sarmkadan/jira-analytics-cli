@@ -1,0 +1,65 @@
+# Build artifacts
+bin/
+obj/
+*.userprefs
+*.userosscache
+*.vspscc
+*.vshost.*
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Diagnostic files
+*.log
+*.stackdump
+*.dmp
+
+# Cache
+.cache/
+*.cache
+
+# OS-specific
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.sln.iml
+
+# Test artifacts
+TestResults/
+Coverage/
+.coverage
+opencover.xml
+
+# Build output
+output/
+reports/
+exports/
+*.pdf
+*.png
+*.jpg
+*.csv
+*.json.bak
+
+# Runtime data
+appsettings.local.json
+appsettings.Development.json
+
+# Generated files
+*.generated.cs
