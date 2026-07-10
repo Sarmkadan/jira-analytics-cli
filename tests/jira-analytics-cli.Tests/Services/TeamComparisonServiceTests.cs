@@ -10,14 +10,18 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
-namespace JiraAnalyticsCli.Tests.Services;
-
+/// <summary>
+/// Tests for the TeamComparisonService class.
+/// </summary>
 public class TeamComparisonServiceTests
 {
     private readonly Mock<IAnalyticsService> _analyticsMock;
     private readonly Mock<ILogger<TeamComparisonService>> _loggerMock;
     private readonly TeamComparisonService _sut;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TeamComparisonServiceTests"/> class.
+    /// </summary>
     public TeamComparisonServiceTests()
     {
         _analyticsMock = new Mock<IAnalyticsService>();
@@ -25,6 +29,13 @@ public class TeamComparisonServiceTests
         _sut           = new TeamComparisonService(_analyticsMock.Object, _loggerMock.Object);
     }
 
+    /// <summary>
+    /// Builds a SprintAnalysisResult object with the specified velocity, health, and defects.
+    /// </summary>
+    /// <param name="velocity">The average velocity of the sprint.</param>
+    /// <param name="health">The overall health of the sprint.</param>
+    /// <param name="defects">The number of defects in the sprint.</param>
+    /// <returns>A SprintAnalysisResult object with the specified properties.</returns>
     private static SprintAnalysisResult BuildAnalysis(double velocity, string health, int defects)
     {
         return new SprintAnalysisResult
@@ -50,6 +61,9 @@ public class TeamComparisonServiceTests
         };
     }
 
+    /// <summary>
+    /// Tests that the CompareTeamsAsync method returns both snapshots when given two projects.
+    /// </summary>
     [Fact]
     public async Task CompareTeamsAsync_WithTwoProjects_ReturnsBothSnapshots()
     {
@@ -62,6 +76,9 @@ public class TeamComparisonServiceTests
         report.Teams.Select(t => t.ProjectKey).Should().Contain(new[] { "ALPHA", "BETA" });
     }
 
+    /// <summary>
+    /// Tests that the CompareTeamsAsync method identifies the fastest team correctly.
+    /// </summary>
     [Fact]
     public async Task CompareTeamsAsync_IdentifiesFastestTeamCorrectly()
     {
@@ -73,6 +90,9 @@ public class TeamComparisonServiceTests
         report.FastestTeam.Should().Be("FAST");
     }
 
+    /// <summary>
+    /// Tests that the CompareTeamsAsync method identifies the highest quality team by lowest defect rate.
+    /// </summary>
     [Fact]
     public async Task CompareTeamsAsync_IdentifiesHighestQualityTeamByLowestDefectRate()
     {
@@ -88,6 +108,9 @@ public class TeamComparisonServiceTests
         report.HighestQualityTeam.Should().Be("HIGHQUAL");
     }
 
+    /// <summary>
+    /// Tests that the CompareTeamsAsync method deduplicates project keys.
+    /// </summary>
     [Fact]
     public async Task CompareTeamsAsync_DeduplicatesProjectKeys()
     {
@@ -100,6 +123,9 @@ public class TeamComparisonServiceTests
         report.Teams.Should().HaveCount(1);
     }
 
+    /// <summary>
+    /// Tests that the CompareTeamsAsync method throws an ArgumentException when given an empty array of project keys.
+    /// </summary>
     [Fact]
     public async Task CompareTeamsAsync_WithEmptyProjectKeys_ThrowsArgumentException()
     {
@@ -107,6 +133,9 @@ public class TeamComparisonServiceTests
             () => _sut.CompareTeamsAsync(Array.Empty<string>()));
     }
 
+    /// <summary>
+    /// Tests that the CompareTeamsAsync method throws an ArgumentOutOfRangeException when given a sprint count of zero.
+    /// </summary>
     [Fact]
     public async Task CompareTeamsAsync_WithZeroSprintCount_ThrowsArgumentOutOfRangeException()
     {
@@ -114,6 +143,9 @@ public class TeamComparisonServiceTests
             () => _sut.CompareTeamsAsync(new[] { "PROJ" }, sprintCount: 0));
     }
 
+    /// <summary>
+    /// Tests that the FormatAsText method returns a string containing both project keys when given a report with two teams.
+    /// </summary>
     [Fact]
     public void FormatAsText_WithTwoTeams_ContainsBothProjectKeys()
     {
