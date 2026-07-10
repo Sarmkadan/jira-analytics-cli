@@ -225,6 +225,31 @@ Performance benchmarks are implemented using [BenchmarkDotNet](https://benchmark
 dotnet run -c Release --project benchmarks/jira-analytics-cli.Benchmarks/jira-analytics-cli.Benchmarks.csproj
 ```
 
+### StringBenchmarks
+
+The `StringBenchmarks` class measures performance of common string operations used throughout the CLI, including whitespace removal, truncation with ellipsis, slug generation, common prefix detection, and pattern matching. These operations are critical for processing Jira keys, issue summaries, and generating URL-friendly identifiers.
+
+
+```csharp
+var benchmarks = new StringBenchmarks();
+
+// Remove whitespace from Jira keys and issue summaries
+string cleanKey = "PROJ-1234 sprint-planning".RemoveWhitespace(); // "PROJ-1234sprint-planning"
+
+// Truncate long issue summaries for display
+string truncated = "Implement OAuth2 token refresh with sliding-window expiry".TruncateWithEllipsis(30); // "Implement OAuth2 token refr..."
+
+// Convert issue titles to URL-friendly slugs
+string slug = "Hello World! This is a Jira Sprint".ToSlug(); // "hello-world-this-is-a-jira-sprint"
+
+// Find common prefix between sprint labels
+string commonPrefix = "MYPROJECT-SPRINT-2024-Q1-WEEK-03".GetCommonPrefix(
+    "MYPROJECT-SPRINT-2024-Q2-WEEK-01"); // "MYPROJECT-SPRINT-2024-"
+
+// Check if a string matches a wildcard pattern
+bool matches = "PROJ-1234".MatchesPattern("*PROJ-12*"); // true
+```
+
 ### Current Results
 
 | Method | Mean | Error | StdDev | Gen0 | Allocated |
