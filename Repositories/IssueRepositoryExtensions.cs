@@ -6,6 +6,9 @@ using JiraAnalyticsCli.Models;
 
 namespace JiraAnalyticsCli.Repositories
 {
+    /// <summary>
+    /// Extension methods that provide additional query and filtering capabilities for <see cref="IssueRepository"/>.
+    /// </summary>
     public static class IssueRepositoryExtensions
     {
         /// <summary>
@@ -15,17 +18,14 @@ namespace JiraAnalyticsCli.Repositories
         /// <param name="projectKey">The project key to filter by.</param>
         /// <param name="assignee">The username to filter by.</param>
         /// <returns>A list of issues assigned to the specified user.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="projectKey"/> or <paramref name="assignee"/> is null or whitespace.</exception>
         public static async ValueTask<List<JiraIssue>> GetByAssigneeAsync(this IssueRepository repository, string projectKey, string assignee)
         {
-            if (string.IsNullOrWhiteSpace(assignee))
-            {
-                throw new ArgumentException("Assignee cannot be null or whitespace.", nameof(assignee));
-            }
+            ArgumentNullException.ThrowIfNull(repository);
 
-            if (string.IsNullOrWhiteSpace(projectKey))
-            {
-                throw new ArgumentException("Project key cannot be null or whitespace.", nameof(projectKey));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(projectKey);
+            ArgumentException.ThrowIfNullOrEmpty(assignee);
 
             var allIssues = await repository.GetByProjectAsync(projectKey);
             return allIssues
@@ -39,12 +39,13 @@ namespace JiraAnalyticsCli.Repositories
         /// <param name="repository">The issue repository instance.</param>
         /// <param name="projectKey">The project key to filter by.</param>
         /// <returns>A list of unassigned issues.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="projectKey"/> is null or whitespace.</exception>
         public static async ValueTask<List<JiraIssue>> GetUnassignedAsync(this IssueRepository repository, string projectKey)
         {
-            if (string.IsNullOrWhiteSpace(projectKey))
-            {
-                throw new ArgumentException("Project key cannot be null or whitespace.", nameof(projectKey));
-            }
+            ArgumentNullException.ThrowIfNull(repository);
+
+            ArgumentException.ThrowIfNullOrEmpty(projectKey);
 
             var allIssues = await repository.GetByProjectAsync(projectKey);
             return allIssues
@@ -59,17 +60,14 @@ namespace JiraAnalyticsCli.Repositories
         /// <param name="projectKey">The project key to filter by.</param>
         /// <param name="days">Number of days to look ahead.</param>
         /// <returns>A list of issues due within the specified timeframe.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="projectKey"/> is null or whitespace, or when <paramref name="days"/> is negative.</exception>
         public static async ValueTask<List<JiraIssue>> GetDueWithinAsync(this IssueRepository repository, string projectKey, int days)
         {
-            if (string.IsNullOrWhiteSpace(projectKey))
-            {
-                throw new ArgumentException("Project key cannot be null or whitespace.", nameof(projectKey));
-            }
+            ArgumentNullException.ThrowIfNull(repository);
 
-            if (days < 0)
-            {
-                throw new ArgumentException("Days must be a non-negative value.", nameof(days));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(projectKey);
+            ArgumentOutOfRangeException.ThrowIfNegative(days);
 
             var cutoffDate = DateTime.Today.AddDays(days);
             var allIssues = await repository.GetByProjectAsync(projectKey);
@@ -87,17 +85,14 @@ namespace JiraAnalyticsCli.Repositories
         /// <param name="projectKey">The project key to filter by.</param>
         /// <param name="count">Number of issues to return.</param>
         /// <returns>A list of the highest priority issues.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="projectKey"/> is null or whitespace, or when <paramref name="count"/> is not positive.</exception>
         public static async ValueTask<List<JiraIssue>> GetTopPriorityAsync(this IssueRepository repository, string projectKey, int count)
         {
-            if (string.IsNullOrWhiteSpace(projectKey))
-            {
-                throw new ArgumentException("Project key cannot be null or whitespace.", nameof(projectKey));
-            }
+            ArgumentNullException.ThrowIfNull(repository);
 
-            if (count <= 0)
-            {
-                throw new ArgumentException("Count must be a positive value.", nameof(count));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(projectKey);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(count, 0);
 
             var allIssues = await repository.GetHighPriorityAsync(projectKey);
             return allIssues
