@@ -19,7 +19,7 @@ namespace JiraAnalyticsIntegration
         /// The JSON serialization options used by all extension methods.
         /// Uses camelCase property naming and includes property name case insensitivity.
         /// </summary>
-        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+        private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             PropertyNameCaseInsensitive = true,
@@ -33,18 +33,13 @@ namespace JiraAnalyticsIntegration
         /// <param name="value">The AnalyticsController instance to serialize.</param>
         /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
         /// <returns>A JSON string representation of the AnalyticsController.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
         public static string ToJson(this AnalyticsController value, bool indented = false)
         {
-            if (value == null)
-            {
-                return "{}";
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             var options = indented
-                ? new JsonSerializerOptions(_jsonOptions)
-                {
-                    WriteIndented = true
-                }
+                ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
                 : _jsonOptions;
 
             return JsonSerializer.Serialize(value, options);
@@ -55,21 +50,13 @@ namespace JiraAnalyticsIntegration
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized AnalyticsController instance, or null if JSON is invalid.</returns>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="json"/> is null or whitespace.</exception>
+        /// <exception cref="JsonException">Thrown if the JSON is invalid or cannot be deserialized.</exception>
         public static AnalyticsController? FromJson(string json)
         {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return null;
-            }
+            ArgumentException.ThrowIfNullOrEmpty(json);
 
-            try
-            {
-                return JsonSerializer.Deserialize<AnalyticsController>(json, _jsonOptions);
-            }
-            catch (JsonException)
-            {
-                return null;
-            }
+            return JsonSerializer.Deserialize<AnalyticsController>(json, _jsonOptions);
         }
 
         /// <summary>
@@ -78,6 +65,7 @@ namespace JiraAnalyticsIntegration
         /// <param name="json">The JSON string to deserialize.</param>
         /// <param name="value">The deserialized AnalyticsController instance, or null if deserialization fails.</param>
         /// <returns>True if deserialization succeeds; false otherwise.</returns>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="json"/> is null or whitespace.</exception>
         public static bool TryFromJson(string json, out AnalyticsController? value)
         {
             value = null;
