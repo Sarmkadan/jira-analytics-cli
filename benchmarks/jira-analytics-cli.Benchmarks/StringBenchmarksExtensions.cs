@@ -5,7 +5,7 @@ using JiraAnalyticsCli.Utils;
 namespace JiraAnalyticsCli.Benchmarks
 {
     /// <summary>
-    /// Extension methods for string manipulation that provide utilities used in benchmark scenarios.
+    /// Extension methods for string manipulation used in benchmark scenarios.
     /// </summary>
     public static class StringBenchmarksExtensions
     {
