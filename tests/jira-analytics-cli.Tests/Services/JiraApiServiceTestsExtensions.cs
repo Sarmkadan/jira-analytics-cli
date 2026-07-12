@@ -40,11 +40,11 @@ namespace JiraAnalyticsCli.Tests.Services
         }
 
         /// <summary>
-        /// Determines whether the response indicates a valid project response (non-null and non-empty).
+        /// Determines whether the response indicates a valid project response (non-null).
         /// </summary>
         /// <param name="tests">The test instance.</param>
         /// <param name="response">The API response to validate.</param>
-        /// <returns><see langword="true"/> if the response is valid; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the response is non-null; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/>.</exception>
         public static bool HasValidProjectResponse(this JiraApiServiceTests tests, object response)
         {
@@ -53,11 +53,11 @@ namespace JiraAnalyticsCli.Tests.Services
         }
 
         /// <summary>
-        /// Determines whether the sprint issues response is empty or null.
+        /// Determines whether the sprint issues response is null.
         /// </summary>
         /// <param name="tests">The test instance.</param>
         /// <param name="response">The API response to check.</param>
-        /// <returns><see langword="true"/> if the response is null or empty; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the response is null; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/>.</exception>
         public static bool HasEmptySprintIssuesResponse(this JiraApiServiceTests tests, object response)
         {
