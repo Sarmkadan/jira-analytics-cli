@@ -3,6 +3,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using SkiaSharp;
@@ -154,7 +155,7 @@ public class ExportService : IExportService
             // Write data rows
             foreach (var row in data)
             {
-                var values = headers.Select(h => row.ContainsKey(h) ? EscapeCsvValue(row[h].ToString()) : string.Empty);
+                var values = headers.Select(h => row.ContainsKey(h) ? EscapeCsvValue(FormatCsvCell(row[h])) : string.Empty);
                 sb.AppendLine(string.Join(",", values));
             }
 
@@ -215,7 +216,7 @@ public class ExportService : IExportService
                 paint.Color = SKColors.Black;
                 paint.TextSize = 12;
                 canvas.DrawText(metric.SprintName, (float)(x + 5), (float)(height - 50), paint);
-                canvas.DrawText(velocity.ToString("F1"), (float)(x + 5), (float)(y - 10), paint);
+                canvas.DrawText(velocity.ToString("F1", CultureInfo.InvariantCulture), (float)(x + 5), (float)(y - 10), paint);
             }
 
             // Save image
@@ -408,7 +409,7 @@ public class ExportService : IExportService
                 paint.Color = SKColors.Black;
                 paint.TextSize = 12;
                 canvas.DrawText(metric.SprintName, (float)(x + 5), (float)(height - 50), paint);
-                canvas.DrawText(velocity.ToString("F1"), (float)(x + 5), (float)(y - 10), paint);
+                canvas.DrawText(velocity.ToString("F1", CultureInfo.InvariantCulture), (float)(x + 5), (float)(y - 10), paint);
             }
         }
         catch (Exception ex)
@@ -484,6 +485,15 @@ public class ExportService : IExportService
 
         await ExportAsCsv(data, outputPath);
     }
+
+    // Formats a CSV cell value using invariant culture so numbers/dates round-trip
+    // correctly regardless of the running machine's locale settings.
+    private static string FormatCsvCell(object? value) => value switch
+    {
+        null => string.Empty,
+        IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+        _ => value.ToString() ?? string.Empty
+    };
 
     private string EscapeCsvValue(string? value)
     {

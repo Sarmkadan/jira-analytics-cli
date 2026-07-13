@@ -3,6 +3,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
@@ -107,11 +108,11 @@ public class TeamComparisonService : ITeamComparisonService
             var awards = BuildAwardIcons(team, report);
             sb.AppendLine(
                 $"{team.ProjectKey.PadRight(projW)} " +
-                $"{team.AverageVelocity.ToString("F1").PadRight(velW)} " +
-                $"{team.AvgCompletionRate.ToString("F1").PadRight(rateW)} " +
-                $"{team.TotalPointsDelivered.ToString().PadRight(ptsW)} " +
-                $"{team.TotalDefects.ToString().PadRight(defW)} " +
-                $"{team.AvgCycleTime.ToString("F1").PadRight(cycleW)} " +
+                $"{team.AverageVelocity.ToString("F1", CultureInfo.InvariantCulture).PadRight(velW)} " +
+                $"{team.AvgCompletionRate.ToString("F1", CultureInfo.InvariantCulture).PadRight(rateW)} " +
+                $"{team.TotalPointsDelivered.ToString(CultureInfo.InvariantCulture).PadRight(ptsW)} " +
+                $"{team.TotalDefects.ToString(CultureInfo.InvariantCulture).PadRight(defW)} " +
+                $"{team.AvgCycleTime.ToString("F1", CultureInfo.InvariantCulture).PadRight(cycleW)} " +
                 $"{team.OverallHealth}{awards}");
         }
 

@@ -3,6 +3,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
 using System.Text.Json;
 using System.Runtime.CompilerServices;
 using JiraAnalyticsCli.Models;
@@ -47,7 +48,7 @@ public class JiraApiService : IJiraApiService
             var root = doc.RootElement;
 
             var createdStr = GetString(root, "created");
-            var createdDate = DateTime.TryParse(createdStr, out var parsedCreatedDate) ? parsedCreatedDate : DateTime.MinValue;
+            var createdDate = ParseDateTimeInvariant(createdStr) ?? DateTime.MinValue;
             var project = new JiraProject
             {
                 Key = projectKey,
@@ -245,16 +246,35 @@ public class JiraApiService : IJiraApiService
         try
         {
             _logger.LogInformation("Fetching team for project {ProjectKey}", projectKey);
-            var response = await _httpClient.GetAsync($"/rest/api/3/projects/{projectKey}/components");
 
-            if (!response.IsSuccessStatusCode)
+            // Jira has no dedicated "team roster" endpoint; the team is derived by
+            // aggregating the distinct assignees across the project's issues.
+            var issues = await GetProjectIssuesAsync(projectKey);
+
+            var developersByAssignee = new Dictionary<string, Developer>(StringComparer.Ordinal);
+
+            foreach (var issue in issues)
             {
-                _logger.LogWarning("Failed to fetch project team: {StatusCode}", response.StatusCode);
-                return team;
+                if (string.IsNullOrWhiteSpace(issue.Assignee))
+                    continue;
+
+                if (!developersByAssignee.TryGetValue(issue.Assignee, out var developer))
+                {
+                    developer = new Developer
+                    {
+                        Key = issue.Assignee,
+                        Name = issue.Assignee,
+                        DisplayName = issue.Assignee
+                    };
+                    developersByAssignee[issue.Assignee] = developer;
+                }
+
+                developer.AssignIssue(issue);
             }
 
-            // In real implementation, would aggregate from issues
-            _logger.LogInformation("Fetched team data for project {ProjectKey}", projectKey);
+            team.AddRange(developersByAssignee.Values.OrderBy(d => d.DisplayName, StringComparer.Ordinal));
+
+            _logger.LogInformation("Fetched team data for project {ProjectKey}: {DeveloperCount} developers", projectKey, team.Count);
         }
         catch (Exception ex)
         {
@@ -293,8 +313,33 @@ public class JiraApiService : IJiraApiService
         try
         {
             _logger.LogInformation("Fetching burndown data for sprint {SprintId}", sprintId);
-            // Implementation would fetch from metrics API or calculate from issue history
-            _logger.LogInformation("Fetched burndown data for sprint {SprintId}", sprintId);
+
+            // Jira's REST API has no burndown endpoint; the standard approach is to
+            // derive a snapshot from the sprint's current issue state.
+            var issues = await GetSprintIssuesAsync(sprintId);
+
+            var completedIssues = issues.Where(i => i.Status is "Done" or "Closed").ToList();
+            var remainingIssues = issues.Except(completedIssues).ToList();
+
+            var totalPoints = issues.Sum(i => i.StoryPoints ?? 0);
+            var completedPoints = completedIssues.Sum(i => i.StoryPoints ?? 0);
+
+            var snapshot = new BurndownSnapshot
+            {
+                Timestamp = DateTime.UtcNow,
+                SprintId = sprintId,
+                TotalStoryPoints = Math.Max(totalPoints, 1),
+                CompletedStoryPoints = completedPoints,
+                RemainingStoryPoints = Math.Max(totalPoints, 1) - completedPoints,
+                TotalIssueCount = issues.Count,
+                CompletedIssueCount = completedIssues.Count,
+                RemainingIssueCount = remainingIssues.Count,
+                ScopeChanges = 0
+            };
+
+            snapshots.Add(snapshot);
+
+            _logger.LogInformation("Fetched burndown data for sprint {SprintId}: {Completed}/{Total} pts", sprintId, completedPoints, totalPoints);
         }
         catch (Exception ex)
         {
@@ -381,8 +426,8 @@ public class JiraApiService : IJiraApiService
             var updatedStr = GetNestedStringOrNull(issueData, "fields", "updated");
             var storyPtsStr = GetNestedStringOrNull(issueData, "fields", "customfield_10016") ?? "0";
 
-            var createdDate = DateTime.TryParse(createdStr, out var parsedCreatedDate) ? parsedCreatedDate : DateTime.MinValue;
-            var updatedDate = DateTime.TryParse(updatedStr, out var parsedUpdatedDate) ? parsedUpdatedDate : DateTime.MinValue;
+            var createdDate = ParseDateTimeInvariant(createdStr) ?? DateTime.MinValue;
+            var updatedDate = ParseDateTimeInvariant(updatedStr) ?? DateTime.MinValue;
             var issue = new JiraIssue
             {
                 Key = GetString(issueData, "key"),
@@ -393,18 +438,22 @@ public class JiraApiService : IJiraApiService
                 IssueType = GetPath(issueData, "fields", "issuetype", "name") ?? "Task",
                 Assignee = GetPath(issueData, "fields", "assignee", "displayName"),
                 Priority = GetPath(issueData, "fields", "priority", "name") ?? "Medium",
-                StoryPoints = int.TryParse(storyPtsStr, out var points) ? points : 0,
+                StoryPoints = double.TryParse(storyPtsStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var points)
+                    ? (int)Math.Round(points, MidpointRounding.AwayFromZero)
+                    : 0,
                 CreatedDate = createdDate,
                 UpdatedDate = updatedDate,
                 SprintId = sprintId
             };
 
             var dueStr = GetNestedStringOrNull(issueData, "fields", "duedate");
-            if (DateTime.TryParse(dueStr, out var dueDate))
+            var dueDate = ParseDateTimeInvariant(dueStr);
+            if (dueDate.HasValue)
                 issue.DueDate = dueDate;
 
             var resStr = GetNestedStringOrNull(issueData, "fields", "resolutiondate");
-            if (DateTime.TryParse(resStr, out var resDate))
+            var resDate = ParseDateTimeInvariant(resStr);
+            if (resDate.HasValue)
                 issue.ResolutionDate = resDate;
 
             return issue;
@@ -429,7 +478,7 @@ public class JiraApiService : IJiraApiService
     {
         if (!element.TryGetProperty(property, out var p)) return defaultValue;
         if (p.ValueKind == JsonValueKind.Number) return p.GetInt32();
-        if (int.TryParse(p.GetString(), out var v)) return v;
+        if (int.TryParse(p.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var v)) return v;
         return defaultValue;
     }
 
@@ -462,6 +511,13 @@ public class JiraApiService : IJiraApiService
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static DateTime? ParseDateOrNull(string? value)
-        => DateTime.TryParse(value, out var dt) ? dt : null;
+    private static DateTime? ParseDateOrNull(string? value) => ParseDateTimeInvariant(value);
+
+    // Parses Jira's ISO-8601 timestamps using the invariant culture so parsing never depends
+    // on the host machine's regional settings (a machine, not a human, produced this data).
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static DateTime? ParseDateTimeInvariant(string? value)
+        => DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dt)
+            ? dt
+            : null;
 }
