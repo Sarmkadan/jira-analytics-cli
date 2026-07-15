@@ -67,4 +67,27 @@ var lastBusinessDay = new DateTime(2026, 6, 15).GetLastBusinessDayOfMonth();
 Console.WriteLine($"Last business day: {lastBusinessDay:yyyy-MM-dd}"); // Output: Last business day: 2026-06-30
 ```
 
+## JsonFormatterTests
+
+The `JsonFormatterTests` class provides comprehensive unit tests for the `JsonFormatter`, ensuring correct JSON serialization, validation, metadata inclusion, and formatting (pretty-printing). It covers scenarios such as handling null properties, serializing objects, and validating JSON structures.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Tests.Formatters;
+
+// Instantiate the test class
+var tests = new JsonFormatterTests();
+
+// These methods contain the test logic and would typically be 
+// invoked by a test runner like xUnit.
+tests.Format_ShouldSerializeObjectToJson();
+tests.Format_ShouldHandleNullPropertiesByIgnoringThem();
+tests.Validate_ShouldReturnTrueForValidJson();
+tests.Validate_ShouldReturnFalseForInvalidJson();
+tests.FormatWithMetadata_ShouldIncludeMetadata();
+tests.Prettify_ShouldFormatMinifiedJson();
+```
+
+
 # ... rest of README content ...
