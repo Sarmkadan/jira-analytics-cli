@@ -160,5 +160,45 @@ tests.FormatWithMetadata_ShouldIncludeMetadata();
 tests.Prettify_ShouldFormatMinifiedJson();
 ```
 
+## BurndownSnapshot
+
+The `BurndownSnapshot` class captures a point‑in‑time view of a sprint’s burndown metrics, including story points and issue counts. It provides methods to calculate the current burndown percentage, project completion, determine if the sprint is on track, and estimate remaining work hours.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using System;
+
+// Create a snapshot for a sprint
+var snapshot = new BurndownSnapshot
+{
+    Timestamp = DateTime.UtcNow,
+    SprintId = 42,
+    RemainingStoryPoints = 30,
+    CompletedStoryPoints = 20,
+    TotalStoryPoints = 50,
+    RemainingIssueCount = 5,
+    CompletedIssueCount = 10,
+    TotalIssueCount = 15,
+    ScopeChanges = 2
+};
+
+// Validate the snapshot data
+snapshot.Validate();
+
+// Calculate percentages and projections
+double percent = snapshot.GetBurndownPercentage();
+double projected = snapshot.GetProjectedCompletionPercentage(DateTime.UtcNow.AddDays(7));
+bool onTrack = snapshot.IsOnTrack(DateTime.UtcNow.AddDays(14));
+int hoursUntilDone = snapshot.GetHoursUntilCompletion(issuesPerHour: 2);
+
+// Output information
+Console.WriteLine(snapshot); // uses ToString()
+Console.WriteLine($"Burndown: {percent:F1}%");
+Console.WriteLine($"Projected completion: {projected:F1}%");
+Console.WriteLine($"On track: {onTrack}");
+Console.WriteLine($"Estimated hours to finish: {hoursUntilDone}");
+```
 
 # ... rest of README content ...
