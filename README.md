@@ -722,6 +722,46 @@ public class ScheduledReportService : BackgroundService
 builder.Services.AddHostedService<ScheduledReportService>();
 ```
 
+## ExportService
+
+The `ExportService` provides functionality to export Jira analytics data in various formats including images (PNG/JPG/SVG), JSON, and CSV. It supports exporting sprint analytics, burndown charts, and team metrics, making it easy to share insights with stakeholders.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using Microsoft.Extensions.Logging;
+
+// Create the service (typically via dependency injection)
+var exportService = new ExportService(
+    jiraService: new JiraApiService(),
+    analyticsService: new AnalyticsService(
+        jiraService: new JiraApiService(),
+        metricsRepository: new MetricsRepository(),
+        logger: new Logger<AnalyticsService>(new LoggerFactory())
+    ),
+    logger: new Logger<ExportService>(new LoggerFactory())
+);
+
+// Export sprint analytics as a PNG image
+await exportService.ExportAnalytics("PROJ", "png", "./sprint_analytics.png");
+
+// Export sprint analytics as JSON
+await exportService.ExportAnalytics("PROJ", "json", "./sprint_analytics.json");
+
+// Export sprint analytics as CSV
+await exportService.ExportAnalytics("PROJ", "csv", "./sprint_analytics.csv");
+
+// Export burndown chart as a PNG image
+await exportService.ExportBurndownChart(1, "png", "./burndown_chart.png");
+
+// Export team metrics as JSON
+await exportService.ExportTeamMetrics("PROJ", "json", "./team_metrics.json");
+
+// Export team metrics as CSV
+await exportService.ExportTeamMetrics("PROJ", "csv", "./team_metrics.csv");
+```
+
 ## TeamDashboardService
 
 The `TeamDashboardService` generates comprehensive team dashboards by combining analytics from multiple Jira projects. It integrates project analysis, team comparisons, and HTML dashboard generation to provide a holistic view of team performance across projects.
