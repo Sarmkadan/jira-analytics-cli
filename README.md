@@ -201,6 +201,101 @@ Console.WriteLine($"On track: {onTrack}");
 Console.WriteLine($"Estimated hours to finish: {hoursUntilDone}");
 ```
 
+## Sprint
+
+The `Sprint` class represents a Jira sprint with its metadata, state, and associated issues. It provides comprehensive methods for tracking sprint progress, velocity, and identifying issues requiring attention such as overdue or blocked items.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using System;
+
+// Create a sprint instance
+var sprint = new Sprint
+{
+    Id = 1,
+    Key = "SPR-2026-Q2-01",
+    Name = "Q2 Platform Enhancement",
+    State = "Active",
+    StartDate = new DateTime(2026, 4, 1),
+    EndDate = new DateTime(2026, 4, 14),
+    CompleteDate = null,
+    Goal = "Enhance authentication service with OAuth2 support and improved error handling",
+    ProjectKey = "PLATFORM"
+};
+
+// Add issues to the sprint
+sprint.Issues.Add(new JiraIssue
+{
+    Key = "PLAT-123",
+    Summary = "Implement OAuth2 client credentials flow",
+    Status = "In Progress",
+    IssueType = "Story",
+    StoryPoints = 8,
+    Priority = "High",
+    DueDate = new DateTime(2026, 4, 10),
+    Assignee = "john.doe@example.com"
+});
+
+sprint.Issues.Add(new JiraIssue
+{
+    Key = "PLAT-124",
+    Summary = "Add rate limiting to authentication endpoints",
+    Status = "To Do",
+    IssueType = "Task",
+    StoryPoints = 3,
+    Priority = "Medium",
+    DueDate = new DateTime(2026, 4, 12),
+    Assignee = "jane.smith@example.com"
+});
+
+sprint.Issues.Add(new JiraIssue
+{
+    Key = "PLAT-125",
+    Summary = "Fix authentication timeout issues",
+    Status = "Done",
+    IssueType = "Bug",
+    StoryPoints = 5,
+    Priority = "Critical",
+    DueDate = new DateTime(2026, 3, 28),
+    CompletedDate = new DateTime(2026, 4, 2)
+});
+
+// Calculate sprint metrics
+int plannedStoryPoints = sprint.GetPlannedStoryPoints();
+int completedStoryPoints = sprint.GetCompletedStoryPoints();
+double velocity = sprint.GetVelocity();
+int totalIssues = sprint.GetTotalIssueCount();
+int completedIssues = sprint.GetCompletedIssueCount();
+int inProgressIssues = sprint.GetInProgressIssues().Count;
+int overdueIssues = sprint.GetOverdueIssues().Count;
+int blockedIssues = sprint.GetBlockedIssues().Count;
+int durationDays = sprint.GetDuration();
+
+bool isActive = sprint.IsActive();
+bool isClosed = sprint.IsClosed();
+
+// Output sprint information
+Console.WriteLine(sprint);
+Console.WriteLine($"Duration: {durationDays} days");
+Console.WriteLine($"Planned story points: {plannedStoryPoints}");
+Console.WriteLine($"Completed story points: {completedStoryPoints}");
+Console.WriteLine($"Velocity: {velocity:F1}%");
+Console.WriteLine($"Total issues: {totalIssues}");
+Console.WriteLine($"Completed: {completedIssues}");
+Console.WriteLine($"In progress: {inProgressIssues}");
+Console.WriteLine($"Overdue: {overdueIssues}");
+Console.WriteLine($"Blocked: {blockedIssues}");
+Console.WriteLine($"Active: {isActive}");
+Console.WriteLine($"Closed: {isClosed}");
+
+// Get specific issue lists
+var overdueIssuesList = sprint.GetOverdueIssues();
+var inProgressIssuesList = sprint.GetInProgressIssues();
+var blockedIssuesList = sprint.GetBlockedIssues();
+```
+
 ## JiraProject
 
 The `JiraProject` class represents a Jira project with comprehensive tracking capabilities for sprints, team members, and project metrics. It provides methods to calculate sprint statistics, team performance, and identify issues requiring attention such as overdue or blocked items.
