@@ -340,6 +340,62 @@ var inProgressIssuesList = sprint.GetInProgressIssues();
 var blockedIssuesList = sprint.GetBlockedIssues();
 ```
 
+## SprintMetric
+
+The `SprintMetric` class represents aggregated metrics for a sprint including velocity, quality indicators, and risk assessment. It provides comprehensive methods for calculating key performance metrics such as velocity, completion rate, commitment accuracy, quality score, and productivity per team member.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using System;
+
+// Create a sprint metric instance for a completed sprint
+var sprintMetric = new SprintMetric
+{
+    SprintId = 42,
+    SprintName = "Sprint 2026-Q2-04",
+    StartDate = new DateTime(2026, 6, 1),
+    EndDate = new DateTime(2026, 6, 14),
+    PlannedStoryPoints = 50,
+    CompletedStoryPoints = 45,
+    CommittedStoryPoints = 48,
+    CompletedIssueCount = 12,
+    TotalIssueCount = 15,
+    DefectsCount = 2,
+    AverageCycleTime = 2.5,
+    OverdueIssueCount = 1,
+    TeamSize = 6,
+    ScopeChangeCount = 3
+};
+
+// Calculate key performance metrics
+double velocity = sprintMetric.GetVelocity();
+double completionRate = sprintMetric.GetCompletionRate();
+double commitmentAccuracy = sprintMetric.GetCommitmentAccuracy();
+double qualityScore = sprintMetric.GetQualityScore();
+double productivityPerMember = sprintMetric.GetProductivityPerTeamMember();
+double dailyBurndownRate = sprintMetric.GetDailyBurndownRate();
+
+// Calculate risk and health status
+double riskScore = sprintMetric.GetRiskScore();
+string healthStatus = sprintMetric.GetHealthStatus();
+
+// Validate the metric data
+sprintMetric.Validate();
+
+// Output the results
+Console.WriteLine(sprintMetric);
+Console.WriteLine($"Velocity: {velocity:F2} story points/day");
+Console.WriteLine($"Completion rate: {completionRate:F1}%");
+Console.WriteLine($"Commitment accuracy: {commitmentAccuracy:F1}%");
+Console.WriteLine($"Quality score: {qualityScore:F1}/100");
+Console.WriteLine($"Productivity: {productivityPerMember:F2} story points/member");
+Console.WriteLine($"Daily burndown: {dailyBurndownRate:F2} story points/day");
+Console.WriteLine($"Risk score: {riskScore:F1}/100");
+Console.WriteLine($"Health status: {healthStatus}");
+```
+
 ## JiraProject
 
 The `JiraProject` class represents a Jira project with comprehensive tracking capabilities for sprints, team members, and project metrics. It provides methods to calculate sprint statistics, team performance, and identify issues requiring attention such as overdue or blocked items.
