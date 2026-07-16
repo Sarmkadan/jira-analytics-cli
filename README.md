@@ -701,6 +701,67 @@ public class TeamDashboardService
 builder.Services.AddSingleton<TeamDashboardService>();
 ```
 
+## JiraApiService
+
+The `JiraApiService` class is the primary service for interacting with the Jira REST API. It provides methods to fetch projects, sprints, issues, team members, and various analytics data from Jira. This service handles all HTTP communication with the Jira API, including authentication, error handling, and data parsing.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using JiraAnalyticsCli.Models;
+using Microsoft.Extensions.Logging;
+
+// Create the service (typically via dependency injection)
+var httpClientFactory = new TestHttpClientFactory();
+var config = new CliConfig();
+var loggerFactory = LoggerFactory.Create(builder => {});
+var logger = loggerFactory.CreateLogger<JiraApiService>();
+
+var jiraService = new JiraApiService(httpClientFactory, config, logger);
+
+// Verify Jira connection
+bool isConnected = await jiraService.VerifyConnectionAsync();
+Console.WriteLine($"Jira connection: {(isConnected ? "Connected" : "Failed")}");
+
+// Get a project
+var project = await jiraService.GetProjectAsync("PROJ");
+if (project != null)
+{
+    Console.WriteLine($"Project: {project.Name} ({project.Key})");
+    Console.WriteLine($"Created: {project.CreatedDate:yyyy-MM-dd}");
+}
+
+// Get project sprints
+var sprints = await jiraService.GetProjectSprintsAsync("PROJ");
+Console.WriteLine($"Sprints: {sprints.Count}");
+
+// Get issues for a project
+var issues = await jiraService.GetProjectIssuesAsync("PROJ");
+Console.WriteLine($"Issues: {issues.Count}");
+
+// Get team members
+var team = await jiraService.GetProjectTeamAsync("PROJ");
+Console.WriteLine($"Team members: {team.Count}");
+
+// Search using JQL
+var searchResult = await jiraService.SearchByJqlAsync("project = PROJ AND status = \"In Progress\"", maxResults: 20);
+Console.WriteLine($"Found {searchResult.Issues.Count} issues matching criteria");
+
+// Get burndown data for a sprint
+var sprintId = 1;
+var burndown = await jiraService.GetBurndownDataAsync(sprintId);
+Console.WriteLine($"Burndown snapshots: {burndown.Count}");
+
+// Get a specific issue
+var issue = await jiraService.GetIssueAsync("PROJ-123");
+if (issue != null)
+{
+    Console.WriteLine($"Issue: {issue.Key} - {issue.Summary}");
+    Console.WriteLine($"Status: {issue.Status}, Points: {issue.StoryPoints}");
+}
+```
+
 ## IAnalyticsService
 
 The `IAnalyticsService` interface provides comprehensive analytics capabilities for Jira projects, enabling teams to analyze sprint performance, team productivity, quality metrics, velocity trends, and identify overdue issues. It serves as the core analytics engine that powers various reporting and dashboard features in the jira-analytics-cli library.
