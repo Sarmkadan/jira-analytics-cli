@@ -701,6 +701,55 @@ public class TeamDashboardService
 builder.Services.AddSingleton<TeamDashboardService>();
 ```
 
+## ITeamComparisonService
+
+The `ITeamComparisonService` interface provides functionality to compare Jira analytics metrics across multiple projects (teams) side by side. It generates comprehensive reports that include velocity, completion rates, quality metrics, cycle times, and identifies the top-performing teams based on various KPIs.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using JiraAnalyticsCli.Models;
+using Microsoft.Extensions.Logging;
+
+// Create service instance (typically injected via DI)
+var comparisonService = new TeamComparisonService(
+    analyticsService: new AnalyticsService(
+        jiraService: new JiraApiService(),
+        metricsRepository: new MetricsRepository(),
+        logger: new Logger<AnalyticsService>(new LoggerFactory())
+    ),
+    logger: new Logger<TeamComparisonService>(new LoggerFactory())
+);
+
+// Compare multiple teams/projects
+var projectKeys = new[] { "PROJ", "PLATFORM", "API" };
+var comparisonReport = await comparisonService.CompareTeamsAsync(projectKeys, sprintCount: 5);
+
+// Access comparison results
+Console.WriteLine($"Report generated at: {comparisonReport.GeneratedAt}");
+Console.WriteLine($"Teams compared: {comparisonReport.Teams.Count}");
+Console.WriteLine($"Fastest team: {comparisonReport.FastestTeam}");
+Console.WriteLine($"Highest quality team: {comparisonReport.HighestQualityTeam}");
+Console.WriteLine($"Most consistent team: {comparisonReport.MostConsistentTeam}");
+
+// Iterate through each team's metrics
+foreach (var team in comparisonReport.Teams)
+{
+    Console.WriteLine($"\nTeam: {team.ProjectKey}");
+    Console.WriteLine($"  Average velocity: {team.AverageVelocity:F2} story points/sprint");
+    Console.WriteLine($"  Completion rate: {team.AvgCompletionRate:F1}%");
+    Console.WriteLine($"  Total points delivered: {team.TotalPointsDelivered}");
+    Console.WriteLine($"  Total issues completed: {team.TotalIssuesCompleted}");
+    Console.WriteLine($"  Total defects: {team.TotalDefects}");
+    Console.WriteLine($"  Defect rate: {team.DefectRate:F2}%");
+    Console.WriteLine($"  Average cycle time: {team.AvgCycleTime:F1} days");
+    Console.WriteLine($"  Overall health: {team.OverallHealth}");
+    Console.WriteLine($"  Velocity trend: {team.VelocityTrend:+#;-#;0}%");
+    Console.WriteLine($"  Sprint count: {team.SprintCount}");
+}
+```
+
 ## JiraHealthCheck
 
 The `JiraHealthCheck` implements ASP.NET Core's health check interface to verify Jira API connectivity. It's useful for monitoring the availability of the Jira API service in production environments.
