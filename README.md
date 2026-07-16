@@ -1,5 +1,46 @@
 // ... rest of README content ...
 
+## DateTimeExtensions
+
+The `DateTimeExtensions` class provides utility extension methods for date and time calculations, formatting, and business logic operations. It includes methods for calculating business days, checking business hours, determining week numbers, validating date states, formatting durations, and finding the last business day of a month.
+
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Utils;
+
+// Current date and time
+var now = DateTime.UtcNow;
+var yesterday = now.AddDays(-1);
+var tomorrow = now.AddDays(1);
+var lastMonth = new DateTime(now.Year, now.Month - 1, 15);
+
+// Check if date is in business hours
+var isBusinessHour = now.IsBusinessHour();
+Console.WriteLine($"Is business hour: {isBusinessHour}");
+
+// Calculate business days between two dates
+var businessDays = yesterday.GetBusinessDaysBetween(now);
+Console.WriteLine($"Business days between yesterday and now: {businessDays}");
+
+// Get week number (ISO 8601)
+var weekNumber = now.GetWeekNumber();
+Console.WriteLine($"Current week number: {weekNumber}");
+
+// Check if date is in past or future
+Console.WriteLine($"Yesterday is past: {yesterday.IsPast()}");
+Console.WriteLine($"Tomorrow is future: {tomorrow.IsFuture()}");
+
+// Format duration in human-readable format
+var duration = TimeSpan.FromHours(2.5);
+Console.WriteLine($"Duration: {duration.ToHumanReadableDuration()}");
+
+// Get last business day of month
+var lastBusinessDay = now.GetLastBusinessDayOfMonth();
+Console.WriteLine($"Last business day of month: {lastBusinessDay:yyyy-MM-dd}");
+```
+
 ## StringExtensions
 
 The `StringExtensions` class provides a set of extension methods for string manipulation and formatting. It offers utilities for truncating strings, removing whitespace, converting to slug format, parsing boolean values, repeating strings, matching patterns, finding common prefixes, and escaping special characters for safe SQL use.
