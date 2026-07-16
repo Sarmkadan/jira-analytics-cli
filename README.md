@@ -204,6 +204,46 @@ tests.FormatWithMetadata_ShouldIncludeMetadata();
 tests.Prettify_ShouldFormatMinifiedJson();
 ```
 
+## CliConfig
+
+The `CliConfig` class provides centralized configuration for the CLI application, including Jira connection settings, caching behavior, logging preferences, and export options. It serves as the primary configuration source for all CLI operations and validates required settings before use.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Configuration;
+using JiraAnalyticsCli.Services;
+using Microsoft.Extensions.Logging;
+
+// Create configuration with default values
+var config = new CliConfig
+{
+    JiraBaseUrl = "https://jira.atlassian.net",
+    JiraApiToken = Environment.GetEnvironmentVariable("JIRA_API_TOKEN") ?? "your-api-token-here",
+    DefaultProject = "PROJ",
+    CacheExpirationMinutes = 30,
+    EnableDetailedLogging = true,
+    DefaultSprintCount = 10,
+    ExportFormat = "json"
+};
+
+// Validate configuration before use
+config.Validate();
+
+// Use configuration with JiraApiService
+var httpClientFactory = new TestHttpClientFactory();
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+});
+
+var jiraService = new JiraApiService(httpClientFactory, config, loggerFactory.CreateLogger<JiraApiService>());
+
+// Verify connection
+bool isConnected = await jiraService.VerifyConnectionAsync();
+Console.WriteLine($"Connection status: {(isConnected ? "Connected" : "Failed")}");
+```
+
 ## BurndownSnapshot
 
 The `BurndownSnapshot` class captures a point‑in‑time view of a sprint’s burndown metrics, including story points and issue counts. It provides methods to calculate the current burndown percentage, project completion, determine if the sprint is on track, and estimate remaining work hours.
