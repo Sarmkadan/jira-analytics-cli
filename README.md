@@ -513,4 +513,269 @@ Console.WriteLine($"Overdue issues: {overdueIssues.Count}");
 Console.WriteLine($"Blocked issues: {blockedIssues.Count}");
 ```
 
+# AnalyticsController
+
+The `AnalyticsController` class provides API endpoints for generating and retrieving Jira analytics reports. It serves as a bridge between the jira-analytics-cli library services and web applications, allowing you to expose analytics functionality through RESTful endpoints.
+
+The controller integrates with the core jira-analytics-cli services including project analysis, report generation, and team dashboards, making it easy to build web applications that provide Jira insights to your team.
+
+### Usage Example
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+using JiraAnalyticsCli.Services;
+
+[ApiController]
+[Route("api/[controller]")]
+public class AnalyticsController : ControllerBase
+{
+    private readonly IAnalyticsService _analyticsService;
+    private readonly IReportService _reportService;
+    private readonly ILogger<AnalyticsController> _logger;
+
+    public AnalyticsController(
+        IAnalyticsService analyticsService,
+        IReportService reportService,
+        ILogger<AnalyticsController> logger)
+    {
+        _analyticsService = analyticsService;
+        _reportService = reportService;
+        _logger = logger;
+    }
+
+    [HttpGet("project/{projectKey}")]
+    public async Task<IActionResult> GetProjectAnalytics(string projectKey, [FromQuery] int sprints = 5)
+    {
+        try
+        {
+            _logger.LogInformation("Generating analytics for project {ProjectKey}", projectKey);
+
+            var analysis = await _analyticsService.AnalyzeSprints(projectKey, sprints);
+            var report = _reportService.GenerateReport(analysis);
+
+            return Ok(new {
+                Project = projectKey,
+                SprintCount = sprints,
+                Analysis = analysis,
+                Report = report
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate analytics");
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+}
+
+// In Program.cs:
+var builder = WebApplication.CreateBuilder(args);
+
+// Register jira-analytics-cli services
+builder.Services.AddSingleton<IAnalyticsService, AnalyticsService>();
+builder.Services.AddSingleton<IReportService, ReportService>();
+
+// Register the controller
+builder.Services.AddControllers();
+
+var app = builder.Build();
+app.MapControllers();
+```
+
+## ScheduledReportService
+
+The `ScheduledReportService` is a background service that periodically generates and exports Jira analytics reports based on a configured schedule. It's ideal for creating automated reporting workflows that run on a regular basis (e.g., weekly reports).
+
+
+### Usage Example
+
+```csharp
+using Microsoft.Extensions.Hosting;
+using JiraAnalyticsCli.Services;
+
+public class ScheduledReportService : BackgroundService
+{
+    private readonly IServiceProvider _services;
+    private readonly ILogger<ScheduledReportService> _logger;
+    private readonly TimeSpan _scheduleInterval;
+
+    public ScheduledReportService(
+        IServiceProvider services,
+        ILogger<ScheduledReportService> logger,
+        TimeSpan scheduleInterval)
+    {
+        _services = services;
+        _logger = logger;
+        _scheduleInterval = scheduleInterval;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Scheduled Report Service started");
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                using var scope = _services.CreateScope();
+                var analyticsService = scope.ServiceProvider.GetRequiredService<IAnalyticsService>();
+                var reportService = scope.ServiceProvider.GetRequiredService<IReportService>();
+                var exportService = scope.ServiceProvider.GetRequiredService<IExportService>();
+
+                // Generate weekly report
+                var analysis = await analyticsService.AnalyzeSprints("PROJECT_KEY", 5);
+                var report = reportService.GenerateReport(analysis);
+
+                // Save to file
+                var filePath = $"./reports/weekly-{DateTime.Now:yyyy-MM-dd}.txt";
+                await File.WriteAllTextAsync(filePath, report, stoppingToken);
+
+                _logger.LogInformation("Weekly report generated: {FilePath}", filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating scheduled report");
+            }
+
+            await Task.Delay(_scheduleInterval, stoppingToken);
+        }
+    }
+}
+
+// Register the background service
+builder.Services.AddHostedService<ScheduledReportService>();
+```
+
+## TeamDashboardService
+
+The `TeamDashboardService` generates comprehensive team dashboards by combining analytics from multiple Jira projects. It integrates project analysis, team comparisons, and HTML dashboard generation to provide a holistic view of team performance across projects.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using JiraAnalyticsCli.Models;
+
+public class TeamDashboardService
+{
+    private readonly IAnalyticsService _analytics;
+    private readonly ITeamComparisonService _comparison;
+    private readonly IHtmlReportService _htmlReport;
+
+    public TeamDashboardService(
+        IAnalyticsService analytics,
+        ITeamComparisonService comparison,
+        IHtmlReportService htmlReport)
+    {
+        _analytics = analytics;
+        _comparison = comparison;
+        _htmlReport = htmlReport;
+    }
+
+    public async Task<TeamDashboard> GenerateTeamDashboard(string[] projectKeys, int sprintCount = 5)
+    {
+        // Get individual project analytics
+        var projectAnalyses = new List<ProjectAnalysis>();
+        foreach (var projectKey in projectKeys)
+        {
+            var analysis = await _analytics.AnalyzeSprints(projectKey, sprintCount);
+            projectAnalyses.Add(analysis);
+        }
+
+        // Compare teams
+        var comparison = await _comparison.CompareTeamsAsync(projectKeys, sprintCount);
+
+        // Generate HTML dashboard
+        var dashboardHtml = await _htmlReport.GenerateDashboardAsync(projectAnalyses, comparison);
+
+        return new TeamDashboard
+        {
+            Projects = projectAnalyses,
+            Comparison = comparison,
+            DashboardHtml = dashboardHtml
+        };
+    }
+}
+
+// Register custom service
+builder.Services.AddSingleton<TeamDashboardService>();
+```
+
+## JiraHealthCheck
+
+The `JiraHealthCheck` implements ASP.NET Core's health check interface to verify Jira API connectivity. It's useful for monitoring the availability of the Jira API service in production environments.
+
+### Usage Example
+
+```csharp
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using JiraAnalyticsCli.Services;
+
+public class JiraHealthCheck : IHealthCheck
+{
+    private readonly IJiraApiService _jiraService;
+
+    public JiraHealthCheck(IJiraApiService jiraService)
+    {
+        _jiraService = jiraService;
+    }
+
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var projects = await _jiraService.GetProjectsAsync();
+            return HealthCheckResult.Healthy("Jira API is accessible");
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("Jira API is not accessible", ex);
+        }
+    }
+}
+
+// Register health check
+builder.Services.AddHealthChecks()
+    .AddCheck<JiraHealthCheck>("jira");
+```
+
+## CachedAnalyticsService
+
+The `CachedAnalyticsService` adds caching functionality to the analytics service to reduce API calls to Jira and improve performance. It caches analysis results for a configurable duration (typically 30 minutes) and returns cached results when available.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using Microsoft.Extensions.Caching.Memory;
+
+public class CachedAnalyticsService : IAnalyticsService
+{
+    private readonly IAnalyticsService _decorated;
+    private readonly IMemoryCache _cache;
+
+    public CachedAnalyticsService(IAnalyticsService decorated, IMemoryCache cache)
+    {
+        _decorated = decorated;
+        _cache = cache;
+    }
+
+    public async Task<ProjectAnalysis> AnalyzeSprints(string projectKey, int sprintCount)
+    {
+        var cacheKey = $"Analytics_{projectKey}_{sprintCount}";
+
+        return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
+            return await _decorated.AnalyzeSprints(projectKey, sprintCount);
+        });
+    }
+}
+
+// Register cached version
+builder.Services.AddSingleton<IAnalyticsService, CachedAnalyticsService>();
+```
+
 # ... rest of README content ...
