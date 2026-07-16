@@ -436,6 +436,128 @@ Console.WriteLine($"Risk score: {riskScore:F1}/100");
 Console.WriteLine($"Health status: {healthStatus}");
 ```
 
+## IssueRepository
+
+The `IssueRepository` class is an in-memory repository for managing Jira issues with caching and search capabilities. It provides methods to retrieve, filter, and save issues efficiently using concurrent collections for thread-safe operations. The repository is particularly useful for caching Jira issues retrieved from the API to reduce network calls and improve performance.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Repositories;
+using JiraAnalyticsCli.Models;
+using Microsoft.Extensions.Logging;
+using System;
+
+// Create repository instance (typically via dependency injection)
+var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var repository = new IssueRepository(loggerFactory.CreateLogger<IssueRepository>());
+
+// Save individual issues
+var issue1 = new JiraIssue
+{
+    Key = "PROJ-123",
+    Summary = "Implement user authentication",
+    Status = "In Progress",
+    Priority = "High",
+    StoryPoints = 5,
+    DueDate = DateTime.UtcNow.AddDays(7),
+    ProjectKey = "PROJ",
+    SprintId = 1
+};
+
+var issue2 = new JiraIssue
+{
+    Key = "PROJ-456",
+    Summary = "Fix authentication bug",
+    Status = "To Do",
+    Priority = "Critical",
+    StoryPoints = 3,
+    DueDate = DateTime.UtcNow.AddDays(3),
+    ProjectKey = "PROJ",
+    SprintId = 1
+};
+
+var issue3 = new JiraIssue
+{
+    Key = "PROJ-789",
+    Summary = "Update API documentation",
+    Status = "Done",
+    Priority = "Medium",
+    StoryPoints = 2,
+    DueDate = DateTime.UtcNow.AddDays(-5), // Overdue
+    ProjectKey = "PROJ",
+    SprintId = 2
+};
+
+await repository.SaveAsync(issue1);
+await repository.SaveAsync(issue2);
+await repository.SaveAsync(issue3);
+
+// Save multiple issues at once
+var batchIssues = new List<JiraIssue>
+{
+    new JiraIssue
+    {
+        Key = "PROJ-101",
+        Summary = "Add rate limiting",
+        Status = "In Progress",
+        Priority = "High",
+        StoryPoints = 8,
+        DueDate = DateTime.UtcNow.AddDays(10),
+        ProjectKey = "PROJ",
+        SprintId = 2
+    },
+    new JiraIssue
+    {
+        Key = "PROJ-102",
+        Summary = "Performance optimization",
+        Status = "To Do",
+        Priority = "Medium",
+        StoryPoints = 5,
+        DueDate = DateTime.UtcNow.AddDays(14),
+        ProjectKey = "PROJ",
+        SprintId = 2
+    }
+};
+
+await repository.SaveRangeAsync(batchIssues);
+
+// Retrieve issues by key
+var retrievedIssue = await repository.GetByKeyAsync("PROJ-123");
+if (retrievedIssue != null)
+{
+    Console.WriteLine($"Found issue: {retrievedIssue.Key} - {retrievedIssue.Summary}");
+}
+
+// Get all issues for a project
+var projIssues = await repository.GetByProjectAsync("PROJ");
+Console.WriteLine($"Total issues in PROJ: {projIssues.Count}");
+
+// Get issues by sprint
+var sprint1Issues = await repository.GetBySprintAsync(1);
+Console.WriteLine($"Issues in Sprint 1: {sprint1Issues.Count}");
+
+// Get overdue issues for a project
+var overdueIssues = await repository.GetOverdueAsync("PROJ");
+Console.WriteLine($"Overdue issues: {overdueIssues.Count}");
+foreach (var overdue in overdueIssues)
+{
+    Console.WriteLine($"  - {overdue.Key}: {overdue.Summary} (Due: {overdue.DueDate:yyyy-MM-dd})");
+}
+
+// Get high priority issues for a project
+var highPriorityIssues = await repository.GetHighPriorityAsync("PROJ");
+Console.WriteLine($"High priority issues: {highPriorityIssues.Count}");
+
+// Get repository statistics
+int totalIssues = repository.GetCount();
+Console.WriteLine($"Total issues in repository: {totalIssues}");
+
+// Clear repository (useful for testing or cache invalidation)
+repository.Clear();
+Console.WriteLine($"Repository cleared. Count: {repository.GetCount()}");
+```
+
 ## JiraProject
 
 The `JiraProject` class represents a Jira project with comprehensive tracking capabilities for sprints, team members, and project metrics. It provides methods to calculate sprint statistics, team performance, and identify issues requiring attention such as overdue or blocked items.
