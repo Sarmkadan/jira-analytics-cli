@@ -741,6 +741,53 @@ builder.Services.AddHealthChecks()
     .AddCheck<JiraHealthCheck>("jira");
 ```
 
+## AnalyticsService
+
+The `AnalyticsService` provides comprehensive analytics capabilities for Jira projects, enabling teams to analyze sprint performance, team productivity, quality metrics, velocity trends, and identify overdue issues. It serves as the core analytics engine that powers various reporting and dashboard features in the jira-analytics-cli library.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using JiraAnalyticsCli.Models;
+using Microsoft.Extensions.Logging;
+
+// Create service instance (typically injected via DI)
+var analyticsService = new AnalyticsService(
+    jiraService: new JiraApiService(),
+    metricsRepository: new MetricsRepository(),
+    logger: new Logger<AnalyticsService>(new LoggerFactory())
+);
+
+// Analyze sprint performance for a project
+var sprintAnalysis = await analyticsService.AnalyzeSprints("PROJ", 5);
+Console.WriteLine($"Sprints analyzed: {sprintAnalysis.Metrics.Count}");
+Console.WriteLine($"Average velocity: {sprintAnalysis.AverageVelocity:F2} story points/day");
+Console.WriteLine($"Overall health: {sprintAnalysis.OverallHealth}");
+
+// Analyze team productivity
+var teamAnalysis = await analyticsService.AnalyzeTeam("PROJ");
+Console.WriteLine($"Top performers: {string.Join(", ", teamAnalysis.TopPerformers.Select(d => d.DisplayName))}");
+Console.WriteLine($"Average productivity: {teamAnalysis.AverageProductivity:F2} story points/day");
+
+// Analyze quality metrics
+var qualityMetrics = await analyticsService.AnalyzeQuality("PROJ");
+Console.WriteLine($"Total defects: {qualityMetrics.TotalDefects}");
+Console.WriteLine($"Defect rate: {qualityMetrics.DefectRate:F2}%");
+Console.WriteLine($"High risk areas: {string.Join(", ", qualityMetrics.HighRiskAreas)}");
+
+// Analyze velocity trends
+var velocityTrend = await analyticsService.AnalyzeVelocityTrend("PROJ", 10);
+Console.WriteLine($"Trend: {velocityTrend.Trend}");
+Console.WriteLine($"Trend slope: {velocityTrend.TrendSlope:F2}%");
+
+// Analyze overdue issues
+var overdueIssues = await analyticsService.AnalyzeOverdueIssues("PROJ");
+Console.WriteLine($"Overdue issues: {overdueIssues.TotalOverdueCount}");
+Console.WriteLine($"Critical overdue: {overdueIssues.CriticalCount}");
+Console.WriteLine($"Average days overdue: {overdueIssues.AverageDaysOverdue:F1}");
+```
+
 ## CachedAnalyticsService
 
 The `CachedAnalyticsService` adds caching functionality to the analytics service to reduce API calls to Jira and improve performance. It caches analysis results for a configurable duration (typically 30 minutes) and returns cached results when available.
