@@ -290,6 +290,80 @@ int removedCount = cacheManager.CleanupAll();
 Console.WriteLine($"Cleaned up {removedCount} expired cache entries");
 ```
 
+## InMemoryCache
+
+The `InMemoryCache` class provides a thread-safe, in-memory caching solution for storing serialized data with automatic expiration and size management. It supports absolute and sliding expiration policies, pattern-based removal, and comprehensive statistics tracking, making it ideal for reducing API calls and improving application performance in data-intensive scenarios.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Caching;
+using JiraAnalyticsCli.Models;
+using Microsoft.Extensions.Logging;
+using System;
+
+// Create cache instance with logging support
+var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var cache = new InMemoryCache(loggerFactory.CreateLogger<InMemoryCache>());
+
+// Create a sample project to cache
+var project = new JiraProject
+{
+    Key = "PROJ",
+    Name = "Platform Services",
+    Description = "Core platform infrastructure",
+    ProjectType = "Software"
+};
+
+// Set cache entry with 30-minute expiration
+var policy = new CachePolicy(TimeSpan.FromMinutes(30));
+cache.Set("project-PROJ", project, policy);
+Console.WriteLine("Project cached with 30-minute expiration");
+
+// Retrieve cached value
+var cachedProject = cache.Get<JiraProject>("project-PROJ");
+if (cachedProject != null)
+{
+    Console.WriteLine($"Retrieved cached project: {cachedProject.Name}");
+}
+
+// Check if key exists
+bool exists = cache.Contains("project-PROJ");
+Console.WriteLine($"Key exists in cache: {exists}");
+
+// Cache with sliding expiration (resets on access)
+var slidingPolicy = new CachePolicy(TimeSpan.FromMinutes(10), sliding: true);
+cache.Set("issues-PROJ", new List<JiraIssue>(), slidingPolicy);
+
+// Access the sliding cache entry to reset expiration
+var issues = cache.Get<List<JiraIssue>>("issues-PROJ");
+Console.WriteLine("Sliding cache entry accessed - expiration timer reset");
+
+// Remove specific entry
+cache.Remove("issues-PROJ");
+Console.WriteLine("Removed issues cache entry");
+
+// Remove multiple entries by pattern
+cache.Set("sprint-PLAT-1", new Sprint { Id = 1, Name = "Sprint 1" }, policy);
+cache.Set("sprint-PLAT-2", new Sprint { Id = 2, Name = "Sprint 2" }, policy);
+cache.Set("sprint-API-1", new Sprint { Id = 3, Name = "API Sprint 1" }, policy);
+
+int removedCount = cache.RemoveByPattern("sprint-PLAT-*");
+Console.WriteLine($"Removed {removedCount} entries matching pattern 'sprint-PLAT-*'");
+
+// Get cache statistics
+var stats = cache.GetStatistics();
+Console.WriteLine($"Cache stats - Total entries: {stats.TotalEntries}, Size: {stats.TotalSizeBytes} bytes, Expired: {stats.ExpiredEntries}");
+
+// Cleanup expired entries
+int cleanupCount = cache.CleanupExpired();
+Console.WriteLine($"Cleaned up {cleanupCount} expired entries");
+
+// Clear entire cache
+cache.Clear();
+Console.WriteLine("Entire cache cleared");
+```
+
 ## CliConfig
 
 The `CliConfig` class provides centralized configuration for the CLI application, including Jira connection settings, caching behavior, logging preferences, and export options. It serves as the primary configuration source for all CLI operations and validates required settings before use.
