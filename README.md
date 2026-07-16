@@ -130,9 +130,53 @@ var separator = FormattingHelpers.RepeatChar('-', 50);
 Console.WriteLine(separator);
 ```
 
-## MarkdownFormatter
+## XmlFormatter
 
-The `MarkdownFormatter` class provides utilities for generating Markdown-formatted content programmatically. It supports headers, tables, lists, code blocks, blockquotes, emphasis formatting, and complete document generation with proper escaping of special characters.
+The `XmlFormatter` class provides utilities for converting objects and collections to well-formed XML with customizable formatting options. It supports automatic XML structure generation from object properties, validation, pretty-printing, and XPath-based value extraction.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Formatters;
+using Microsoft.Extensions.Logging;
+
+// Create formatter with logger
+var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var formatter = new XmlFormatter(loggerFactory.CreateLogger<XmlFormatter>(), includeXmlDeclaration: true);
+
+// Format an object to XML
+var projectData = new
+{
+    Name = "Analytics Dashboard",
+    Version = "1.0.0",
+    Issues = new List<object>
+    {
+        new { Key = "PROJ-123", Summary = "Implement login page", Status = "In Progress", Priority = "High" },
+        new { Key = "PROJ-124", Summary = "Fix authentication bug", Status = "Done", Priority = "Critical" },
+        new { Key = "PROJ-125", Summary = "Update documentation", Status = "Open", Priority = "Medium" }
+    },
+    CreatedAt = DateTime.UtcNow,
+    IsActive = true
+};
+
+var xml = formatter.Format(projectData, "project");
+Console.WriteLine(xml);
+
+// Validate XML
+var (isValid, error) = formatter.Validate(xml);
+Console.WriteLine(isValid ? "Valid XML" : $"Invalid: {error}");
+
+// Prettify existing XML
+var prettyXml = formatter.Prettify(xml);
+Console.WriteLine(prettyXml);
+
+// Select values using XPath
+var issueKeys = formatter.SelectValues(xml, "//item[starts-with(@Key, 'PROJ-')]/@Key");
+foreach (var key in issueKeys)
+{
+    Console.WriteLine(key);
+}
+```
 
 ### Usage Example
 
