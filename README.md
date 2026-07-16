@@ -41,6 +41,68 @@ var lastBusinessDay = now.GetLastBusinessDayOfMonth();
 Console.WriteLine($"Last business day of month: {lastBusinessDay:yyyy-MM-dd}");
 ```
 
+## FormattingHelpers
+
+The `FormattingHelpers` class provides utility methods for formatting various data types for console output and reports. It includes methods for formatting numbers as percentages, formatting integers with thousand separators, formatting decimals, dates, bytes, creating tables, applying ANSI color codes, formatting status indicators with emojis, and text alignment utilities.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Utils;
+
+// Numeric formatting
+var percentage = FormattingHelpers.FormatPercentage(85.678, 2);
+Console.WriteLine(percentage); // Output: "85.68%"
+
+var formattedNumber = FormattingHelpers.FormatNumber(12500);
+Console.WriteLine(formattedNumber); // Output: "12,500"
+
+var formattedDecimal = FormattingHelpers.FormatDecimal(3.14159, 3);
+Console.WriteLine(formattedDecimal); // Output: "3.142"
+
+// Date formatting
+var now = DateTime.UtcNow;
+var formattedDate = FormattingHelpers.FormatDate(now);
+Console.WriteLine(formattedDate); // Output: "2026-07-16"
+
+var formattedDateTime = FormattingHelpers.FormatDateTime(now);
+Console.WriteLine(formattedDateTime); // Output: "2026-07-16 14:30:45"
+
+// Byte formatting
+var fileSize = FormattingHelpers.FormatBytes(1572864);
+Console.WriteLine(fileSize); // Output: "1.5 MB"
+
+// Table creation
+var headers = new[] { "ID", "Name", "Status", "Created" };
+var rows = new List<string[]>
+{
+    new[] { "1", "Feature X", "In Progress", "2026-07-15" },
+    new[] { "2", "Bug Y", "Done", "2026-07-14" },
+    new[] { "3", "Task Z", "Open", "2026-07-13" }
+};
+var table = FormattingHelpers.CreateTable(headers, rows);
+Console.WriteLine(table);
+
+// Color formatting
+var coloredText = FormattingHelpers.ColorText("Important Message", ConsoleColor.Red);
+Console.WriteLine(coloredText);
+
+// Status formatting
+var status = FormattingHelpers.FormatStatus("Done");
+Console.WriteLine(status); // Output: "✅ Done"
+
+// Text alignment
+var centered = FormattingHelpers.CenterText("Centered Title", 50);
+Console.WriteLine(centered);
+
+var indented = FormattingHelpers.Indent("Nested content", 4);
+Console.WriteLine(indented);
+
+// Character repetition
+var separator = FormattingHelpers.RepeatChar('-', 50);
+Console.WriteLine(separator);
+```
+
 ## StringExtensions
 
 The `StringExtensions` class provides a set of extension methods for string manipulation and formatting. It offers utilities for truncating strings, removing whitespace, converting to slug format, parsing boolean values, repeating strings, matching patterns, finding common prefixes, and escaping special characters for safe SQL use.
