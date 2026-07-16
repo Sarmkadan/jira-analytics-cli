@@ -1,5 +1,32 @@
 // ... rest of README content ...
 
+## ValidationHelpers
+
+The `ValidationHelpers` class provides a set of utility methods for validating various data types and formats. It includes methods for checking Jira issue keys, project keys, URLs, email addresses, sprint IDs, story points, date ranges, and percentage values. Additionally, it offers methods for truncating strings with ellipsis, sanitizing strings for CSV/file output, and converting percentage values to visual progress bars.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Utils;
+
+// Validate Jira issue key
+var isValidIssueKey = ValidationHelpers.IsValidJiraIssueKey("PROJ-123");
+Console.WriteLine(isValidIssueKey); // Output: true
+
+// Validate URL
+var isValidUrl = ValidationHelpers.IsValidUrl("https://example.com");
+Console.WriteLine(isValidUrl); // Output: true
+
+// Truncate string with ellipsis
+var truncatedString = ValidationHelpers.TruncateWithEllipsis("This is a very long string", 20);
+Console.WriteLine(truncatedString); // Output: "This is a very long..."
+
+// Convert percentage to visual progress bar
+var percentage = 75;
+var progressBar = ValidationHelpers.ToProgressBar(percentage);
+Console.WriteLine(progressBar); // Output: [█████████░░░░░]
+```
+
 ## DateTimeExtensions
 
 The `DateTimeExtensions` class provides utility extension methods for date and time calculations, formatting, and business logic operations. It includes methods for calculating business days, checking business hours, determining week numbers, validating date states, formatting durations, and finding the last business day of a month.
