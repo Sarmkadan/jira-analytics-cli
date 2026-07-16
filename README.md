@@ -130,6 +130,101 @@ var separator = FormattingHelpers.RepeatChar('-', 50);
 Console.WriteLine(separator);
 ```
 
+## MarkdownFormatter
+
+The `MarkdownFormatter` class provides utilities for generating Markdown-formatted content programmatically. It supports headers, tables, lists, code blocks, blockquotes, emphasis formatting, and complete document generation with proper escaping of special characters.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Formatters;
+using Microsoft.Extensions.Logging;
+
+// Create formatter with logger
+var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var formatter = new MarkdownFormatter(loggerFactory.CreateLogger<MarkdownFormatter>());
+
+// Create header
+var header = formatter.Header("Project Status Report", 1);
+Console.WriteLine(header);
+// Output: # Project Status Report
+
+// Create table from collection
+var issues = new List<Issue>
+{
+    new Issue { Id = "PROJ-1", Title = "Implement login page", Status = "In Progress", Priority = "High" },
+    new Issue { Id = "PROJ-2", Title = "Fix authentication bug", Status = "Done", Priority = "Critical" },
+    new Issue { Id = "PROJ-3", Title = "Update documentation", Status = "Open", Priority = "Medium" }
+};
+var table = formatter.Table(issues);
+Console.WriteLine(table);
+
+// Create definition list
+var metrics = new Dictionary<string, string>
+{
+    { "Total Issues", "42" },
+    { "Completed", "35 (83%)" },
+    { "In Progress", "5" },
+    { "Blocked", "2" }
+};
+var definitionList = formatter.DefinitionList(metrics);
+Console.WriteLine(definitionList);
+
+// Create bulleted list
+var features = new List<string> { "User authentication", "Dashboard analytics", "API integration", "Reporting module" };
+var bulletList = formatter.BulletList(features);
+Console.WriteLine(bulletList);
+
+// Create numbered list
+var steps = new List<string> { "Setup project structure", "Implement core features", "Add unit tests", "Deploy to staging" };
+var numberedList = formatter.NumberedList(steps);
+Console.WriteLine(numberedList);
+
+// Create code block
+var codeSample = "public class Program { public static void Main() { Console.WriteLine(\"Hello World!\"); } }";
+var codeBlock = formatter.CodeBlock(codeSample, "csharp");
+Console.WriteLine(codeBlock);
+
+// Create blockquote
+var quote = formatter.BlockQuote("This is a critical finding that requires immediate attention.\nThe issue affects user authentication and should be prioritized.");
+Console.WriteLine(quote);
+
+// Format emphasis
+var boldText = formatter.Bold("Important");
+var italicText = formatter.Italic("emphasis");
+Console.WriteLine($"{boldText} and {italicText}");
+
+// Create horizontal rule
+var hr = formatter.HorizontalRule();
+Console.WriteLine(hr);
+
+// Create hyperlink
+var link = formatter.Link("View on GitHub", "https://github.com/sarmkadan/jira-analytics-cli");
+Console.WriteLine(link);
+
+// Create complete document
+var document = formatter.Document(
+    "Jira Analytics Report",
+    ("Summary", formatter.DefinitionList(new Dictionary<string, string>
+    {
+        { "Generated", DateTime.UtcNow.ToString("yyyy-MM-dd") },
+        { "Total Issues", "42" },
+        { "Completion Rate", "83%" }
+    })),
+    ("Issues by Status", table)
+);
+Console.WriteLine(document);
+
+// Supporting class for example
+public class Issue
+{
+    public string Id { get; set; }
+    public string Title { get; set; }
+    public string Status { get; set; }
+    public string Priority { get; set; }
+}
+```
+
 ## StringExtensions
 
 The `StringExtensions` class provides a set of extension methods for string manipulation and formatting. It offers utilities for truncating strings, removing whitespace, converting to slug format, parsing boolean values, repeating strings, matching patterns, finding common prefixes, and escaping special characters for safe SQL use.
