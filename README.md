@@ -201,4 +201,121 @@ Console.WriteLine($"On track: {onTrack}");
 Console.WriteLine($"Estimated hours to finish: {hoursUntilDone}");
 ```
 
+## JiraProject
+
+The `JiraProject` class represents a Jira project with comprehensive tracking capabilities for sprints, team members, and project metrics. It provides methods to calculate sprint statistics, team performance, and identify issues requiring attention such as overdue or blocked items.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using System;
+using System.Linq;
+
+// Create a Jira project instance
+var project = new JiraProject
+{
+    Key = "PROJ",
+    Id = "10000",
+    Name = "Platform Services",
+    Description = "Core platform infrastructure and services",
+    ProjectType = "Software",
+    Lead = "john.leaderson@example.com",
+    CreatedDate = new DateTime(2025, 1, 10),
+    Url = "https://jira.example.com/projects/PROJ"
+};
+
+// Add sprints to the project
+project.Sprints.Add(new Sprint
+{
+    Id = 1,
+    Name = "Sprint 1",
+    Goal = "Implement authentication service",
+    StartDate = new DateTime(2026, 6, 1),
+    EndDate = new DateTime(2026, 6, 14),
+    Status = "Closed"
+});
+
+project.Sprints.Add(new Sprint
+{
+    Id = 2,
+    Name = "Sprint 2",
+    Goal = "Enhance API documentation",
+    StartDate = new DateTime(2026, 6, 15),
+    EndDate = new DateTime(2026, 6, 28),
+    Status = "Active"
+});
+
+project.Sprints.Add(new Sprint
+{
+    Id = 3,
+    Name = "Sprint 3",
+    Goal = "Performance optimization",
+    StartDate = new DateTime(2026, 6, 29),
+    EndDate = new DateTime(2026, 7, 12),
+    Status = "Planned"
+});
+
+// Add team members
+project.TeamMembers.Add(new Developer
+{
+    Key = "DEV-001",
+    Name = "Alice Johnson",
+    Email = "alice.johnson@example.com",
+    DisplayName = "Alice J.",
+    Active = true,
+    JoinDate = new DateTime(2025, 3, 1)
+});
+
+project.TeamMembers.Add(new Developer
+{
+    Key = "DEV-002",
+    Name = "Bob Smith",
+    Email = "bob.smith@example.com",
+    DisplayName = "Bob S.",
+    Active = true,
+    JoinDate = new DateTime(2025, 2, 15)
+});
+
+// Add some metrics history
+project.MetricsHistory.Add(new SprintMetric
+{
+    SprintId = 1,
+    Date = new DateTime(2026, 6, 14),
+    CompletedStoryPoints = 45,
+    TotalStoryPoints = 50,
+    CompletedIssues = 12,
+    TotalIssues = 15
+});
+
+// Calculate project statistics
+int totalSprints = project.GetTotalSprintCount();
+int completedSprints = project.GetCompletedSprintCount();
+Sprint? currentSprint = project.GetCurrentActiveSprint();
+double avgVelocity = project.GetAverageVelocity();
+int teamSize = project.GetTotalTeamSize();
+
+// Get recent sprints
+var recentSprints = project.GetRecentSprints(2);
+
+// Identify issues requiring attention
+var overdueIssues = project.GetAllOverdueIssues();
+var blockedIssues = project.GetAllBlockedIssues();
+
+// Get top performers
+var topPerformers = project.GetTopPerformers(3);
+
+// Output project information
+Console.WriteLine($"Project: {project.Name} ({project.Key})");
+Console.WriteLine($"Type: {project.ProjectType}");
+Console.WriteLine($"Total sprints: {totalSprints}");
+Console.WriteLine($"Completed sprints: {completedSprints}");
+Console.WriteLine($"Current active sprint: {currentSprint?.Name ?? "None"}");
+Console.WriteLine($"Average velocity: {avgVelocity} story points/sprint");
+Console.WriteLine($"Team size: {teamSize} developers");
+Console.WriteLine($"Top performers: {string.Join(", ", topPerformers.Select(d => d.DisplayName))}");
+Console.WriteLine($"Overdue issues: {overdueIssues.Count}");
+Console.WriteLine($"Blocked issues: {blockedIssues.Count}");
+```
+
 # ... rest of README content ...
