@@ -188,6 +188,56 @@ using Microsoft.Extensions.Logging;
 var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
 var formatter = new MarkdownFormatter(loggerFactory.CreateLogger<MarkdownFormatter>());
 
+## JsonFormatter
+
+The `JsonFormatter` class provides utilities for converting objects and collections to JSON format with support for prettification, metadata wrapping, field filtering, and validation. It handles serialization with configurable indentation, circular reference detection, and safe error handling.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Formatters;
+using Microsoft.Extensions.Logging;
+
+// Create formatter with logger
+var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var formatter = new JsonFormatter(loggerFactory.CreateLogger<JsonFormatter>(), prettyPrint: true);
+
+// Format an object to JSON
+var projectData = new
+{
+    Name = "Analytics Dashboard",
+    Version = "1.0.0",
+    Issues = new List<object>
+    {
+        new { Key = "PROJ-123", Summary = "Implement login page", Status = "In Progress", Priority = "High" },
+        new { Key = "PROJ-124", Summary = "Fix authentication bug", Status = "Done", Priority = "Critical" },
+        new { Key = "PROJ-125", Summary = "Update documentation", Status = "Open", Priority = "Medium" }
+    },
+    CreatedAt = DateTime.UtcNow,
+    IsActive = true
+};
+
+var json = formatter.Format(projectData);
+Console.WriteLine(json);
+
+// Format with metadata wrapper
+var jsonWithMetadata = formatter.FormatWithMetadata(projectData, "Project Analytics Report", "2.1.0");
+Console.WriteLine(jsonWithMetadata);
+
+// Format filtered fields only
+var filteredJson = formatter.FormatFiltered(projectData, new[] { "Name", "Version", "CreatedAt" });
+Console.WriteLine(filteredJson);
+
+// Validate JSON
+var (isValid, errors) = formatter.Validate(json);
+Console.WriteLine(isValid ? "Valid JSON" : $"Invalid: {string.Join(", ", errors)}");
+
+// Prettify existing JSON
+var minifiedJson = "{\\"Name\\":\\"Test\\",\\"Count\\":42}";
+var prettyJson = formatter.Prettify(minifiedJson);
+Console.WriteLine(prettyJson);
+```
+
 // Create header
 var header = formatter.Header("Project Status Report", 1);
 Console.WriteLine(header);
