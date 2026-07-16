@@ -582,6 +582,82 @@ var app = builder.Build();
 app.MapControllers();
 ```
 
+## ReportService
+
+The `ReportService` generates formatted text and HTML reports from Jira analytics data. It provides methods to create comprehensive sprint performance summaries, burndown charts, and various report formats for team and project stakeholders.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using JiraAnalyticsCli.Models;
+using Microsoft.Extensions.Logging;
+
+// Create the service (typically via dependency injection)
+var reportService = new ReportService(
+    jiraService: new JiraApiService(),
+    exportService: new ExportService(),
+    logger: new Logger<ReportService>(new LoggerFactory())
+);
+
+// Generate a text report from sprint analysis
+var analysis = new SprintAnalysisResult
+{
+    Metrics = new List<SprintMetric>
+    {
+        new SprintMetric
+        {
+            SprintId = 1,
+            SprintName = "Sprint 1",
+            StartDate = new DateTime(2026, 6, 1),
+            EndDate = new DateTime(2026, 6, 14),
+            PlannedStoryPoints = 50,
+            CompletedStoryPoints = 45,
+            TotalIssueCount = 15,
+            CompletedIssueCount = 12,
+            DefectsCount = 2,
+            AverageCycleTime = 2.5,
+            OverdueIssueCount = 1,
+            TeamSize = 6,
+            ScopeChangeCount = 3
+        }
+    },
+    AverageVelocity = 45.0,
+    TrendPercentage = 5.2,
+    OverallHealth = "Healthy"
+};
+
+var textReport = reportService.GenerateReport(analysis);
+Console.WriteLine(textReport);
+
+// Generate an HTML report
+var teamAnalysis = new TeamAnalysisResult
+{
+    TopPerformers = new List<Developer>
+    {
+        new Developer
+        {
+            Key = "DEV-001",
+            Name = "Alice Johnson",
+            DisplayName = "Alice J.",
+            Active = true,
+            JoinDate = new DateTime(2025, 3, 1)
+        }
+    },
+    AverageProductivity = 2.3
+};
+
+var htmlReport = reportService.GenerateHtmlReport(analysis, teamAnalysis);
+File.WriteAllText("report.html", htmlReport);
+
+// Generate a burndown chart
+await reportService.GenerateBurndownChart("PROJ", 1, "./burndown.png");
+
+// Generate a summary report
+var summaryReport = reportService.GenerateSummaryReport(analysis);
+Console.WriteLine(summaryReport);
+```
+
 ## ScheduledReportService
 
 The `ScheduledReportService` is a background service that periodically generates and exports Jira analytics reports based on a configured schedule. It's ideal for creating automated reporting workflows that run on a regular basis (e.g., weekly reports).
