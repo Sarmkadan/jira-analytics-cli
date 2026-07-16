@@ -555,6 +555,141 @@ repository.Clear();
 Console.WriteLine($"Repository cleared. Count: {repository.GetCount()}");
 ```
 
+## MetricsRepository
+
+The `MetricsRepository` class is an in-memory repository for managing sprint metrics and burndown data with historical tracking capabilities. It provides methods to retrieve, filter, and save sprint performance metrics and burndown snapshots efficiently using concurrent collections for thread-safe operations. The repository is particularly useful for caching metrics retrieved from the Jira API to reduce network calls and improve performance, and for maintaining historical records of sprint performance.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Repositories;
+using JiraAnalyticsCli.Models;
+using Microsoft.Extensions.Logging;
+using System;
+
+// Create repository instance (typically via dependency injection)
+var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var repository = new MetricsRepository(loggerFactory.CreateLogger<MetricsRepository>());
+
+// Save individual sprint metrics
+var sprintMetric1 = new SprintMetric
+{
+    SprintId = 1,
+    SprintName = "Sprint 2026-Q2-01",
+    StartDate = new DateTime(2026, 6, 1),
+    EndDate = new DateTime(2026, 6, 14),
+    PlannedStoryPoints = 50,
+    CompletedStoryPoints = 45,
+    CommittedStoryPoints = 48,
+    CompletedIssueCount = 12,
+    TotalIssueCount = 15,
+    DefectsCount = 2,
+    AverageCycleTime = 2.5,
+    OverdueIssueCount = 1,
+    TeamSize = 6,
+    ScopeChangeCount = 3
+};
+
+var sprintMetric2 = new SprintMetric
+{
+    SprintId = 2,
+    SprintName = "Sprint 2026-Q2-02",
+    StartDate = new DateTime(2026, 6, 15),
+    EndDate = new DateTime(2026, 6, 28),
+    PlannedStoryPoints = 40,
+    CompletedStoryPoints = 38,
+    CommittedStoryPoints = 40,
+    CompletedIssueCount = 10,
+    TotalIssueCount = 12,
+    DefectsCount = 1,
+    AverageCycleTime = 1.8,
+    OverdueIssueCount = 0,
+    TeamSize = 6,
+    ScopeChangeCount = 1
+};
+
+await repository.SaveMetricAsync(sprintMetric1);
+await repository.SaveMetricAsync(sprintMetric2);
+
+// Save burndown snapshots for a sprint
+var burndownSnapshots = new List<BurndownSnapshot>
+{
+    new BurndownSnapshot
+    {
+        Timestamp = new DateTime(2026, 6, 1),
+        SprintId = 1,
+        RemainingStoryPoints = 50,
+        CompletedStoryPoints = 0,
+        TotalStoryPoints = 50,
+        RemainingIssueCount = 15,
+        CompletedIssueCount = 0,
+        TotalIssueCount = 15,
+        ScopeChanges = 0
+    },
+    new BurndownSnapshot
+    {
+        Timestamp = new DateTime(2026, 6, 7),
+        SprintId = 1,
+        RemainingStoryPoints = 25,
+        CompletedStoryPoints = 25,
+        TotalStoryPoints = 50,
+        RemainingIssueCount = 8,
+        CompletedIssueCount = 7,
+        TotalIssueCount = 15,
+        ScopeChanges = 0
+    },
+    new BurndownSnapshot
+    {
+        Timestamp = new DateTime(2026, 6, 14),
+        SprintId = 1,
+        RemainingStoryPoints = 5,
+        CompletedStoryPoints = 45,
+        TotalStoryPoints = 50,
+        RemainingIssueCount = 2,
+        CompletedIssueCount = 13,
+        TotalIssueCount = 15,
+        ScopeChanges = 0
+    }
+};
+
+await repository.SaveBurndownRangeAsync(burndownSnapshots);
+
+// Retrieve metrics by project
+var projectMetrics = await repository.GetByProjectAsync("PROJ");
+Console.WriteLine($"Metrics for PROJ: {projectMetrics.Count} entries");
+foreach (var metric in projectMetrics)
+{
+    Console.WriteLine($" - {metric.SprintName}: {metric.CompletedStoryPoints}/{metric.PlannedStoryPoints} points");
+}
+
+// Get metrics for a specific sprint
+var sprint1Metrics = await repository.GetBySprintAsync(1);
+Console.WriteLine($"Metrics for Sprint 1: {sprint1Metrics.Count} entries");
+
+// Get burndown data for a sprint
+var sprint1Burndown = await repository.GetBurndownDataAsync(1);
+Console.WriteLine($"Burndown snapshots for Sprint 1: {sprint1Burndown.Count} entries");
+
+// Get the latest metrics for a project
+var latestMetric = await repository.GetLatestForProjectAsync("PROJ");
+if (latestMetric != null)
+{
+    Console.WriteLine($"Latest metric: {latestMetric.SprintName}");
+    Console.WriteLine($"  Velocity: {latestMetric.GetVelocity():F2} story points/day");
+    Console.WriteLine($"  Completion rate: {latestMetric.GetCompletionRate():F1}%");
+}
+
+// Get repository statistics
+int totalMetrics = repository.GetMetricCount();
+int totalBurndowns = repository.GetBurndownCount();
+Console.WriteLine($"Total metrics: {totalMetrics}");
+Console.WriteLine($"Total burndown snapshots: {totalBurndowns}");
+
+// Clear repository (useful for testing or cache invalidation)
+repository.Clear();
+Console.WriteLine($"Repository cleared. Metrics: {repository.GetMetricCount()}, Burndowns: {repository.GetBurndownCount()}");
+```
+
 ## IssueRepository
 
 The `IssueRepository` class is an in-memory repository for managing Jira issues with caching and search capabilities. It provides methods to retrieve, filter, and save issues efficiently using concurrent collections for thread-safe operations. The repository is particularly useful for caching Jira issues retrieved from the API to reduce network calls and improve performance.
