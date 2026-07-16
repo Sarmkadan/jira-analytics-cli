@@ -204,6 +204,92 @@ tests.FormatWithMetadata_ShouldIncludeMetadata();
 tests.Prettify_ShouldFormatMinifiedJson();
 ```
 
+## CacheManager
+
+The `CacheManager` class provides centralized caching functionality for the jira-analytics-cli library. It manages in-memory caches for various data types (projects, sprints, issues, metrics) with automatic cleanup, statistics tracking, and thread-safe operations. The cache manager is particularly useful for reducing API calls to Jira and improving application performance by caching frequently accessed data.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Caching;
+using JiraAnalyticsCli.Models;
+using System;
+using System.Linq;
+
+// Create a cache manager instance (typically via dependency injection)
+var cacheManager = new CacheManager();
+
+// Set default cache store (in-memory by default)
+var cacheStore = cacheManager.GetStore();
+Console.WriteLine($"Default cache store type: {cacheStore.GetType().Name}");
+
+// Cache a project
+var project = new JiraProject
+{
+    Key = "PROJ",
+    Name = "Platform Services",
+    Description = "Core platform infrastructure"
+};
+
+cacheManager.SetDefault<JiraProject>(project.Key, project);
+Console.WriteLine($"Cached project: {project.Key}");
+
+// Cache a sprint
+var sprint = new Sprint
+{
+    Id = 1,
+    Key = "SPR-2026-Q2-01",
+    Name = "Q2 Platform Enhancement",
+    State = "Active",
+    StartDate = new DateTime(2026, 4, 1),
+    EndDate = new DateTime(2026, 4, 14)
+};
+
+cacheManager.SetDefault<Sprint>(sprint.Key, sprint);
+Console.WriteLine($"Cached sprint: {sprint.Name}");
+
+// Retrieve cached values
+var cachedProject = cacheManager.GetDefault<JiraProject>(project.Key);
+if (cachedProject != null)
+{
+    Console.WriteLine($"Retrieved project from cache: {cachedProject.Name}");
+}
+
+var cachedSprint = cacheManager.GetDefault<Sprint>("SPR-2026-Q2-01");
+if (cachedSprint != null)
+{
+    Console.WriteLine($"Retrieved sprint from cache: {cachedSprint.Name}");
+}
+
+// Check if a key exists in cache
+bool hasProject = cacheManager.Contains(project.Key);
+bool hasSprint = cacheManager.Contains("SPR-2026-Q2-01");
+Console.WriteLine($"Project in cache: {hasProject}, Sprint in cache: {hasSprint}");
+
+// Remove items from cache
+cacheManager.Remove(project.Key);
+Console.WriteLine($"Removed project from cache");
+
+// Clear specific cache store
+cacheManager.ClearStore();
+Console.WriteLine("Cleared current cache store");
+
+// Clear all cache stores
+cacheManager.ClearAll();
+Console.WriteLine("Cleared all cache stores");
+
+// Get global statistics across all cache stores
+var statistics = cacheManager.GetGlobalStatistics();
+foreach (var stat in statistics)
+{
+    Console.WriteLine($"Cache {stat.Key}: {stat.Value.ItemCount} items, {stat.Value.HitCount} hits, {stat.Value.MissCount} misses");
+}
+
+// Cleanup expired entries
+int removedCount = cacheManager.CleanupAll();
+Console.WriteLine($"Cleaned up {removedCount} expired cache entries");
+```
+
 ## CliConfig
 
 The `CliConfig` class provides centralized configuration for the CLI application, including Jira connection settings, caching behavior, logging preferences, and export options. It serves as the primary configuration source for all CLI operations and validates required settings before use.
