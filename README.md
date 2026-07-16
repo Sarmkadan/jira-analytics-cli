@@ -436,6 +436,125 @@ Console.WriteLine($"Risk score: {riskScore:F1}/100");
 Console.WriteLine($"Health status: {healthStatus}");
 ```
 
+## SprintRepository
+
+The `SprintRepository` class is an in-memory repository for managing Jira sprint data with lifecycle management and filtering capabilities. It provides methods to retrieve, filter, and save sprint entities efficiently using concurrent collections for thread-safe operations.
+
+The repository is particularly useful for caching sprint data retrieved from the Jira API to reduce network calls and improve performance, and for managing sprint lifecycle operations such as finding active, recent closed, or project-specific sprints.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Repositories;
+using JiraAnalyticsCli.Models;
+using Microsoft.Extensions.Logging;
+using System;
+
+// Create repository instance (typically via dependency injection)
+var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var repository = new SprintRepository(loggerFactory.CreateLogger<SprintRepository>());
+
+// Save individual sprints
+var sprint1 = new Sprint
+{
+    Id = 1,
+    Key = "SPR-2026-Q2-01",
+    Name = "Q2 Platform Enhancement",
+    State = "Active",
+    StartDate = new DateTime(2026, 4, 1),
+    EndDate = new DateTime(2026, 4, 14),
+    CompleteDate = null,
+    Goal = "Enhance authentication service with OAuth2 support and improved error handling",
+    ProjectKey = "PLATFORM"
+};
+
+var sprint2 = new Sprint
+{
+    Id = 2,
+    Key = "SPR-2026-Q2-02",
+    Name = "Q2 API Improvements",
+    State = "Closed",
+    StartDate = new DateTime(2026, 4, 15),
+    EndDate = new DateTime(2026, 4, 28),
+    CompleteDate = new DateTime(2026, 4, 29),
+    Goal = "Improve API performance and add new endpoints",
+    ProjectKey = "PLATFORM"
+};
+
+var sprint3 = new Sprint
+{
+    Id = 3,
+    Key = "SPR-2026-Q2-03",
+    Name = "Q2 Bug Fixes",
+    State = "Active",
+    StartDate = new DateTime(2026, 4, 29),
+    EndDate = new DateTime(2026, 5, 12),
+    CompleteDate = null,
+    Goal = "Fix critical bugs and security issues",
+    ProjectKey = "PLATFORM"
+};
+
+await repository.SaveAsync(sprint1);
+await repository.SaveAsync(sprint2);
+await repository.SaveAsync(sprint3);
+
+// Save multiple sprints at once
+var batchSprints = new List<Sprint>
+{
+    new Sprint
+    {
+        Id = 4,
+        Key = "SPR-2026-Q3-01",
+        Name = "Q3 Migration",
+        State = "Planned",
+        StartDate = new DateTime(2026, 7, 1),
+        EndDate = new DateTime(2026, 7, 14),
+        Goal = "Migrate to new infrastructure",
+        ProjectKey = "PLATFORM"
+    },
+    new Sprint
+    {
+        Id = 5,
+        Key = "SPR-2026-Q3-02",
+        Name = "Q3 Testing",
+        State = "Planned",
+        StartDate = new DateTime(2026, 7, 15),
+        EndDate = new DateTime(2026, 7, 28),
+        Goal = "Comprehensive testing of new features",
+        ProjectKey = "PLATFORM"
+    }
+};
+
+await repository.SaveRangeAsync(batchSprints);
+
+// Retrieve a sprint by ID
+var retrievedSprint = await repository.GetByIdAsync(1);
+if (retrievedSprint != null)
+{
+    Console.WriteLine($"Found sprint: {retrievedSprint.Key} - {retrievedSprint.Name}");
+}
+
+// Get all sprints for a project
+var platformSprints = await repository.GetByProjectAsync("PLATFORM");
+Console.WriteLine($"Total sprints in PLATFORM: {platformSprints.Count}");
+
+// Get active sprints
+var activeSprints = await repository.GetActiveSprints();
+Console.WriteLine($"Active sprints: {activeSprints.Count}");
+
+// Get recent closed sprints (last 5)
+var recentClosedSprints = await repository.GetRecentClosedSprints(5);
+Console.WriteLine($"Recent closed sprints: {recentClosedSprints.Count}");
+
+// Get repository statistics
+int totalSprints = repository.GetCount();
+Console.WriteLine($"Total sprints in repository: {totalSprints}");
+
+// Clear repository (useful for testing or cache invalidation)
+repository.Clear();
+Console.WriteLine($"Repository cleared. Count: {repository.GetCount()}");
+```
+
 ## IssueRepository
 
 The `IssueRepository` class is an in-memory repository for managing Jira issues with caching and search capabilities. It provides methods to retrieve, filter, and save issues efficiently using concurrent collections for thread-safe operations. The repository is particularly useful for caching Jira issues retrieved from the API to reduce network calls and improve performance.
