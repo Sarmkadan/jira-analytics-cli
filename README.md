@@ -70,6 +70,50 @@ Console.WriteLine($"Available hours: {availableHours}");
 Console.WriteLine($"Load factor: {loadFactor:F2} story points/hour");
 ```
 
+## JiraIssue
+
+The `JiraIssue` class represents a single Jira work item, holding all relevant information such as key, summary, status, priority, and timeline data. It provides methods to identify issue status, including overdue or high-priority flags, and calculate aging metrics.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a new Jira issue
+var issue = new JiraIssue
+{
+    Key = "PROJ-101",
+    Id = "10001",
+    Summary = "Implement user authentication",
+    Description = "Add OAuth2 support to the login service.",
+    Status = "In Progress",
+    IssueType = "Story",
+    Assignee = "dev.user@example.com",
+    Priority = "High",
+    StoryPoints = 5,
+    DueDate = DateTime.UtcNow.AddDays(7),
+    CreatedDate = DateTime.UtcNow.AddDays(-2),
+    UpdatedDate = DateTime.UtcNow,
+    ResolutionDate = null,
+    Labels = new List<string> { "auth", "security" },
+    Components = new List<string> { "backend" },
+    ProjectKey = "PROJ",
+    SprintId = 1
+};
+
+// Check issue status and aging
+bool isOverdue = issue.IsOverdue;
+bool isHighPriority = issue.IsHighPriority;
+int daysOpen = issue.GetDaysOpenWithoutProgress();
+
+Console.WriteLine($"Issue: {issue.Key} - {issue.Summary}");
+Console.WriteLine($"Status: {issue.Status}");
+Console.WriteLine($"Overdue: {isOverdue}");
+Console.WriteLine($"Days open without progress: {daysOpen}");
+```
+
 ## CachePolicyExtensions
 
 The `CachePolicyExtensions` class provides a set of extension methods for working with `CachePolicy` objects. These methods allow you to create and modify cache policies with specific conditions, maximum sizes, and expiration times.
