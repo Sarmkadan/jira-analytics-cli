@@ -178,16 +178,6 @@ foreach (var key in issueKeys)
 }
 ```
 
-### Usage Example
-
-```csharp
-using JiraAnalyticsCli.Formatters;
-using Microsoft.Extensions.Logging;
-
-// Create formatter with logger
-var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-var formatter = new MarkdownFormatter(loggerFactory.CreateLogger<MarkdownFormatter>());
-
 ## JsonFormatter
 
 The `JsonFormatter` class provides utilities for converting objects and collections to JSON format with support for prettification, metadata wrapping, field filtering, and validation. It handles serialization with configurable indentation, circular reference detection, and safe error handling.
@@ -373,3 +363,49 @@ var escaped = sqlString.EscapeForSql();
 Console.WriteLine(escaped); // Output: "Hello''World"
 ```
 
+## TeamComparisonServiceTestsValidation
+
+`TeamComparisonServiceTestsValidation` provides a collection of fluent validation helpers used in unit tests for the `TeamComparisonService`.  
+The static extension methods assert that a `TeamComparisonReport` contains the expected teams, correctly identifies the fastest, highest‑quality, and most‑consistent teams, and that individual `TeamProjectSnapshot` objects have the expected velocity and defect‑rate metrics. Additional helpers verify that generated text reports contain the required project keys and performance labels.
+
+### Usage Example
+
+```csharp
+using System.Collections.Generic;
+using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Tests.Services;
+
+// Create a sample report
+var report = new TeamComparisonReport
+{
+    Teams = new List<TeamProjectSnapshot>
+    {
+        new TeamProjectSnapshot { ProjectKey = "PROJ1", AverageVelocity = 20.5, DefectRate = 0.02 },
+        new TeamProjectSnapshot { ProjectKey = "PROJ2", AverageVelocity = 18.0, DefectRate = 0.01 }
+    },
+    FastestTeam = "PROJ1",
+    HighestQualityTeam = "PROJ2",
+    MostConsistentTeam = "PROJ1"
+};
+
+var expectedKeys = new[] { "PROJ1", "PROJ2" };
+
+// Validate the report contents
+report.ShouldContainTeams(expectedKeys);
+report.ShouldIdentifyFastestTeam("PROJ1");
+report.ShouldIdentifyHighestQualityTeam("PROJ2");
+report.ShouldIdentifyMostConsistentTeam("PROJ1");
+
+// Validate a specific team snapshot's metrics
+var snapshot = report.Teams[0];
+snapshot.ShouldHaveMetrics(expectedVelocity: 20.5, expectedDefectRate: 0.02);
+
+// Validate a generated text report
+var textReport = @"
+Fastest team: PROJ1
+Highest quality: PROJ2
+Most consistent: PROJ1
+";
+textReport.ShouldContainProjectKeys(expectedKeys);
+textReport.ShouldContainPerformanceLabels();
+```
