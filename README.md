@@ -1,4 +1,3 @@
-
 ## BurndownSnapshotExtensions
 
 The `BurndownSnapshotExtensions` class provides extension methods for the `BurndownSnapshot` model that enhance burndown chart analysis and reporting. It includes methods for calculating velocity trends, detecting acceleration/deceleration, computing burn rates, creating delta comparisons, formatting status strings, detecting scope creep, and extracting time-series data for charting.
@@ -157,4 +156,53 @@ if (formatErrors.Count == 0)
 {
     Console.WriteLine("Format is valid");
 }
+```
+
+## AnalyticsServiceValidation
+
+`AnalyticsServiceValidation` offers a set of static helper methods that validate an `AnalyticsService` instance and the parameters of its public API. The methods ensure that inputs such as project keys, sprint counts, dates, numeric values, and collections meet basic business rules before the service performs any calculations.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using JiraAnalyticsCli.Services;
+
+// Assume an AnalyticsService instance is available (dependencies would normally be injected)
+var analyticsService = new AnalyticsService(
+    // constructor arguments omitted for brevity
+);
+
+// Validate the service instance itself
+IReadOnlyList<string> instanceProblems = analyticsService.Validate();
+Console.WriteLine($"Instance validation problems: {instanceProblems.Count}");
+
+// Quick validity check
+bool isValid = analyticsService.IsValid();
+Console.WriteLine($"Service is valid: {isValid}");
+
+// Throw if the instance is not valid
+analyticsService.EnsureValid();
+
+// Validate a project key
+IReadOnlyList<string> keyProblems = AnalyticsServiceValidation.ValidateProjectKey("PROJ-2026");
+Console.WriteLine($"Project key problems: {keyProblems.Count}");
+
+// Validate sprint count
+IReadOnlyList<string> sprintProblems = AnalyticsServiceValidation.ValidateSprintCount(5);
+Console.WriteLine($"Sprint count problems: {sprintProblems.Count}");
+
+// Validate a date parameter
+IReadOnlyList<string> dateProblems = AnalyticsServiceValidation.ValidateDate(DateTime.UtcNow, nameof(dateProblems));
+Console.WriteLine($"Date problems: {dateProblems.Count}");
+
+// Validate a numeric value
+IReadOnlyList<string> numberProblems = AnalyticsServiceValidation.ValidateNumber(42.7, "velocity");
+Console.WriteLine($"Number problems: {numberProblems.Count}");
+
+// Validate a collection
+var ids = new List<int> { 1, 2, 3 };
+IReadOnlyList<string> collectionProblems = AnalyticsServiceValidation.ValidateCollection(ids, "ids");
+Console.WriteLine($"Collection problems: {collectionProblems.Count}");
 ```
