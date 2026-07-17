@@ -64,19 +64,15 @@ public static class MetricsRepositoryValidation
     /// <summary>
     /// Checks if the repository contains valid data
     /// </summary>
-    /// <param name="value">The repository to check</param>
+    /// <param name="value">The repository to validate</param>
     /// <returns>True if repository is valid, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown when repository is null</exception>
     public static bool IsValid(this MetricsRepository value)
     {
-        try
-        {
-            _ = value.Validate();
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        ArgumentNullException.ThrowIfNull(value);
+
+        var problems = value.Validate();
+        return problems.Count == 0;
     }
 
     /// <summary>
@@ -98,42 +94,36 @@ public static class MetricsRepositoryValidation
     /// <summary>
     /// Gets all metrics from the repository for validation purposes
     /// </summary>
+    /// <param name="repository">The repository to get metrics from</param>
+    /// <returns>Collection of metric lists, one per project</returns>
     private static IEnumerable<IReadOnlyList<SprintMetric>> GetAllMetrics(this MetricsRepository repository)
     {
         ArgumentNullException.ThrowIfNull(repository);
 
         // Use reflection to access the private _metrics field
         var metricsField = typeof(MetricsRepository).GetField("_metrics", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (metricsField != null)
+        return metricsField?.GetValue(repository) switch
         {
-            var metricsDict = metricsField.GetValue(repository) as ConcurrentDictionary<string, List<SprintMetric>>;
-            if (metricsDict != null)
-            {
-                return metricsDict.Values;
-            }
-        }
-
-        return Enumerable.Empty<IReadOnlyList<SprintMetric>>();
+            ConcurrentDictionary<string, List<SprintMetric>> metricsDict when metricsDict.Count > 0 => metricsDict.Values,
+            _ => Enumerable.Empty<IReadOnlyList<SprintMetric>>()
+        };
     }
 
     /// <summary>
     /// Gets all burndown data from the repository for validation purposes
     /// </summary>
+    /// <param name="repository">The repository to get burndown data from</param>
+    /// <returns>Collection of burndown snapshot lists, one per sprint</returns>
     private static IEnumerable<IReadOnlyList<BurndownSnapshot>> GetAllBurndownData(this MetricsRepository repository)
     {
         ArgumentNullException.ThrowIfNull(repository);
 
         // Use reflection to access the private _burndownData field
         var burndownField = typeof(MetricsRepository).GetField("_burndownData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (burndownField != null)
+        return burndownField?.GetValue(repository) switch
         {
-            var burndownDict = burndownField.GetValue(repository) as ConcurrentDictionary<int, List<BurndownSnapshot>>;
-            if (burndownDict != null)
-            {
-                return burndownDict.Values;
-            }
-        }
-
-        return Enumerable.Empty<IReadOnlyList<BurndownSnapshot>>();
+            ConcurrentDictionary<int, List<BurndownSnapshot>> burndownDict when burndownDict.Count > 0 => burndownDict.Values,
+            _ => Enumerable.Empty<IReadOnlyList<BurndownSnapshot>>()
+        };
     }
 }
