@@ -450,3 +450,52 @@ Console.WriteLine(projIssues.Count()); // Output: 1
 issueRepository.Clear();
 Console.WriteLine(issueRepository.GetCount()); // Output: 0
 ```
+
+## DateTimeExtensionsTestsJsonExtensions
+
+The `DateTimeExtensionsTestsJsonExtensions` class provides JSON serialization and deserialization utilities specifically designed for testing DateTime and TimeSpan scenarios. It includes methods for converting DateTime and TimeSpan values to JSON strings, and parsing JSON strings back to these types with both strict and try-parse approaches.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Tests.Utils;
+using System;
+
+// Current date and time
+var now = DateTime.UtcNow;
+var timeSpan = TimeSpan.FromHours(2.5);
+
+// Serialize DateTime to JSON
+var dateJson = now.ToJson();
+Console.WriteLine(dateJson); // Output: "2026-07-19T14:30:45.123Z"
+
+// Serialize nullable DateTime to JSON
+DateTime? nullableDate = DateTime.UtcNow.AddDays(-1);
+var nullableDateJson = nullableDate.ToJson();
+Console.WriteLine(nullableDateJson); // Output: "2026-07-18T14:30:45.123Z"
+
+// Serialize TimeSpan to JSON
+var timeSpanJson = timeSpan.ToJson();
+Console.WriteLine(timeSpanJson); // Output: "02:30:00"
+
+// Deserialize DateTime from JSON
+var jsonDate = "\"2026-07-19T14:30:45Z\"";
+var parsedDate = DateTimeExtensionsTestsJsonExtensions.FromJson(jsonDate);
+Console.WriteLine(parsedDate); // Output: 7/19/2026 2:30:45 PM
+
+// Try-parse DateTime from JSON
+var validJson = "\"2026-07-19T14:30:45Z\"";
+var success = DateTimeExtensionsTestsJsonExtensions.TryFromJson(validJson, out var tryParsedDate);
+Console.WriteLine(success); // Output: True
+Console.WriteLine(tryParsedDate); // Output: 7/19/2026 2:30:45 PM
+
+// Deserialize TimeSpan from JSON
+var jsonTimeSpan = "\"02:30:00\"";
+var parsedTimeSpan = DateTimeExtensionsTestsJsonExtensions.FromJsonToTimeSpan(jsonTimeSpan);
+Console.WriteLine(parsedTimeSpan); // Output: 02:30:00
+
+// Try-parse TimeSpan from JSON
+var successTimeSpan = DateTimeExtensionsTestsJsonExtensions.TryFromJsonToTimeSpan(jsonTimeSpan, out var tryParsedTimeSpan);
+Console.WriteLine(successTimeSpan); // Output: True
+Console.WriteLine(tryParsedTimeSpan); // Output: 02:30:00
+```
