@@ -46,11 +46,11 @@ namespace JiraAnalyticsCli.Models
         public static double GetSprintCompletionPercentage(this JiraProject project)
         {
             ArgumentNullException.ThrowIfNull(project);
-            int total = project.GetTotalSprintCount();
-            if (total == 0)
-                return 0;
 
-            return (double)project.GetCompletedSprintCount() / total * 100;
+            int total = project.GetTotalSprintCount();
+            return total == 0
+                ? 0
+                : (double)project.GetCompletedSprintCount() / total * 100;
         }
 
         /// <summary>
@@ -72,12 +72,10 @@ namespace JiraAnalyticsCli.Models
             ArgumentNullException.ThrowIfNull(project);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
-            // TakeLast is available in .NET 6+. It returns the last 'count' elements preserving order.
-            var recent = project.MetricsHistory
-                .TakeLast(count)
-                .ToList();
-
-            return recent.AsReadOnly();
+            return project.MetricsHistory
+                .Take(count)
+                .ToList()
+                .AsReadOnly();
         }
     }
 }
