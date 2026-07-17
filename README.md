@@ -207,6 +207,102 @@ IReadOnlyList<string> collectionProblems = AnalyticsServiceValidation.ValidateCo
 Console.WriteLine($"Collection problems: {collectionProblems.Count}");
 ```
 
+## CollectionExtensionsValidation
+
+The `CollectionExtensionsValidation` class provides validation extension methods for parameters used by `CollectionExtensions` operations. It includes methods for validating collection sources, checking validity, ensuring validity with exceptions, and validating batch sizes, key selectors, and list indices to prevent common collection-related exceptions.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+// Create a sample collection
+var issues = new List<string> { "ISSUE-1", "ISSUE-2", "ISSUE-3" };
+
+// Validate a collection source
+var collectionErrors = issues.Validate();
+Console.WriteLine($"Collection validation errors: {collectionErrors.Count}");
+
+// Quick validity check
+bool isValid = issues.IsValid();
+Console.WriteLine($"Collection is valid: {isValid}");
+
+// Ensure the collection is valid (throws if invalid)
+try
+{
+    issues.EnsureValid();
+    Console.WriteLine("Collection is valid");
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+}
+
+// Validate an empty collection
+var emptyCollection = new List<string>();
+var emptyErrors = emptyCollection.Validate();
+Console.WriteLine($"Empty collection errors: {string.Join(", ", emptyErrors)}");
+
+// Validate a batch size for batching operations
+var batchSizeErrors = 10.Validate();
+Console.WriteLine($"Batch size validation errors: {batchSizeErrors.Count}");
+
+// Check if batch size is valid
+bool batchSizeValid = 5.IsValid();
+Console.WriteLine($"Batch size 5 is valid: {batchSizeValid}");
+
+// Ensure batch size is valid (throws if invalid)
+try
+{
+    (-1).EnsureValid();
+}
+catch (ArgumentOutOfRangeException)
+{
+    Console.WriteLine("Negative batch size validation failed as expected");
+}
+
+// Validate a key selector function for GroupByMultiple operations
+Func<string, string> keySelector = s => s.Split('-')[0];
+var selectorErrors = keySelector.Validate();
+Console.WriteLine($"Key selector validation errors: {selectorErrors.Count}");
+
+// Check if key selector is valid
+bool selectorValid = keySelector.IsValid();
+Console.WriteLine($"Key selector is valid: {selectorValid}");
+
+// Ensure key selector is valid (throws if invalid)
+try
+{
+    ((Func<string, string>)null!).EnsureValid();
+}
+catch (ArgumentNullException)
+{
+    Console.WriteLine("Null key selector validation failed as expected");
+}
+
+// Validate a list and index for GetAtIndexOrDefault operations
+var list = new List<int> { 10, 20, 30 };
+var indexErrors = list.Validate(1);
+Console.WriteLine($"List index validation errors: {indexErrors.Count}");
+
+// Check if list and index are valid
+bool indexValid = list.IsValid(2);
+Console.WriteLine($"List index 2 is valid: {indexValid}");
+
+// Ensure list and index are valid (throws if invalid)
+try
+{
+    list.EnsureValid(-1);
+}
+catch (ArgumentOutOfRangeException)
+{
+    Console.WriteLine("Negative index validation failed as expected");
+}
+```
+
 ## SprintRepositoryJsonExtensions
 
 The `SprintRepositoryJsonExtensions` class provides extension methods for serializing and deserializing `SprintRepository` instances to and from JSON format. It includes methods for converting a repository to a JSON string, parsing JSON back into a repository, safe parsing with error handling, retrieving all sprints for serialization, and loading sprints into a repository.
