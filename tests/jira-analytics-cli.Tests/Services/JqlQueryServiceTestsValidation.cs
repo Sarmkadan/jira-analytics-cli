@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Linq;
+using System.Reflection;
 
 public static class JqlQueryServiceTestsValidation
 {
@@ -16,8 +17,12 @@ public static class JqlQueryServiceTestsValidation
 
         var problems = new List<string>();
 
-        // Validate all public members that could contain invalid data
-        // Note: Only the actual public members of JqlQueryServiceTests are validated
+        // Validate that the instance has the expected test methods
+        var testMethods = GetTestMethods(value);
+        if (testMethods.Count == 0)
+        {
+            problems.Add("The JqlQueryServiceTests instance has no public parameterless test methods.");
+        }
 
         return problems.AsReadOnly();
     }
@@ -27,6 +32,7 @@ public static class JqlQueryServiceTestsValidation
     /// </summary>
     /// <param name="value">The instance to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this JqlQueryServiceTests value)
     {
         try
@@ -57,6 +63,17 @@ public static class JqlQueryServiceTestsValidation
         }
 
         throw new ArgumentException(
-            $"The {nameof(JqlQueryServiceTests)} instance is invalid. Problems:\n{string.Join("\n", problems)}");
+            $"The {nameof(JqlQueryServiceTests)} instance is invalid. Problems:{Environment.NewLine}{string.Join(Environment.NewLine, problems)}");
+    }
+
+    private static List<string> GetTestMethods(JqlQueryServiceTests value)
+    {
+        var methods = typeof(JqlQueryServiceTests)
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+            .Where(m => m.GetParameters().Length == 0 &&
+                   (m.ReturnType == typeof(void) || m.ReturnType == typeof(Task)))
+            .ToList();
+
+        return methods.Select(m => m.Name).ToList();
     }
 }
