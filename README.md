@@ -499,3 +499,60 @@ var successTimeSpan = DateTimeExtensionsTestsJsonExtensions.TryFromJsonToTimeSpa
 Console.WriteLine(successTimeSpan); // Output: True
 Console.WriteLine(tryParsedTimeSpan); // Output: 02:30:00
 ```
+
+## DateTimeExtensionsTestsExtensions
+
+The `DateTimeExtensionsTestsExtensions` class provides extension methods for creating and manipulating DateTime values specifically designed for testing scenarios. It includes methods for setting specific times of day, calculating business days and hours, determining month boundaries, and creating common holiday dates.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Tests.Utils;
+using System;
+
+// Current date
+var today = DateTime.UtcNow;
+var yesterday = today.AddDays(-1);
+var tomorrow = today.AddDays(1);
+
+// Set specific times of day
+var businessStart = today.AtBusinessStart();  // 9:00 AM
+var businessEnd = today.AtBusinessEnd();      // 5:00 PM
+var midnight = today.AtMidnight();            // 12:00 AM (midnight)
+var noon = today.AtNoon();                    // 12:00 PM (noon)
+
+Console.WriteLine(businessStart); // Output: 2026-07-19 09:00:00
+Console.WriteLine(businessEnd);   // Output: 2026-07-19 17:00:00
+
+// Calculate business days and hours
+var businessDays = yesterday.GetBusinessDays(tomorrow);
+Console.WriteLine($"Business days between yesterday and tomorrow: {string.Join(", ", businessDays)}");
+
+var businessHours = yesterday.GetBusinessHours(tomorrow);
+Console.WriteLine($"Business hours between yesterday and tomorrow: {businessHours.Count()} hours");
+
+// Month boundaries
+var firstDay = today.FirstDayOfMonth();  // 2026-07-01
+var lastDay = today.LastDayOfMonth();    // 2026-07-31
+
+Console.WriteLine(firstDay); // Output: 2026-07-01
+Console.WriteLine(lastDay);  // Output: 2026-07-31
+
+// Next/previous business week
+var nextWeekStart = today.AtNextBusinessWeekStart();      // Next Monday 9:00 AM
+var prevWeekEnd = today.AtPreviousBusinessWeekEnd();    // Last Friday 5:00 PM
+var weekendStart = today.AtWeekendStart();               // This Saturday midnight
+
+Console.WriteLine(nextWeekStart); // Output: 2026-07-20 09:00:00
+Console.WriteLine(prevWeekEnd);   // Output: 2026-07-18 17:00:00
+Console.WriteLine(weekendStart);  // Output: 2026-07-25 00:00:00
+
+// Common holidays (fixed date)
+var newYears2026 = DateTimeExtensionsTestsExtensions.NewYearsDay(2026);
+var christmas2026 = DateTimeExtensionsTestsExtensions.ChristmasDay(2026);
+var independenceDay2026 = DateTimeExtensionsTestsExtensions.IndependenceDay(2026);
+
+Console.WriteLine(newYears2026);         // Output: 2026-01-01
+Console.WriteLine(christmas2026);       // Output: 2026-12-25
+Console.WriteLine(independenceDay2026); // Output: 2026-07-04
+```
