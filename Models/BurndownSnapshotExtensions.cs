@@ -34,7 +34,7 @@ public static class BurndownSnapshotExtensions
         if (historicalSnapshots.Count < 2)
             return 0;
 
-        // Find snapshots from previous days (same time of day)
+        // Find snapshots from previous days
         var previousDaySnapshots = historicalSnapshots
             .Where(h => h.Timestamp.Date < snapshot.Timestamp.Date)
             .ToList();
@@ -43,13 +43,14 @@ public static class BurndownSnapshotExtensions
             return 0;
 
         // Calculate total story points burned between historical and current
-        var oldestHistorical = previousDaySnapshots.MinBy(h => h.Timestamp)!.Timestamp;
+        var oldestHistorical = previousDaySnapshots.MinBy(h => h.Timestamp)?.Timestamp ?? DateTime.MinValue;
         var daysBetween = (snapshot.Timestamp - oldestHistorical).TotalDays;
 
         if (daysBetween <= 0)
             return 0;
 
-        var totalStoryPointsBurned = snapshot.CompletedStoryPoints - previousDaySnapshots.Max(h => h.CompletedStoryPoints);
+        var maxHistoricalCompleted = previousDaySnapshots.Max(h => h.CompletedStoryPoints);
+        var totalStoryPointsBurned = snapshot.CompletedStoryPoints - maxHistoricalCompleted;
         return totalStoryPointsBurned / daysBetween;
     }
 
@@ -69,9 +70,11 @@ public static class BurndownSnapshotExtensions
         ArgumentNullException.ThrowIfNull(historicalSnapshots);
 
         var velocityTrend = snapshot.CalculateVelocityTrend(historicalSnapshots);
-        var overallVelocity = snapshot.CompletedStoryPoints / Math.Max(1, (snapshot.Timestamp - historicalSnapshots.Last().Timestamp).TotalDays);
+        var oldestTimestamp = historicalSnapshots.LastOrDefault()?.Timestamp ?? snapshot.Timestamp.AddDays(-1);
+        var daysBetween = (snapshot.Timestamp - oldestTimestamp).TotalDays;
+        var overallVelocity = daysBetween > 0 ? snapshot.CompletedStoryPoints / daysBetween : 0;
 
-        // If we're burning story points faster now than overall, velocity is accelerating
+        // If we're burning story points significantly faster now than overall, velocity is accelerating
         return velocityTrend > overallVelocity * 1.1; // 10% improvement threshold
     }
 
@@ -91,11 +94,13 @@ public static class BurndownSnapshotExtensions
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(daysInSprint, 0);
 
         if (daysInSprint <= 0)
-            daysInSprint = 14;
+            return 0;
 
-        var daysElapsed = (snapshot.Timestamp - snapshot.Timestamp.AddDays(-daysInSprint)).TotalDays;
+        var startDate = snapshot.Timestamp.AddDays(-daysInSprint);
+        var daysElapsed = (snapshot.Timestamp - startDate).TotalDays;
+
         if (daysElapsed <= 0)
-            return snapshot.CompletedStoryPoints;
+            return 0;
 
         return snapshot.CompletedStoryPoints / daysElapsed;
     }
@@ -106,7 +111,7 @@ public static class BurndownSnapshotExtensions
     /// </summary>
     /// <param name="current">The current snapshot</param>
     /// <param name="previous">The previous snapshot to compare against</param>
-    /// <returns>A new BurndownSnapshot representing the delta, or null if comparison not possible</returns>
+    /// <returns>A new <see cref="BurndownSnapshot"/> representing the delta, or null if comparison not possible (e.g., timestamps are not in chronological order)</returns>
     /// <exception cref="ArgumentNullException">Thrown when current or previous is null</exception>
     public static BurndownSnapshot? CreateDeltaSnapshot(
         this BurndownSnapshot current,
@@ -156,7 +161,8 @@ public static class BurndownSnapshotExtensions
 
         if (includeProjected && snapshot.TotalStoryPoints > 0)
         {
-            var projected = snapshot.GetProjectedCompletionPercentage(snapshot.Timestamp.AddDays(7));
+            var projectedDate = snapshot.Timestamp.AddDays(7);
+            var projected = snapshot.GetProjectedCompletionPercentage(projectedDate);
             parts.Add($"Projected: {projected:F1}% in 7 days");
         }
 
