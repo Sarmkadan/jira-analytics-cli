@@ -556,3 +556,39 @@ Console.WriteLine(newYears2026);         // Output: 2026-01-01
 Console.WriteLine(christmas2026);       // Output: 2026-12-25
 Console.WriteLine(independenceDay2026); // Output: 2026-07-04
 ```
+
+## ValidationHelpersTestsExtensions
+
+The `ValidationHelpersTestsExtensions` class provides extension methods for the `ValidationHelpersTests` class that facilitate testing validation logic. It includes methods to retrieve test method names and run all validation tests, returning structured results that can be used for test reporting and validation assertions.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Tests.Utils;
+using System;
+
+// Create a ValidationHelpersTests instance
+var validationTests = new ValidationHelpersTests();
+
+// Get all test method names
+var testMethodNames = validationTests.GetTestMethodNames();
+Console.WriteLine($"Found {testMethodNames.Count} test methods:");
+foreach (var name in testMethodNames)
+{
+    Console.WriteLine($"  - {name}");
+}
+
+// Run all tests and get results
+var testResults = validationTests.RunAllTests();
+Console.WriteLine($"\nRan {testResults.Count} tests:");
+
+foreach (var result in testResults)
+{
+    Console.WriteLine($"  {result.TestMethodName}: {(result.Success ? "✓ PASS" : "✗ FAIL")}");
+}
+
+// Access individual test result
+var firstResult = testResults[0];
+Console.WriteLine($"\nFirst test: {firstResult.TestMethodName}");
+Console.WriteLine($"Success: {firstResult.Success}");
+```
