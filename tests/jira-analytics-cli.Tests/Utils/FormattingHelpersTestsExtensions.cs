@@ -61,6 +61,7 @@ namespace JiraAnalyticsCli.Tests.Utils
         /// </summary>
         /// <param name="MethodName">The name of the test method.</param>
         /// <param name="Succeeded">True if the method completed without throwing; otherwise false.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="MethodName"/> is <c>null</c>.</exception>
         public sealed record TestResult(string MethodName, bool Succeeded);
     }
 }
