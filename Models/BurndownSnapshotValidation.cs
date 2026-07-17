@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace JiraAnalyticsCli.Models;
 
@@ -23,9 +22,10 @@ public static class BurndownSnapshotValidation
     public static IReadOnlyList<string> Validate(this BurndownSnapshot value)
     {
         ArgumentNullException.ThrowIfNull(value);
+
         try
         {
-            value.Validate();
+            value.EnsureValid();
             return Array.Empty<string>();
         }
         catch (ArgumentException ex)
@@ -34,15 +34,16 @@ public static class BurndownSnapshotValidation
         }
     }
 
-
     /// <summary>
     /// Determines whether the specified burndown snapshot is valid.
     /// </summary>
     /// <param name="value">The burndown snapshot to check</param>
     /// <returns>True if the snapshot is valid; otherwise, false</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
     public static bool IsValid(this BurndownSnapshot value)
     {
-        return value is not null && value.GetValidationErrors().Count == 0;
+        ArgumentNullException.ThrowIfNull(value);
+        return value.GetValidationErrors().Count == 0;
     }
 
     /// <summary>
@@ -99,6 +100,12 @@ public static class BurndownSnapshotValidation
             errors.Add("Completed story points plus remaining story points must equal total story points");
         }
 
+        // Validate that completed doesn't exceed total
+        if (value.CompletedStoryPoints > value.TotalStoryPoints)
+        {
+            errors.Add("Completed story points cannot exceed total story points");
+        }
+
         // Validate issue counts
         if (value.RemainingIssueCount < 0)
         {
@@ -125,21 +132,16 @@ public static class BurndownSnapshotValidation
             errors.Add("Completed issue count plus remaining issue count must equal total issue count");
         }
 
+        // Validate that completed doesn't exceed total
+        if (value.CompletedIssueCount > value.TotalIssueCount)
+        {
+            errors.Add("Completed issue count cannot exceed total issue count");
+        }
+
         // Validate scope changes
         if (value.ScopeChanges < -1000 || value.ScopeChanges > 1000)
         {
             errors.Add("Scope changes must be between -1000 and 1000");
-        }
-
-        // Validate that completed doesn't exceed total
-        if (value.CompletedStoryPoints > value.TotalStoryPoints)
-        {
-            errors.Add("Completed story points cannot exceed total story points");
-        }
-
-        if (value.CompletedIssueCount > value.TotalIssueCount)
-        {
-            errors.Add("Completed issue count cannot exceed total issue count");
         }
 
         return errors.AsReadOnly();
@@ -160,8 +162,8 @@ public static class BurndownSnapshotValidation
         {
             throw new ArgumentException(
                 $"BurndownSnapshot validation failed:{Environment.NewLine}- {
-                    string.Join($"{Environment.NewLine}- ", errors)
-                }");
+                string.Join($"{Environment.NewLine}- ", errors)
+            }");
         }
     }
 }
