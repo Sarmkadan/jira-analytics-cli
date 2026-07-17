@@ -28,7 +28,7 @@ public static class AnalyticsServiceValidation
         ArgumentNullException.ThrowIfNull(value);
 
         // Instance is valid if not null (dependencies are validated by DI container)
-        return Array.Empty<string>();
+        return [];
     }
 
     /// <summary>
@@ -36,17 +36,15 @@ public static class AnalyticsServiceValidation
     /// </summary>
     /// <param name="value">The AnalyticsService instance to check</param>
     /// <returns>True if the instance is valid; otherwise, false.</returns>
-    public static bool IsValid(this AnalyticsService? value)
-    {
-        return value?.Validate().Count == 0;
-    }
+    public static bool IsValid(this AnalyticsService? value) => value is not null && value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified AnalyticsService instance is valid, throwing an exception
     /// with detailed validation messages if it is not.
     /// </summary>
     /// <param name="value">The AnalyticsService instance to validate</param>
-    /// <exception cref="ArgumentException">Thrown if the instance is null or has validation problems</exception>
+    /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
+    /// <exception cref="ArgumentException">Thrown if the instance has validation problems</exception>
     public static void EnsureValid(this AnalyticsService? value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -66,18 +64,16 @@ public static class AnalyticsServiceValidation
     /// </summary>
     /// <param name="projectKey">The project key to validate</param>
     /// <returns>A list of validation problems (empty if valid)</returns>
+    /// <exception cref="ArgumentNullException">Thrown if projectKey is null</exception>
     public static IReadOnlyList<string> ValidateProjectKey(string? projectKey)
     {
         var problems = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(projectKey))
-        {
-            problems.Add("Project key cannot be null, empty, or whitespace");
-            return problems.AsReadOnly();
-        }
+        ArgumentException.ThrowIfNullOrEmpty(projectKey);
 
         // Basic validation: project keys are typically uppercase alphanumeric with hyphens
         var normalized = projectKey.Trim();
+
         if (normalized.Any(c => !char.IsLetterOrDigit(c) && c != '-'))
         {
             problems.Add("Project key contains invalid characters. Only letters, digits, and hyphens are allowed");
@@ -93,7 +89,7 @@ public static class AnalyticsServiceValidation
             problems.Add("Project key is too short (minimum 2 characters)");
         }
 
-        return problems.AsReadOnly();
+        return problems;
     }
 
     /// <summary>
@@ -102,6 +98,7 @@ public static class AnalyticsServiceValidation
     /// </summary>
     /// <param name="sprintCount">The number of sprints to analyze</param>
     /// <returns>A list of validation problems (empty if valid)</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if sprintCount is less than 0</exception>
     public static IReadOnlyList<string> ValidateSprintCount(int sprintCount)
     {
         var problems = new List<string>();
@@ -115,7 +112,7 @@ public static class AnalyticsServiceValidation
             problems.Add("Sprint count is too large (maximum 50 sprints)");
         }
 
-        return problems.AsReadOnly();
+        return problems;
     }
 
     /// <summary>
@@ -124,8 +121,11 @@ public static class AnalyticsServiceValidation
     /// <param name="date">The date to validate</param>
     /// <param name="paramName">The name of the parameter for error messages</param>
     /// <returns>A list of validation problems (empty if valid)</returns>
+    /// <exception cref="ArgumentException">Thrown if paramName is null or empty</exception>
     public static IReadOnlyList<string> ValidateDate(DateTime date, string paramName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(paramName);
+
         var problems = new List<string>();
 
         // Default DateTime (Unix epoch) is considered invalid for business logic
@@ -142,7 +142,7 @@ public static class AnalyticsServiceValidation
             problems.Add($"{paramName} date is more than 1 year in the future");
         }
 
-        return problems.AsReadOnly();
+        return problems;
     }
 
     /// <summary>
@@ -153,8 +153,11 @@ public static class AnalyticsServiceValidation
     /// <param name="minValue">Minimum allowed value (inclusive)</param>
     /// <param name="maxValue">Maximum allowed value (inclusive)</param>
     /// <returns>A list of validation problems (empty if valid)</returns>
+    /// <exception cref="ArgumentException">Thrown if paramName is null or empty</exception>
     public static IReadOnlyList<string> ValidateNumber(double value, string paramName, double minValue = 0, double maxValue = 10000)
     {
+        ArgumentException.ThrowIfNullOrEmpty(paramName);
+
         var problems = new List<string>();
 
         if (double.IsNaN(value))
@@ -174,7 +177,7 @@ public static class AnalyticsServiceValidation
             problems.Add($"{paramName} cannot be greater than {maxValue} (was {value.ToString(CultureInfo.InvariantCulture)})");
         }
 
-        return problems.AsReadOnly();
+        return problems;
     }
 
     /// <summary>
@@ -184,21 +187,22 @@ public static class AnalyticsServiceValidation
     /// <param name="collection">The collection to validate</param>
     /// <param name="paramName">The name of the parameter for error messages</param>
     /// <returns>A list of validation problems (empty if valid)</returns>
+    /// <exception cref="ArgumentException">Thrown if paramName is null or empty</exception>
     public static IReadOnlyList<string> ValidateCollection<T>(IReadOnlyCollection<T>? collection, string paramName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(paramName);
+
         var problems = new List<string>();
 
         if (collection is null)
         {
             problems.Add($"{paramName} collection cannot be null");
-            return problems.AsReadOnly();
         }
-
-        if (collection.Count == 0)
+        else if (collection.Count == 0)
         {
             problems.Add($"{paramName} collection cannot be empty");
         }
 
-        return problems.AsReadOnly();
+        return problems;
     }
 }
