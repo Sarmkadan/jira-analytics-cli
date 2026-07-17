@@ -49,11 +49,12 @@ public static class DateTimeExtensionsTestsExtensions
     /// </summary>
     /// <param name="date">The base date.</param>
     /// <returns>A DateTime at midnight on Saturday.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when date is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="date"/> is null.</exception>
     public static DateTime AtWeekendStart(this DateTime date)
     {
         ArgumentNullException.ThrowIfNull(date);
-        return date.Date.AddDays(-(int)date.DayOfWeek + (int)DayOfWeek.Saturday);
+        var daysToSaturday = ((int)DayOfWeek.Saturday - (int)date.DayOfWeek + 7) % 7;
+        return date.Date.AddDays(daysToSaturday);
     }
 
     /// <summary>
@@ -74,7 +75,7 @@ public static class DateTimeExtensionsTestsExtensions
     /// </summary>
     /// <param name="date">The base date.</param>
     /// <returns>A DateTime at 17:00 on the previous Friday.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when date is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="date"/> is null.</exception>
     public static DateTime AtPreviousBusinessWeekEnd(this DateTime date)
     {
         ArgumentNullException.ThrowIfNull(date);
@@ -136,7 +137,7 @@ public static class DateTimeExtensionsTestsExtensions
     /// <param name="startDate">The start date (inclusive).</param>
     /// <param name="endDate">The end date (inclusive).</param>
     /// <returns>An enumerable of DateTime values representing business days.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when startDate or endDate is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="startDate"/> or <paramref name="endDate"/> is null.</exception>
     public static IEnumerable<DateTime> GetBusinessDays(this DateTime startDate, DateTime endDate)
     {
         ArgumentNullException.ThrowIfNull(startDate);
@@ -167,7 +168,7 @@ public static class DateTimeExtensionsTestsExtensions
     /// <param name="startDate">The start date (inclusive).</param>
     /// <param name="endDate">The end date (inclusive).</param>
     /// <returns>An enumerable of DateTime values representing business hours.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when startDate or endDate is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="startDate"/> or <paramref name="endDate"/> is null.</exception>
     public static IEnumerable<DateTime> GetBusinessHours(this DateTime startDate, DateTime endDate)
     {
         ArgumentNullException.ThrowIfNull(startDate);
@@ -205,7 +206,8 @@ public static class DateTimeExtensionsTestsExtensions
     /// </summary>
     /// <param name="date">The base date.</param>
     /// <returns>A DateTime representing the last day of the month.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when date is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="date"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the year/month combination is invalid.</exception>
     public static DateTime LastDayOfMonth(this DateTime date)
     {
         ArgumentNullException.ThrowIfNull(date);
@@ -217,22 +219,14 @@ public static class DateTimeExtensionsTestsExtensions
     /// </summary>
     /// <param name="date">The base date.</param>
     /// <returns>A DateTime with time set to 00:00:00.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when date is null.</exception>
-    public static DateTime AtMidnight(this DateTime date)
-    {
-        ArgumentNullException.ThrowIfNull(date);
-        return date.Date;
-    }
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="date"/> is null.</exception>
+    public static DateTime AtMidnight(this DateTime date) => date.Date;
 
     /// <summary>
     /// Creates a date with the time component set to noon.
     /// </summary>
     /// <param name="date">The base date.</param>
     /// <returns>A DateTime with time set to 12:00:00.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when date is null.</exception>
-    public static DateTime AtNoon(this DateTime date)
-    {
-        ArgumentNullException.ThrowIfNull(date);
-        return date.Date.AddHours(12);
-    }
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="date"/> is null.</exception>
+    public static DateTime AtNoon(this DateTime date) => date.Date.AddHours(12);
 }
