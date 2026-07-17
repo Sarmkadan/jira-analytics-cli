@@ -92,3 +92,69 @@ var remainingOverTime = historicalSnapshots.Append(snapshot).ToList()
 Console.WriteLine($"Completed over time: [{string.Join(", ", completedOverTime)}]");
 Console.WriteLine($"Remaining over time: [{string.Join(", ", remainingOverTime)}]");
 ```
+
+## ReportServiceValidation
+
+The `ReportServiceValidation` class provides extension methods for validating `ReportService` instances and their parameters used in report generation. It includes methods for validating service instances, checking validity, ensuring validity with exceptions, and validating various report parameters like project keys, sprint IDs, output paths, and formats.
+
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using JiraAnalyticsCli.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a ReportService instance (typically injected via DI)
+var reportService = new ReportService(
+    // dependencies would be injected here
+);
+
+// Validate the ReportService instance
+var validationErrors = reportService.Validate();
+Console.WriteLine($"Validation errors count: {validationErrors.Count}");
+
+// Check if the ReportService instance is valid
+var isValid = reportService.IsValid();
+Console.WriteLine($"Is valid: {isValid}");
+
+// Ensure the ReportService instance is valid (throws if invalid)
+try
+{
+    reportService.EnsureValid();
+    Console.WriteLine("ReportService instance is valid");
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+}
+
+// Validate a project key for report generation
+var projectKeyErrors = ReportServiceValidation.ValidateProjectKey("PROJ-2026");
+if (projectKeyErrors.Count == 0)
+{
+    Console.WriteLine("Project key is valid");
+}
+
+// Validate a sprint ID for burndown chart generation
+var sprintIdErrors = ReportServiceValidation.ValidateSprintId(123);
+if (sprintIdErrors.Count == 0)
+{
+    Console.WriteLine("Sprint ID is valid");
+}
+
+// Validate an output path for report generation
+var outputPathErrors = ReportServiceValidation.ValidateOutputPath("./reports/sprint-2026-q3.html");
+if (outputPathErrors.Count == 0)
+{
+    Console.WriteLine("Output path is valid");
+}
+
+// Validate a format for report generation
+var formatErrors = ReportServiceValidation.ValidateFormat("html");
+if (formatErrors.Count == 0)
+{
+    Console.WriteLine("Format is valid");
+}
+```
