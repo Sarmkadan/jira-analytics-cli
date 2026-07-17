@@ -4,6 +4,8 @@
 // =============================================================================
 
 using System.Globalization;
+using System.Reflection;
+using Xunit;
 
 namespace JiraAnalyticsCli.Tests.Utils;
 
@@ -25,35 +27,211 @@ public static class FormattingHelpersTestsValidation
         var problems = new List<string>();
 
         // Validate FormatPercentage test cases
-        // FormatPercentage_DefaultPrecision_ReturnsOneDecimalPlace - no validation needed
-        // FormatPercentage_ZeroPrecision_ReturnsWholeNumber - no validation needed
-        // FormatPercentage_ZeroValue_ReturnsZeroPercent - no validation needed
+        problems.AddRange(ValidateFormatPercentageTests(value));
 
         // Validate FormatBytes test cases
-        // FormatBytes_VariousSizes_ReturnsHumanReadable - validates with specific byte values
+        problems.AddRange(ValidateFormatBytesTests(value));
 
         // Validate CreateTable test cases
-        // CreateTable_NullHeaders_ReturnsEmpty - null headers are explicitly tested
-        // CreateTable_EmptyHeaders_ReturnsEmpty - empty headers are explicitly tested
-        // CreateTable_EmptyRows_ReturnsEmpty - empty rows are explicitly tested
-        // CreateTable_ValidData_ContainsHeadersAndRows - validates with actual data
-        // CreateTable_RowShorterThanHeaders_PadsWithEmpty - validates padding behavior
+        problems.AddRange(ValidateCreateTableTests(value));
 
         // Validate FormatStatus test cases
-        // FormatStatus_VariousStatuses_ContainsOriginalStatus - validates status strings
+        problems.AddRange(ValidateFormatStatusTests(value));
 
         // Validate RepeatChar test cases
-        // RepeatChar_ZeroCount_ReturnsEmpty - validates zero count
-        // RepeatChar_PositiveCount_ReturnsRepeatedString - validates positive count
+        problems.AddRange(ValidateRepeatCharTests(value));
 
         // Validate Indent test cases
-        // Indent_DefaultSpaces_AddsTwoSpaces - validates default indentation
-        // Indent_CustomSpaces_AddsCorrectIndentation - validates custom indentation
+        problems.AddRange(ValidateIndentTests(value));
 
         // Validate CenterText test cases
-        // CenterText_ShorterThanWidth_CentersWithPadding - validates centering
-        // CenterText_EqualToWidth_ReturnsOriginal - validates equal width
-        // CenterText_LongerThanWidth_ReturnsOriginal - validates longer than width
+        problems.AddRange(ValidateCenterTextTests(value));
+
+        return problems.AsReadOnly();
+    }
+
+    private static IReadOnlyList<string> ValidateFormatPercentageTests(FormattingHelpersTests tests)
+    {
+        var problems = new List<string>();
+
+        // Test that FormatPercentage_DefaultPrecision_ReturnsOneDecimalPlace exists
+        var method = typeof(FormattingHelpersTests).GetMethod("FormatPercentage_DefaultPrecision_ReturnsOneDecimalPlace");
+        if (method == null)
+        {
+            problems.Add("Missing test method: FormatPercentage_DefaultPrecision_ReturnsOneDecimalPlace");
+        }
+
+        // Test that FormatPercentage_ZeroPrecision_ReturnsWholeNumber exists
+        method = typeof(FormattingHelpersTests).GetMethod("FormatPercentage_ZeroPrecision_ReturnsWholeNumber");
+        if (method == null)
+        {
+            problems.Add("Missing test method: FormatPercentage_ZeroPrecision_ReturnsWholeNumber");
+        }
+
+        // Test that FormatPercentage_ZeroValue_ReturnsZeroPercent exists
+        method = typeof(FormattingHelpersTests).GetMethod("FormatPercentage_ZeroValue_ReturnsZeroPercent");
+        if (method == null)
+        {
+            problems.Add("Missing test method: FormatPercentage_ZeroValue_ReturnsZeroPercent");
+        }
+
+        return problems.AsReadOnly();
+    }
+
+    private static IReadOnlyList<string> ValidateFormatBytesTests(FormattingHelpersTests tests)
+    {
+        var problems = new List<string>();
+
+        // Test that FormatBytes_VariousSizes_ReturnsHumanReadable exists
+        var method = typeof(FormattingHelpersTests).GetMethod("FormatBytes_VariousSizes_ReturnsHumanReadable");
+        if (method == null)
+        {
+            problems.Add("Missing test method: FormatBytes_VariousSizes_ReturnsHumanReadable");
+        }
+        else
+        {
+            // Verify it has the correct attributes
+            var attributes = method.GetCustomAttributes(typeof(TheoryAttribute), false);
+            if (attributes.Length == 0)
+            {
+                problems.Add("FormatBytes_VariousSizes_ReturnsHumanReadable should be marked with [Theory]");
+            }
+        }
+
+        return problems.AsReadOnly();
+    }
+
+    private static IReadOnlyList<string> ValidateCreateTableTests(FormattingHelpersTests tests)
+    {
+        var problems = new List<string>();
+
+        // Test that CreateTable_NullHeaders_ReturnsEmpty exists
+        var method = typeof(FormattingHelpersTests).GetMethod("CreateTable_NullHeaders_ReturnsEmpty");
+        if (method == null)
+        {
+            problems.Add("Missing test method: CreateTable_NullHeaders_ReturnsEmpty");
+        }
+
+        // Test that CreateTable_EmptyHeaders_ReturnsEmpty exists
+        method = typeof(FormattingHelpersTests).GetMethod("CreateTable_EmptyHeaders_ReturnsEmpty");
+        if (method == null)
+        {
+            problems.Add("Missing test method: CreateTable_EmptyHeaders_ReturnsEmpty");
+        }
+
+        // Test that CreateTable_EmptyRows_ReturnsEmpty exists
+        method = typeof(FormattingHelpersTests).GetMethod("CreateTable_EmptyRows_ReturnsEmpty");
+        if (method == null)
+        {
+            problems.Add("Missing test method: CreateTable_EmptyRows_ReturnsEmpty");
+        }
+
+        // Test that CreateTable_ValidData_ContainsHeadersAndRows exists
+        method = typeof(FormattingHelpersTests).GetMethod("CreateTable_ValidData_ContainsHeadersAndRows");
+        if (method == null)
+        {
+            problems.Add("Missing test method: CreateTable_ValidData_ContainsHeadersAndRows");
+        }
+
+        // Test that CreateTable_RowShorterThanHeaders_PadsWithEmpty exists
+        method = typeof(FormattingHelpersTests).GetMethod("CreateTable_RowShorterThanHeaders_PadsWithEmpty");
+        if (method == null)
+        {
+            problems.Add("Missing test method: CreateTable_RowShorterThanHeaders_PadsWithEmpty");
+        }
+
+        return problems.AsReadOnly();
+    }
+
+    private static IReadOnlyList<string> ValidateFormatStatusTests(FormattingHelpersTests tests)
+    {
+        var problems = new List<string>();
+
+        // Test that FormatStatus_VariousStatuses_ContainsOriginalStatus exists
+        var method = typeof(FormattingHelpersTests).GetMethod("FormatStatus_VariousStatuses_ContainsOriginalStatus");
+        if (method == null)
+        {
+            problems.Add("Missing test method: FormatStatus_VariousStatuses_ContainsOriginalStatus");
+        }
+        else
+        {
+            // Verify it has the correct attributes
+            var attributes = method.GetCustomAttributes(typeof(TheoryAttribute), false);
+            if (attributes.Length == 0)
+            {
+                problems.Add("FormatStatus_VariousStatuses_ContainsOriginalStatus should be marked with [Theory]");
+            }
+        }
+
+        return problems.AsReadOnly();
+    }
+
+    private static IReadOnlyList<string> ValidateRepeatCharTests(FormattingHelpersTests tests)
+    {
+        var problems = new List<string>();
+
+        // Test that RepeatChar_ZeroCount_ReturnsEmpty exists
+        var method = typeof(FormattingHelpersTests).GetMethod("RepeatChar_ZeroCount_ReturnsEmpty");
+        if (method == null)
+        {
+            problems.Add("Missing test method: RepeatChar_ZeroCount_ReturnsEmpty");
+        }
+
+        // Test that RepeatChar_PositiveCount_ReturnsRepeatedString exists
+        method = typeof(FormattingHelpersTests).GetMethod("RepeatChar_PositiveCount_ReturnsRepeatedString");
+        if (method == null)
+        {
+            problems.Add("Missing test method: RepeatChar_PositiveCount_ReturnsRepeatedString");
+        }
+
+        return problems.AsReadOnly();
+    }
+
+    private static IReadOnlyList<string> ValidateIndentTests(FormattingHelpersTests tests)
+    {
+        var problems = new List<string>();
+
+        // Test that Indent_DefaultSpaces_AddsTwoSpaces exists
+        var method = typeof(FormattingHelpersTests).GetMethod("Indent_DefaultSpaces_AddsTwoSpaces");
+        if (method == null)
+        {
+            problems.Add("Missing test method: Indent_DefaultSpaces_AddsTwoSpaces");
+        }
+
+        // Test that Indent_CustomSpaces_AddsCorrectIndentation exists
+        method = typeof(FormattingHelpersTests).GetMethod("Indent_CustomSpaces_AddsCorrectIndentation");
+        if (method == null)
+        {
+            problems.Add("Missing test method: Indent_CustomSpaces_AddsCorrectIndentation");
+        }
+
+        return problems.AsReadOnly();
+    }
+
+    private static IReadOnlyList<string> ValidateCenterTextTests(FormattingHelpersTests tests)
+    {
+        var problems = new List<string>();
+
+        // Test that CenterText_ShorterThanWidth_CentersWithPadding exists
+        var method = typeof(FormattingHelpersTests).GetMethod("CenterText_ShorterThanWidth_CentersWithPadding");
+        if (method == null)
+        {
+            problems.Add("Missing test method: CenterText_ShorterThanWidth_CentersWithPadding");
+        }
+
+        // Test that CenterText_EqualToWidth_ReturnsOriginal exists
+        method = typeof(FormattingHelpersTests).GetMethod("CenterText_EqualToWidth_ReturnsOriginal");
+        if (method == null)
+        {
+            problems.Add("Missing test method: CenterText_EqualToWidth_ReturnsOriginal");
+        }
+
+        // Test that CenterText_LongerThanWidth_ReturnsOriginal exists
+        method = typeof(FormattingHelpersTests).GetMethod("CenterText_LongerThanWidth_ReturnsOriginal");
+        if (method == null)
+        {
+            problems.Add("Missing test method: CenterText_LongerThanWidth_ReturnsOriginal");
+        }
 
         return problems.AsReadOnly();
     }
@@ -66,6 +244,7 @@ public static class FormattingHelpersTestsValidation
     /// <exception cref="ArgumentNullException">Thrown if value is null.</exception>
     public static bool IsValid(this FormattingHelpersTests value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return value.Validate().Count == 0;
     }
 
