@@ -40,6 +40,8 @@ public static class SprintRepositoryJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>A new <see cref="SprintRepository"/> populated with the deserialized sprints.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static SprintRepository? FromJson(string json)
     {
@@ -54,11 +56,12 @@ public static class SprintRepositoryJsonExtensions
             }
         );
 
-        if (sprints == null || sprints.Count == 0)
-            return new SprintRepository(null!); // Logger will be null but methods handle it
-
         var repository = new SprintRepository(null!);
-        repository.LoadSprints(sprints);
+        if (sprints is { Count: > 0 })
+        {
+            repository.LoadSprints(sprints);
+        }
+
         return repository;
     }
 
@@ -68,6 +71,8 @@ public static class SprintRepositoryJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized repository, or null on failure.</param>
     /// <returns>True if deserialization succeeded; otherwise false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     public static bool TryFromJson(string json, out SprintRepository? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -104,23 +109,22 @@ file static class SprintRepositoryExtensions
     /// </summary>
     /// <param name="repository">The repository.</param>
     /// <returns>A list of all sprints.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is null.</exception>
     public static List<Sprint> GetAllSprints(this SprintRepository repository)
     {
         ArgumentNullException.ThrowIfNull(repository);
 
-        // Since SprintRepository uses ConcurrentDictionary internally, we need to extract all values
-        // This uses reflection to access the private _sprints field
+        // Access the internal ConcurrentDictionary to extract all sprint values
         var field = typeof(SprintRepository).GetField(
             "_sprints",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
         );
 
-        if (field?.GetValue(repository) is System.Collections.Concurrent.ConcurrentDictionary<int, Sprint> dictionary)
+        return field?.GetValue(repository) switch
         {
-            return dictionary.Values.ToList();
-        }
-
-        return new List<Sprint>();
+            System.Collections.Concurrent.ConcurrentDictionary<int, Sprint> dictionary => dictionary.Values.ToList(),
+            _ => throw new InvalidOperationException("Internal _sprints field not found or has unexpected type")
+        };
     }
 
     /// <summary>
@@ -128,6 +132,8 @@ file static class SprintRepositoryExtensions
     /// </summary>
     /// <param name="repository">The repository.</param>
     /// <param name="sprints">The sprints to load.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> or <paramref name="sprints"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the internal _sprints field cannot be accessed.</exception>
     public static void LoadSprints(this SprintRepository repository, List<Sprint> sprints)
     {
         ArgumentNullException.ThrowIfNull(repository);
@@ -138,13 +144,15 @@ file static class SprintRepositoryExtensions
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
         );
 
-        if (field?.GetValue(repository) is System.Collections.Concurrent.ConcurrentDictionary<int, Sprint> dictionary)
+        if (field?.GetValue(repository) is not System.Collections.Concurrent.ConcurrentDictionary<int, Sprint> dictionary)
         {
-            dictionary.Clear();
-            foreach (var sprint in sprints)
-            {
-                dictionary.AddOrUpdate(sprint.Id, sprint, (id, existing) => sprint);
-            }
+            throw new InvalidOperationException("Internal _sprints field not found or has unexpected type");
+        }
+
+        dictionary.Clear();
+        foreach (var sprint in sprints)
+        {
+            dictionary.AddOrUpdate(sprint.Id, sprint, (_, _) => sprint);
         }
     }
 }
