@@ -1,160 +1,141 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
-using System.Globalization;
+using FluentAssertions;
+using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Services;
 
 namespace JiraAnalyticsCli.Tests.Services;
 
 /// <summary>
-/// Validation helpers for the TeamComparisonServiceTests class.
+/// Validation helpers for TeamComparisonService functionality.
+/// Provides reusable validation logic for comparing team performance metrics.
 /// </summary>
 public static class TeamComparisonServiceTestsValidation
 {
     /// <summary>
-    /// Validates that the TeamComparisonServiceTests instance meets all requirements.
+    /// Validates that a team comparison report contains the expected teams.
     /// </summary>
-    /// <param name="value">The instance to validate.</param>
-    /// <returns>A list of human-readable validation problems; empty if valid.</returns>
-    public static IReadOnlyList<string> Validate(this TeamComparisonServiceTests value)
+    /// <param name="report">The comparison report to validate.</param>
+    /// <param name="expectedProjectKeys">The expected project keys that should be present in the report.</param>
+    /// <exception cref="ArgumentNullException">Thrown when report is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when expectedProjectKeys is null.</exception>
+    public static void ShouldContainTeams(this TeamComparisonReport report, IReadOnlyCollection<string> expectedProjectKeys)
     {
-        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(report);
+        ArgumentNullException.ThrowIfNull(expectedProjectKeys);
 
-        var problems = new List<string>();
+        report.Teams.Should().NotBeNull($"because the report must contain team snapshots");
+        report.Teams.Should().HaveCount(expectedProjectKeys.Count,
+            $"because the report should contain exactly {expectedProjectKeys.Count} team(s)");
 
-        // Validate that all test methods are present and can be invoked
-        problems.AddRange(ValidateTestMethodInvocations(value));
-
-        return problems.AsReadOnly();
+        foreach (var projectKey in expectedProjectKeys)
+        {
+            report.Teams.Should().Contain(t => string.Equals(t.ProjectKey, projectKey, StringComparison.OrdinalIgnoreCase),
+                $"because the report should contain team with project key '{projectKey}'");
+        }
     }
 
     /// <summary>
-    /// Checks if the TeamComparisonServiceTests instance is valid.
+    /// Validates that a team comparison report identifies the fastest team correctly.
     /// </summary>
-    /// <param name="value">The instance to validate.</param>
-    /// <returns>True if valid; otherwise false.</returns>
-    public static bool IsValid(this TeamComparisonServiceTests value)
+    /// <param name="report">The comparison report to validate.</param>
+    /// <param name="expectedFastestTeam">The project key expected to be identified as the fastest team.</param>
+    /// <exception cref="ArgumentNullException">Thrown when report is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when expectedFastestTeam is null or empty.</exception>
+    public static void ShouldIdentifyFastestTeam(this TeamComparisonReport report, string expectedFastestTeam)
     {
-        return Validate(value).Count == 0;
+        ArgumentNullException.ThrowIfNull(report);
+        ArgumentException.ThrowIfNullOrEmpty(expectedFastestTeam);
+
+        report.FastestTeam.Should().Be(expectedFastestTeam,
+            $"because the fastest team should be '{expectedFastestTeam}'");
     }
 
     /// <summary>
-    /// Ensures that the TeamComparisonServiceTests instance is valid, throwing an exception if not.
+    /// Validates that a team comparison report identifies the highest quality team correctly.
     /// </summary>
-    /// <param name="value">The instance to validate.</param>
-    /// <exception cref="ArgumentException">Thrown when validation fails.</exception>
-    public static void EnsureValid(this TeamComparisonServiceTests value)
+    /// <param name="report">The comparison report to validate.</param>
+    /// <param name="expectedHighestQualityTeam">The project key expected to be identified as the highest quality team.</param>
+    /// <exception cref="ArgumentNullException">Thrown when report is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when expectedHighestQualityTeam is null or empty.</exception>
+    public static void ShouldIdentifyHighestQualityTeam(this TeamComparisonReport report, string expectedHighestQualityTeam)
     {
-        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(report);
+        ArgumentException.ThrowIfNullOrEmpty(expectedHighestQualityTeam);
 
-        var problems = Validate(value);
+        report.HighestQualityTeam.Should().Be(expectedHighestQualityTeam,
+            $"because the highest quality team should be '{expectedHighestQualityTeam}'");
+    }
 
-        if (problems.Count > 0)
+    /// <summary>
+    /// Validates that a team comparison report identifies the most consistent team correctly.
+    /// </summary>
+    /// <param name="report">The comparison report to validate.</param>
+    /// <param name="expectedMostConsistentTeam">The project key expected to be identified as the most consistent team.</param>
+    /// <exception cref="ArgumentNullException">Thrown when report is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when expectedMostConsistentTeam is null or empty.</exception>
+    public static void ShouldIdentifyMostConsistentTeam(this TeamComparisonReport report, string expectedMostConsistentTeam)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+        ArgumentException.ThrowIfNullOrEmpty(expectedMostConsistentTeam);
+
+        report.MostConsistentTeam.Should().Be(expectedMostConsistentTeam,
+            $"because the most consistent team should be '{expectedMostConsistentTeam}'");
+    }
+
+    /// <summary>
+    /// Validates that a team project snapshot has the expected velocity metrics.
+    /// </summary>
+    /// <param name="snapshot">The team snapshot to validate.</param>
+    /// <param name="expectedVelocity">The expected average velocity value.</param>
+    /// <param name="expectedDefectRate">The expected defect rate value.</param>
+    /// <exception cref="ArgumentNullException">Thrown when snapshot is null.</exception>
+    public static void ShouldHaveMetrics(this TeamProjectSnapshot snapshot, double expectedVelocity, double expectedDefectRate)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        snapshot.AverageVelocity.Should().BeApproximately(expectedVelocity, 0.1,
+            $"because the average velocity should be approximately {expectedVelocity}");
+        snapshot.DefectRate.Should().BeApproximately(expectedDefectRate, 0.1,
+            $"because the defect rate should be approximately {expectedDefectRate}");
+    }
+
+    /// <summary>
+    /// Validates that a team comparison report contains expected summary text.
+    /// </summary>
+    /// <param name="textReport">The text report to validate.</param>
+    /// <param name="expectedProjectKeys">The project keys expected to be mentioned in the report.</param>
+    /// <exception cref="ArgumentNullException">Thrown when textReport is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when expectedProjectKeys is null.</exception>
+    public static void ShouldContainProjectKeys(this string textReport, IReadOnlyCollection<string> expectedProjectKeys)
+    {
+        ArgumentNullException.ThrowIfNull(textReport);
+        ArgumentNullException.ThrowIfNull(expectedProjectKeys);
+
+        foreach (var projectKey in expectedProjectKeys)
         {
-            throw new ArgumentException(
-                $"TeamComparisonServiceTests validation failed:{Environment.NewLine}  - {string.Join($"{Environment.NewLine}  - ", problems)}");
+            textReport.Should().Contain(projectKey,
+                $"because the text report should mention project key '{projectKey}'");
         }
     }
 
-    private static IReadOnlyList<string> ValidateTestMethodInvocations(TeamComparisonServiceTests value)
+    /// <summary>
+    /// Validates that a team comparison report contains expected performance labels.
+    /// </summary>
+    /// <param name="textReport">The text report to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown when textReport is null.</exception>
+    public static void ShouldContainPerformanceLabels(this string textReport)
     {
-        var problems = new List<string>();
+        ArgumentNullException.ThrowIfNull(textReport);
 
-        try
-        {
-            // CompareTeamsAsync_WithTwoProjects_ReturnsBothSnapshots
-            var task1 = value.CompareTeamsAsync_WithTwoProjects_ReturnsBothSnapshots();
-            if (task1 == null)
-            {
-                problems.Add("CompareTeamsAsync_WithTwoProjects_ReturnsBothSnapshots returned null");
-            }
-        }
-        catch (Exception ex)
-        {
-            problems.Add($"CompareTeamsAsync_WithTwoProjects_ReturnsBothSnapshots threw: {ex.GetType().Name}: {ex.Message}");
-        }
-
-        try
-        {
-            // CompareTeamsAsync_IdentifiesFastestTeamCorrectly
-            var task2 = value.CompareTeamsAsync_IdentifiesFastestTeamCorrectly();
-            if (task2 == null)
-            {
-                problems.Add("CompareTeamsAsync_IdentifiesFastestTeamCorrectly returned null");
-            }
-        }
-        catch (Exception ex)
-        {
-            problems.Add($"CompareTeamsAsync_IdentifiesFastestTeamCorrectly threw: {ex.GetType().Name}: {ex.Message}");
-        }
-
-        try
-        {
-            // CompareTeamsAsync_IdentifiesHighestQualityTeamByLowestDefectRate
-            var task3 = value.CompareTeamsAsync_IdentifiesHighestQualityTeamByLowestDefectRate();
-            if (task3 == null)
-            {
-                problems.Add("CompareTeamsAsync_IdentifiesHighestQualityTeamByLowestDefectRate returned null");
-            }
-        }
-        catch (Exception ex)
-        {
-            problems.Add($"CompareTeamsAsync_IdentifiesHighestQualityTeamByLowestDefectRate threw: {ex.GetType().Name}: {ex.Message}");
-        }
-
-        try
-        {
-            // CompareTeamsAsync_DeduplicatesProjectKeys
-            var task4 = value.CompareTeamsAsync_DeduplicatesProjectKeys();
-            if (task4 == null)
-            {
-                problems.Add("CompareTeamsAsync_DeduplicatesProjectKeys returned null");
-            }
-        }
-        catch (Exception ex)
-        {
-            problems.Add($"CompareTeamsAsync_DeduplicatesProjectKeys threw: {ex.GetType().Name}: {ex.Message}");
-        }
-
-        try
-        {
-            // CompareTeamsAsync_WithEmptyProjectKeys_ThrowsArgumentException
-            var task5 = value.CompareTeamsAsync_WithEmptyProjectKeys_ThrowsArgumentException();
-            if (task5 == null)
-            {
-                problems.Add("CompareTeamsAsync_WithEmptyProjectKeys_ThrowsArgumentException returned null");
-            }
-        }
-        catch (Exception ex)
-        {
-            problems.Add($"CompareTeamsAsync_WithEmptyProjectKeys_ThrowsArgumentException threw: {ex.GetType().Name}: {ex.Message}");
-        }
-
-        try
-        {
-            // CompareTeamsAsync_WithZeroSprintCount_ThrowsArgumentOutOfRangeException
-            var task6 = value.CompareTeamsAsync_WithZeroSprintCount_ThrowsArgumentOutOfRangeException();
-            if (task6 == null)
-            {
-                problems.Add("CompareTeamsAsync_WithZeroSprintCount_ThrowsArgumentOutOfRangeException returned null");
-            }
-        }
-        catch (Exception ex)
-        {
-            problems.Add($"CompareTeamsAsync_WithZeroSprintCount_ThrowsArgumentOutOfRangeException threw: {ex.GetType().Name}: {ex.Message}");
-        }
-
-        try
-        {
-            // FormatAsText_WithTwoTeams_ContainsBothProjectKeys
-            value.FormatAsText_WithTwoTeams_ContainsBothProjectKeys();
-        }
-        catch (Exception ex)
-        {
-            problems.Add($"FormatAsText_WithTwoTeams_ContainsBothProjectKeys threw: {ex.GetType().Name}: {ex.Message}");
-        }
-
-        return problems;
+        textReport.Should().Contain("Fastest team",
+            "because the report should identify the fastest team");
+        textReport.Should().Contain("Highest quality",
+            "because the report should identify the highest quality team");
+        textReport.Should().Contain("Most consistent",
+            "because the report should identify the most consistent team");
     }
 }
