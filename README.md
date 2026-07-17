@@ -1,106 +1,94 @@
 
-## SprintExtensions
+## BurndownSnapshotExtensions
 
-The `SprintExtensions` class provides extension methods for the `Sprint` model that enhance sprint analytics capabilities. It includes methods for calculating completion percentages, health scores, velocity metrics, cycle times, burn rates, and risk assessments. The extensions also provide status summaries, trend analysis, and goal tracking to help teams monitor sprint progress and identify potential issues.
+The `BurndownSnapshotExtensions` class provides extension methods for the `BurndownSnapshot` model that enhance burndown chart analysis and reporting. It includes methods for calculating velocity trends, detecting acceleration/deceleration, computing burn rates, creating delta comparisons, formatting status strings, detecting scope creep, and extracting time-series data for charting.
 
 ### Usage Example
 
 ```csharp
 using JiraAnalyticsCli.Models;
 using System;
+using System.Collections.Generic;
 
-// Create a sample sprint
-var sprint = new Sprint
+// Create a sample burndown snapshot
+var snapshot = new BurndownSnapshot
 {
-    Key = "PROJ-2026-Q3-SPR1",
-    Name = "Q3 2026 Sprint 1",
-    State = "Active",
-    Goal = "Implement authentication and authorization features",
-    StartDate = new DateTime(2026, 7, 1),
-    EndDate = new DateTime(2026, 7, 15),
-    Issues = new List<JiraIssue>
+    Timestamp = new DateTime(2026, 7, 10, 14, 30, 0),
+    SprintId = "PROJ-2026-Q3-SPR1",
+    TotalStoryPoints = 50,
+    CompletedStoryPoints = 25,
+    RemainingStoryPoints = 25,
+    TotalIssueCount = 20,
+    CompletedIssueCount = 10,
+    RemainingIssueCount = 10,
+    ScopeChanges = 2
+};
+
+// Create historical snapshots for trend analysis
+var historicalSnapshots = new List<BurndownSnapshot>
+{
+    new BurndownSnapshot
     {
-        new JiraIssue
-        {
-            Key = "PROJ-101",
-            Summary = "Implement login page",
-            Status = "In Progress",
-            Priority = "High",
-            CreatedDate = new DateTime(2026, 7, 1),
-            DueDate = new DateTime(2026, 7, 10),
-            StoryPoints = 5,
-            ResolutionDate = null
-        },
-        new JiraIssue
-        {
-            Key = "PROJ-102",
-            Summary = "Fix authentication bug",
-            Status = "Done",
-            Priority = "Critical",
-            CreatedDate = new DateTime(2026, 6, 28),
-            DueDate = new DateTime(2026, 7, 5),
-            StoryPoints = 3,
-            ResolutionDate = new DateTime(2026, 7, 3)
-        },
-        new JiraIssue
-        {
-            Key = "PROJ-103",
-            Summary = "Implement role-based authorization",
-            Status = "To Do",
-            Priority = "High",
-            CreatedDate = new DateTime(2026, 7, 2),
-            DueDate = new DateTime(2026, 7, 12),
-            StoryPoints = 8,
-            ResolutionDate = null
-        },
-        new JiraIssue
-        {
-            Key = "PROJ-104",
-            Summary = "Update documentation",
-            Status = "Open",
-            Priority = "Medium",
-            CreatedDate = new DateTime(2026, 7, 1),
-            DueDate = new DateTime(2026, 7, 14),
-            StoryPoints = 2,
-            ResolutionDate = null
-        }
+        Timestamp = new DateTime(2026, 7, 9, 14, 30, 0),
+        SprintId = "PROJ-2026-Q3-SPR1",
+        TotalStoryPoints = 50,
+        CompletedStoryPoints = 20,
+        RemainingStoryPoints = 30,
+        TotalIssueCount = 20,
+        CompletedIssueCount = 8,
+        RemainingIssueCount = 12,
+        ScopeChanges = 1
+    },
+    new BurndownSnapshot
+    {
+        Timestamp = new DateTime(2026, 7, 8, 14, 30, 0),
+        SprintId = "PROJ-2026-Q3-SPR1",
+        TotalStoryPoints = 50,
+        CompletedStoryPoints = 15,
+        RemainingStoryPoints = 35,
+        TotalIssueCount = 20,
+        CompletedIssueCount = 6,
+        RemainingIssueCount = 14,
+        ScopeChanges = 0
     }
 };
 
-// Calculate key metrics
-var completionPercent = sprint.GetCompletionPercentage();
-Console.WriteLine($"Completion: {completionPercent:F1}%"); // Output: Completion: 25.0%
+// Calculate velocity trend over time
+var velocityTrend = snapshot.CalculateVelocityTrend(historicalSnapshots);
+Console.WriteLine($"Velocity Trend: {velocityTrend:F2} story points/day");
 
-var healthScore = sprint.GetHealthScore();
-Console.WriteLine($"Health Score: {healthScore:F1}%"); // Output: Health Score: 45.0%
+// Check if velocity is accelerating
+var isAccelerating = snapshot.IsVelocityAccelerating(historicalSnapshots);
+Console.WriteLine($"Is Accelerating: {isAccelerating}");
 
-var averageCycleTime = sprint.GetAverageCycleTime();
-Console.WriteLine($"Average Cycle Time: {averageCycleTime:F1} days"); // Output: Average Cycle Time: 5.0 days
+// Get burn rate for the sprint
+var burnRate = snapshot.GetBurnRate(daysInSprint: 14);
+Console.WriteLine($"Burn Rate: {burnRate:F2} story points/day");
 
-var burnRate = sprint.GetBurnRate();
-Console.WriteLine($"Burn Rate: {burnRate:F2} issues/day"); // Output: Burn Rate: 0.20 issues/day
+// Create a delta snapshot for comparison
+var previousSnapshot = historicalSnapshots[0];
+var deltaSnapshot = snapshot.CreateDeltaSnapshot(previousSnapshot);
+if (deltaSnapshot != null)
+{
+    Console.WriteLine($"Delta - Completed: {deltaSnapshot.CompletedStoryPoints}, " +
+                     $"Remaining: {deltaSnapshot.RemainingStoryPoints}");
+}
 
-// Get status summary
-var statusSummary = sprint.GetStatusSummary();
-Console.WriteLine(statusSummary);
-// Output: Sprint PROJ-2026-Q3-SPR1: Q3 2026 Sprint 1 | State: Active | 
-// Completion: 25.0% (1/4) | Health: 45.0% | Velocity: 0.0% | Burn Rate: 0.20 issues/day
+// Format as status string
+var statusString = snapshot.ToStatusString();
+Console.WriteLine(statusString);
+// Output: Sprint PROJ-2026-Q3-SPR1 @ 2026-07-10 14:30 | 25/50 pts (50.0%) | 10/20 issues
 
-// Get high-priority issues
-var highPriorityIssues = sprint.GetHighPriorityIssues();
-Console.WriteLine($"High Priority Issues: {highPriorityIssues.Count}"); // Output: High Priority Issues: 2
+// Check for scope creep
+var hasScopeCreep = snapshot.HasScopeCreep(threshold: 3);
+Console.WriteLine($"Has Scope Creep: {hasScopeCreep}");
 
-// Get at-risk issues
-var atRiskIssues = sprint.GetAtRiskIssues();
-Console.WriteLine($"At Risk Issues: {atRiskIssues.Count}"); // Output: At Risk Issues: 0
+// Extract time-series data for charting
+var completedOverTime = historicalSnapshots.Append(snapshot).ToList()
+    .GetCompletedStoryPointsOverTime();
+var remainingOverTime = historicalSnapshots.Append(snapshot).ToList()
+    .GetRemainingStoryPointsOverTime();
 
-// Get progress trend
-var trend = sprint.GetProgressTrend();
-Console.WriteLine($"Progress Trend: {trend}"); // Output: Progress Trend: ⏸️ Monitoring Required
-
-// Get goal status
-var goalStatus = sprint.GetGoalStatus();
-Console.WriteLine($"Goal Status: {goalStatus}");
-// Output: Goal Status: 🎯 Goal likely achievable: Implement authentication and authorization features 
-// (25.0% complete, 3/18 story points)
+Console.WriteLine($"Completed over time: [{string.Join(", ", completedOverTime)}]");
+Console.WriteLine($"Remaining over time: [{string.Join(", ", remainingOverTime)}]");
 ```
