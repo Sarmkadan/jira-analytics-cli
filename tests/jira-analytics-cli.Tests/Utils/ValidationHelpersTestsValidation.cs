@@ -72,7 +72,7 @@ public static class ValidationHelpersTestsValidation
     /// </summary>
     /// <param name="value">The ValidationHelpersTests instance to validate.</param>
     /// <returns>A list of human-readable validation problems. Empty list if valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this ValidationHelpersTests value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -80,31 +80,31 @@ public static class ValidationHelpersTestsValidation
         var problems = new List<string>();
 
         // Validate Jira issue keys
-        if (!string.IsNullOrEmpty(value.IssueKey) && !ValidationHelpers.IsValidJiraIssueKey(value.IssueKey))
+        if (value.IssueKey is not null && !ValidationHelpers.IsValidJiraIssueKey(value.IssueKey))
         {
             problems.Add($"IssueKey '{value.IssueKey}' is not a valid Jira issue key format. Expected format: PROJ-123");
         }
 
         // Validate project keys
-        if (!string.IsNullOrEmpty(value.ProjectKey) && !ValidationHelpers.IsValidProjectKey(value.ProjectKey))
+        if (value.ProjectKey is not null && !ValidationHelpers.IsValidProjectKey(value.ProjectKey))
         {
             problems.Add($"ProjectKey '{value.ProjectKey}' is not a valid Jira project key format. Expected uppercase alphanumeric, max 10 characters");
         }
 
         // Validate URLs
-        if (!string.IsNullOrEmpty(value.Url) && !ValidationHelpers.IsValidUrl(value.Url))
+        if (value.Url is not null && !ValidationHelpers.IsValidUrl(value.Url))
         {
             problems.Add($"Url '{value.Url}' is not a valid URL format. Expected http:// or https:// protocol");
         }
 
         // Validate emails
-        if (!string.IsNullOrEmpty(value.Email) && !ValidationHelpers.IsValidEmail(value.Email))
+        if (value.Email is not null && !ValidationHelpers.IsValidEmail(value.Email))
         {
             problems.Add($"Email '{value.Email}' is not a valid email format");
         }
 
         // Validate sprint IDs (must be positive)
-        if (value.SprintId <= 0)
+        if (!ValidationHelpers.IsValidSprintId(value.SprintId))
         {
             problems.Add($"SprintId '{value.SprintId}' must be a positive integer");
         }
@@ -122,7 +122,7 @@ public static class ValidationHelpersTestsValidation
         }
 
         // Validate percentage (0-100)
-        if (value.Percentage < 0 || value.Percentage > 100)
+        if (!ValidationHelpers.IsValidPercentage(value.Percentage))
         {
             problems.Add($"Percentage '{value.Percentage}' must be between 0 and 100 inclusive");
         }
@@ -145,8 +145,8 @@ public static class ValidationHelpersTestsValidation
     /// Throws an <see cref="ArgumentException"/> with a detailed message listing all validation problems if invalid.
     /// </summary>
     /// <param name="value">The ValidationHelpersTests instance to validate.</param>
-    /// <exception cref="ArgumentNullException">Thrown when value is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when value contains validation problems.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="value"/> contains validation problems.</exception>
     public static void EnsureValid(this ValidationHelpersTests value)
     {
         ArgumentNullException.ThrowIfNull(value);
