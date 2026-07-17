@@ -409,3 +409,44 @@ Most consistent: PROJ1
 textReport.ShouldContainProjectKeys(expectedKeys);
 textReport.ShouldContainPerformanceLabels();
 ```
+
+## IssueRepositoryTests
+
+The `IssueRepositoryTests` class contains unit tests for the `IssueRepository` class, verifying that issue storage and retrieval operations work correctly. It tests saving valid issues, handling null inputs, retrieving issues by project, and clearing the repository.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Repositories;
+using Microsoft.Extensions.Logging;
+using Moq;
+
+// Create repository with mock logger
+var loggerMock = new Mock<ILogger<IssueRepository>>();
+var issueRepository = new IssueRepository(loggerMock.Object);
+
+// Save a valid issue
+var issue = new JiraIssue
+{
+Key = "PROJ-123",
+Id = "123",
+Summary = "Implement authentication feature",
+ProjectKey = "PROJ",
+CreatedDate = DateTime.UtcNow
+};
+
+await issueRepository.SaveAsync(issue);
+
+// Retrieve issue by key
+var savedIssue = await issueRepository.GetByKeyAsync("PROJ-123");
+Console.WriteLine(savedIssue?.Key); // Output: PROJ-123
+
+// Get issues by project
+var projIssues = await issueRepository.GetByProjectAsync("PROJ");
+Console.WriteLine(projIssues.Count()); // Output: 1
+
+// Clear all issues
+issueRepository.Clear();
+Console.WriteLine(issueRepository.GetCount()); // Output: 0
+```
