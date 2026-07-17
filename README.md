@@ -1,594 +1,106 @@
-// ... rest of README content ...
 
-## ValidationHelpers
+## SprintExtensions
 
-The `ValidationHelpers` class provides a set of utility methods for validating various data types and formats. It includes methods for checking Jira issue keys, project keys, URLs, email addresses, sprint IDs, story points, date ranges, and percentage values. Additionally, it offers methods for truncating strings with ellipsis, sanitizing strings for CSV/file output, and converting percentage values to visual progress bars.
-
-### Usage Example
-
-```csharp
-using JiraAnalyticsCli.Utils;
-
-// Validate Jira issue key
-var isValidIssueKey = ValidationHelpers.IsValidJiraIssueKey("PROJ-123");
-Console.WriteLine(isValidIssueKey); // Output: true
-
-// Validate URL
-var isValidUrl = ValidationHelpers.IsValidUrl("https://example.com");
-Console.WriteLine(isValidUrl); // Output: true
-
-// Truncate string with ellipsis
-var truncatedString = ValidationHelpers.TruncateWithEllipsis("This is a very long string", 20);
-Console.WriteLine(truncatedString); // Output: "This is a very long..."
-
-// Convert percentage to visual progress bar
-var percentage = 75;
-var progressBar = ValidationHelpers.ToProgressBar(percentage);
-Console.WriteLine(progressBar); // Output: [█████████░░░░░]
-```
-
-## DateTimeExtensions
-
-The `DateTimeExtensions` class provides utility extension methods for date and time calculations, formatting, and business logic operations. It includes methods for calculating business days, checking business hours, determining week numbers, validating date states, formatting durations, and finding the last business day of a month.
-
-
-### Usage Example
-
-```csharp
-using JiraAnalyticsCli.Utils;
-
-// Current date and time
-var now = DateTime.UtcNow;
-var yesterday = now.AddDays(-1);
-var tomorrow = now.AddDays(1);
-var lastMonth = new DateTime(now.Year, now.Month - 1, 15);
-
-// Check if date is in business hours
-var isBusinessHour = now.IsBusinessHour();
-Console.WriteLine($"Is business hour: {isBusinessHour}");
-
-// Calculate business days between two dates
-var businessDays = yesterday.GetBusinessDaysBetween(now);
-Console.WriteLine($"Business days between yesterday and now: {businessDays}");
-
-// Get week number (ISO 8601)
-var weekNumber = now.GetWeekNumber();
-Console.WriteLine($"Current week number: {weekNumber}");
-
-// Check if date is in past or future
-Console.WriteLine($"Yesterday is past: {yesterday.IsPast()}");
-Console.WriteLine($"Tomorrow is future: {tomorrow.IsFuture()}");
-
-// Format duration in human-readable format
-var duration = TimeSpan.FromHours(2.5);
-Console.WriteLine($"Duration: {duration.ToHumanReadableDuration()}");
-
-// Get last business day of month
-var lastBusinessDay = now.GetLastBusinessDayOfMonth();
-Console.WriteLine($"Last business day of month: {lastBusinessDay:yyyy-MM-dd}");
-```
-
-## FormattingHelpers
-
-The `FormattingHelpers` class provides utility methods for formatting various data types for console output and reports. It includes methods for formatting numbers as percentages, formatting integers with thousand separators, formatting decimals, dates, bytes, creating tables, applying ANSI color codes, formatting status indicators with emojis, and text alignment utilities.
-
-### Usage Example
-
-```csharp
-using JiraAnalyticsCli.Utils;
-
-// Numeric formatting
-var percentage = FormattingHelpers.FormatPercentage(85.678, 2);
-Console.WriteLine(percentage); // Output: "85.68%"
-
-var formattedNumber = FormattingHelpers.FormatNumber(12500);
-Console.WriteLine(formattedNumber); // Output: "12,500"
-
-var formattedDecimal = FormattingHelpers.FormatDecimal(3.14159, 3);
-Console.WriteLine(formattedDecimal); // Output: "3.142"
-
-// Date formatting
-var now = DateTime.UtcNow;
-var formattedDate = FormattingHelpers.FormatDate(now);
-Console.WriteLine(formattedDate); // Output: "2026-07-16"
-
-var formattedDateTime = FormattingHelpers.FormatDateTime(now);
-Console.WriteLine(formattedDateTime); // Output: "2026-07-16 14:30:45"
-
-// Byte formatting
-var fileSize = FormattingHelpers.FormatBytes(1572864);
-Console.WriteLine(fileSize); // Output: "1.5 MB"
-
-// Table creation
-var headers = new[] { "ID", "Name", "Status", "Created" };
-var rows = new List<string[]>
-{
-    new[] { "1", "Feature X", "In Progress", "2026-07-15" },
-    new[] { "2", "Bug Y", "Done", "2026-07-14" },
-    new[] { "3", "Task Z", "Open", "2026-07-13" }
-};
-var table = FormattingHelpers.CreateTable(headers, rows);
-Console.WriteLine(table);
-
-// Color formatting
-var coloredText = FormattingHelpers.ColorText("Important Message", ConsoleColor.Red);
-Console.WriteLine(coloredText);
-
-// Status formatting
-var status = FormattingHelpers.FormatStatus("Done");
-Console.WriteLine(status); // Output: "✅ Done"
-
-// Text alignment
-var centered = FormattingHelpers.CenterText("Centered Title", 50);
-Console.WriteLine(centered);
-
-var indented = FormattingHelpers.Indent("Nested content", 4);
-Console.WriteLine(indented);
-
-// Character repetition
-var separator = FormattingHelpers.RepeatChar('-', 50);
-Console.WriteLine(separator);
-```
-
-## XmlFormatter
-
-The `XmlFormatter` class provides utilities for converting objects and collections to well-formed XML with customizable formatting options. It supports automatic XML structure generation from object properties, validation, pretty-printing, and XPath-based value extraction.
-
-### Usage Example
-
-```csharp
-using JiraAnalyticsCli.Formatters;
-using Microsoft.Extensions.Logging;
-
-// Create formatter with logger
-var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-var formatter = new XmlFormatter(loggerFactory.CreateLogger<XmlFormatter>(), includeXmlDeclaration: true);
-
-// Format an object to XML
-var projectData = new
-{
-    Name = "Analytics Dashboard",
-    Version = "1.0.0",
-    Issues = new List<object>
-    {
-        new { Key = "PROJ-123", Summary = "Implement login page", Status = "In Progress", Priority = "High" },
-        new { Key = "PROJ-124", Summary = "Fix authentication bug", Status = "Done", Priority = "Critical" },
-        new { Key = "PROJ-125", Summary = "Update documentation", Status = "Open", Priority = "Medium" }
-    },
-    CreatedAt = DateTime.UtcNow,
-    IsActive = true
-};
-
-var xml = formatter.Format(projectData, "project");
-Console.WriteLine(xml);
-
-// Validate XML
-var (isValid, error) = formatter.Validate(xml);
-Console.WriteLine(isValid ? "Valid XML" : $"Invalid: {error}");
-
-// Prettify existing XML
-var prettyXml = formatter.Prettify(xml);
-Console.WriteLine(prettyXml);
-
-// Select values using XPath
-var issueKeys = formatter.SelectValues(xml, "//item[starts-with(@Key, 'PROJ-')]/@Key");
-foreach (var key in issueKeys)
-{
-    Console.WriteLine(key);
-}
-```
-
-## JsonFormatter
-
-The `JsonFormatter` class provides utilities for converting objects and collections to JSON format with support for prettification, metadata wrapping, field filtering, and validation. It handles serialization with configurable indentation, circular reference detection, and safe error handling.
-
-### Usage Example
-
-```csharp
-using JiraAnalyticsCli.Formatters;
-using Microsoft.Extensions.Logging;
-
-// Create formatter with logger
-var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-var formatter = new JsonFormatter(loggerFactory.CreateLogger<JsonFormatter>(), prettyPrint: true);
-
-// Format an object to JSON
-var projectData = new
-{
-    Name = "Analytics Dashboard",
-    Version = "1.0.0",
-    Issues = new List<object>
-    {
-        new { Key = "PROJ-123", Summary = "Implement login page", Status = "In Progress", Priority = "High" },
-        new { Key = "PROJ-124", Summary = "Fix authentication bug", Status = "Done", Priority = "Critical" },
-        new { Key = "PROJ-125", Summary = "Update documentation", Status = "Open", Priority = "Medium" }
-    },
-    CreatedAt = DateTime.UtcNow,
-    IsActive = true
-};
-
-var json = formatter.Format(projectData);
-Console.WriteLine(json);
-
-// Format with metadata wrapper
-var jsonWithMetadata = formatter.FormatWithMetadata(projectData, "Project Analytics Report", "2.1.0");
-Console.WriteLine(jsonWithMetadata);
-
-// Format filtered fields only
-var filteredJson = formatter.FormatFiltered(projectData, new[] { "Name", "Version", "CreatedAt" });
-Console.WriteLine(filteredJson);
-
-// Validate JSON
-var (isValid, errors) = formatter.Validate(json);
-Console.WriteLine(isValid ? "Valid JSON" : $"Invalid: {string.Join(", ", errors)}");
-
-// Prettify existing JSON
-var minifiedJson = "{\\"Name\\":\\"Test\\",\\"Count\\":42}";
-var prettyJson = formatter.Prettify(minifiedJson);
-Console.WriteLine(prettyJson);
-```
-
-// Create header
-var header = formatter.Header("Project Status Report", 1);
-Console.WriteLine(header);
-// Output: # Project Status Report
-
-// Create table from collection
-var issues = new List<Issue>
-{
-    new Issue { Id = "PROJ-1", Title = "Implement login page", Status = "In Progress", Priority = "High" },
-    new Issue { Id = "PROJ-2", Title = "Fix authentication bug", Status = "Done", Priority = "Critical" },
-    new Issue { Id = "PROJ-3", Title = "Update documentation", Status = "Open", Priority = "Medium" }
-};
-var table = formatter.Table(issues);
-Console.WriteLine(table);
-
-// Create definition list
-var metrics = new Dictionary<string, string>
-{
-    { "Total Issues", "42" },
-    { "Completed", "35 (83%)" },
-    { "In Progress", "5" },
-    { "Blocked", "2" }
-};
-var definitionList = formatter.DefinitionList(metrics);
-Console.WriteLine(definitionList);
-
-// Create bulleted list
-var features = new List<string> { "User authentication", "Dashboard analytics", "API integration", "Reporting module" };
-var bulletList = formatter.BulletList(features);
-Console.WriteLine(bulletList);
-
-// Create numbered list
-var steps = new List<string> { "Setup project structure", "Implement core features", "Add unit tests", "Deploy to staging" };
-var numberedList = formatter.NumberedList(steps);
-Console.WriteLine(numberedList);
-
-// Create code block
-var codeSample = "public class Program { public static void Main() { Console.WriteLine(\"Hello World!\"); } }";
-var codeBlock = formatter.CodeBlock(codeSample, "csharp");
-Console.WriteLine(codeBlock);
-
-// Create blockquote
-var quote = formatter.BlockQuote("This is a critical finding that requires immediate attention.\nThe issue affects user authentication and should be prioritized.");
-Console.WriteLine(quote);
-
-// Format emphasis
-var boldText = formatter.Bold("Important");
-var italicText = formatter.Italic("emphasis");
-Console.WriteLine($"{boldText} and {italicText}");
-
-// Create horizontal rule
-var hr = formatter.HorizontalRule();
-Console.WriteLine(hr);
-
-// Create hyperlink
-var link = formatter.Link("View on GitHub", "https://github.com/sarmkadan/jira-analytics-cli");
-Console.WriteLine(link);
-
-// Create complete document
-var document = formatter.Document(
-    "Jira Analytics Report",
-    ("Summary", formatter.DefinitionList(new Dictionary<string, string>
-    {
-        { "Generated", DateTime.UtcNow.ToString("yyyy-MM-dd") },
-        { "Total Issues", "42" },
-        { "Completion Rate", "83%" }
-    })),
-    ("Issues by Status", table)
-);
-Console.WriteLine(document);
-
-// Supporting class for example
-public class Issue
-{
-    public string Id { get; set; }
-    public string Title { get; set; }
-    public string Status { get; set; }
-    public string Priority { get; set; }
-}
-```
-
-## StringExtensions
-
-The `StringExtensions` class provides a set of extension methods for string manipulation and formatting. It offers utilities for truncating strings, removing whitespace, converting to slug format, parsing boolean values, repeating strings, matching patterns, finding common prefixes, and escaping special characters for safe SQL use.
-
-### Usage Example
-
-```csharp
-using JiraAnalyticsCli.Utils;
-
-// Sample data
-var longString = "This is a very long string that needs to be truncated.";
-var whitespaceString = "   This string has leading and trailing whitespace.   ";
-var slugString = "This string will be converted to slug format.";
-var boolString = "true";
-
-// Truncate string with ellipsis
-var truncated = longString.TruncateWithEllipsis(20);
-Console.WriteLine(truncated); // Output: "This is a very long..."
-
-// Remove whitespace from string
-var cleaned = whitespaceString.RemoveWhitespace();
-Console.WriteLine(cleaned); // Output: "This string has leading and trailing whitespace."
-
-// Convert string to slug format
-var slug = slugString.ToSlug();
-Console.WriteLine(slug); // Output: "this-string-will-be-converted-to-slug-format"
-
-// Parse boolean value from string
-if (boolString.TryParseBool(out bool result))
-{
-    Console.WriteLine(result); // Output: true
-}
-
-// Repeat string
-var repeated = "Hello".Repeat(3);
-Console.WriteLine(repeated); // Output: "HelloHelloHello"
-
-// Match pattern
-var pattern = "Hello*";
-if ("HelloWorld".MatchesPattern(pattern))
-{
-    Console.WriteLine("Match found!"); // Output: Match found!
-}
-
-// Find common prefix
-var prefix = "Hello".GetCommonPrefix("HelloWorld");
-Console.WriteLine(prefix); // Output: "Hello"
-
-// Escape special characters for SQL
-var sqlString = "Hello'World";
-var escaped = sqlString.EscapeForSql();
-Console.WriteLine(escaped); // Output: "Hello''World"
-```
-
-## TeamComparisonServiceTestsValidation
-
-`TeamComparisonServiceTestsValidation` provides a collection of fluent validation helpers used in unit tests for the `TeamComparisonService`.  
-The static extension methods assert that a `TeamComparisonReport` contains the expected teams, correctly identifies the fastest, highest‑quality, and most‑consistent teams, and that individual `TeamProjectSnapshot` objects have the expected velocity and defect‑rate metrics. Additional helpers verify that generated text reports contain the required project keys and performance labels.
-
-### Usage Example
-
-```csharp
-using System.Collections.Generic;
-using JiraAnalyticsCli.Models;
-using JiraAnalyticsCli.Tests.Services;
-
-// Create a sample report
-var report = new TeamComparisonReport
-{
-    Teams = new List<TeamProjectSnapshot>
-    {
-        new TeamProjectSnapshot { ProjectKey = "PROJ1", AverageVelocity = 20.5, DefectRate = 0.02 },
-        new TeamProjectSnapshot { ProjectKey = "PROJ2", AverageVelocity = 18.0, DefectRate = 0.01 }
-    },
-    FastestTeam = "PROJ1",
-    HighestQualityTeam = "PROJ2",
-    MostConsistentTeam = "PROJ1"
-};
-
-var expectedKeys = new[] { "PROJ1", "PROJ2" };
-
-// Validate the report contents
-report.ShouldContainTeams(expectedKeys);
-report.ShouldIdentifyFastestTeam("PROJ1");
-report.ShouldIdentifyHighestQualityTeam("PROJ2");
-report.ShouldIdentifyMostConsistentTeam("PROJ1");
-
-// Validate a specific team snapshot's metrics
-var snapshot = report.Teams[0];
-snapshot.ShouldHaveMetrics(expectedVelocity: 20.5, expectedDefectRate: 0.02);
-
-// Validate a generated text report
-var textReport = @"
-Fastest team: PROJ1
-Highest quality: PROJ2
-Most consistent: PROJ1
-";
-textReport.ShouldContainProjectKeys(expectedKeys);
-textReport.ShouldContainPerformanceLabels();
-```
-
-## IssueRepositoryTests
-
-The `IssueRepositoryTests` class contains unit tests for the `IssueRepository` class, verifying that issue storage and retrieval operations work correctly. It tests saving valid issues, handling null inputs, retrieving issues by project, and clearing the repository.
+The `SprintExtensions` class provides extension methods for the `Sprint` model that enhance sprint analytics capabilities. It includes methods for calculating completion percentages, health scores, velocity metrics, cycle times, burn rates, and risk assessments. The extensions also provide status summaries, trend analysis, and goal tracking to help teams monitor sprint progress and identify potential issues.
 
 ### Usage Example
 
 ```csharp
 using JiraAnalyticsCli.Models;
-using JiraAnalyticsCli.Repositories;
-using Microsoft.Extensions.Logging;
-using Moq;
+using System;
 
-// Create repository with mock logger
-var loggerMock = new Mock<ILogger<IssueRepository>>();
-var issueRepository = new IssueRepository(loggerMock.Object);
-
-// Save a valid issue
-var issue = new JiraIssue
+// Create a sample sprint
+var sprint = new Sprint
 {
-Key = "PROJ-123",
-Id = "123",
-Summary = "Implement authentication feature",
-ProjectKey = "PROJ",
-CreatedDate = DateTime.UtcNow
+    Key = "PROJ-2026-Q3-SPR1",
+    Name = "Q3 2026 Sprint 1",
+    State = "Active",
+    Goal = "Implement authentication and authorization features",
+    StartDate = new DateTime(2026, 7, 1),
+    EndDate = new DateTime(2026, 7, 15),
+    Issues = new List<JiraIssue>
+    {
+        new JiraIssue
+        {
+            Key = "PROJ-101",
+            Summary = "Implement login page",
+            Status = "In Progress",
+            Priority = "High",
+            CreatedDate = new DateTime(2026, 7, 1),
+            DueDate = new DateTime(2026, 7, 10),
+            StoryPoints = 5,
+            ResolutionDate = null
+        },
+        new JiraIssue
+        {
+            Key = "PROJ-102",
+            Summary = "Fix authentication bug",
+            Status = "Done",
+            Priority = "Critical",
+            CreatedDate = new DateTime(2026, 6, 28),
+            DueDate = new DateTime(2026, 7, 5),
+            StoryPoints = 3,
+            ResolutionDate = new DateTime(2026, 7, 3)
+        },
+        new JiraIssue
+        {
+            Key = "PROJ-103",
+            Summary = "Implement role-based authorization",
+            Status = "To Do",
+            Priority = "High",
+            CreatedDate = new DateTime(2026, 7, 2),
+            DueDate = new DateTime(2026, 7, 12),
+            StoryPoints = 8,
+            ResolutionDate = null
+        },
+        new JiraIssue
+        {
+            Key = "PROJ-104",
+            Summary = "Update documentation",
+            Status = "Open",
+            Priority = "Medium",
+            CreatedDate = new DateTime(2026, 7, 1),
+            DueDate = new DateTime(2026, 7, 14),
+            StoryPoints = 2,
+            ResolutionDate = null
+        }
+    }
 };
 
-await issueRepository.SaveAsync(issue);
+// Calculate key metrics
+var completionPercent = sprint.GetCompletionPercentage();
+Console.WriteLine($"Completion: {completionPercent:F1}%"); // Output: Completion: 25.0%
 
-// Retrieve issue by key
-var savedIssue = await issueRepository.GetByKeyAsync("PROJ-123");
-Console.WriteLine(savedIssue?.Key); // Output: PROJ-123
+var healthScore = sprint.GetHealthScore();
+Console.WriteLine($"Health Score: {healthScore:F1}%"); // Output: Health Score: 45.0%
 
-// Get issues by project
-var projIssues = await issueRepository.GetByProjectAsync("PROJ");
-Console.WriteLine(projIssues.Count()); // Output: 1
+var averageCycleTime = sprint.GetAverageCycleTime();
+Console.WriteLine($"Average Cycle Time: {averageCycleTime:F1} days"); // Output: Average Cycle Time: 5.0 days
 
-// Clear all issues
-issueRepository.Clear();
-Console.WriteLine(issueRepository.GetCount()); // Output: 0
-```
+var burnRate = sprint.GetBurnRate();
+Console.WriteLine($"Burn Rate: {burnRate:F2} issues/day"); // Output: Burn Rate: 0.20 issues/day
 
-## DateTimeExtensionsTestsJsonExtensions
+// Get status summary
+var statusSummary = sprint.GetStatusSummary();
+Console.WriteLine(statusSummary);
+// Output: Sprint PROJ-2026-Q3-SPR1: Q3 2026 Sprint 1 | State: Active | 
+// Completion: 25.0% (1/4) | Health: 45.0% | Velocity: 0.0% | Burn Rate: 0.20 issues/day
 
-The `DateTimeExtensionsTestsJsonExtensions` class provides JSON serialization and deserialization utilities specifically designed for testing DateTime and TimeSpan scenarios. It includes methods for converting DateTime and TimeSpan values to JSON strings, and parsing JSON strings back to these types with both strict and try-parse approaches.
+// Get high-priority issues
+var highPriorityIssues = sprint.GetHighPriorityIssues();
+Console.WriteLine($"High Priority Issues: {highPriorityIssues.Count}"); // Output: High Priority Issues: 2
 
-### Usage Example
+// Get at-risk issues
+var atRiskIssues = sprint.GetAtRiskIssues();
+Console.WriteLine($"At Risk Issues: {atRiskIssues.Count}"); // Output: At Risk Issues: 0
 
-```csharp
-using JiraAnalyticsCli.Tests.Utils;
-using System;
+// Get progress trend
+var trend = sprint.GetProgressTrend();
+Console.WriteLine($"Progress Trend: {trend}"); // Output: Progress Trend: ⏸️ Monitoring Required
 
-// Current date and time
-var now = DateTime.UtcNow;
-var timeSpan = TimeSpan.FromHours(2.5);
-
-// Serialize DateTime to JSON
-var dateJson = now.ToJson();
-Console.WriteLine(dateJson); // Output: "2026-07-19T14:30:45.123Z"
-
-// Serialize nullable DateTime to JSON
-DateTime? nullableDate = DateTime.UtcNow.AddDays(-1);
-var nullableDateJson = nullableDate.ToJson();
-Console.WriteLine(nullableDateJson); // Output: "2026-07-18T14:30:45.123Z"
-
-// Serialize TimeSpan to JSON
-var timeSpanJson = timeSpan.ToJson();
-Console.WriteLine(timeSpanJson); // Output: "02:30:00"
-
-// Deserialize DateTime from JSON
-var jsonDate = "\"2026-07-19T14:30:45Z\"";
-var parsedDate = DateTimeExtensionsTestsJsonExtensions.FromJson(jsonDate);
-Console.WriteLine(parsedDate); // Output: 7/19/2026 2:30:45 PM
-
-// Try-parse DateTime from JSON
-var validJson = "\"2026-07-19T14:30:45Z\"";
-var success = DateTimeExtensionsTestsJsonExtensions.TryFromJson(validJson, out var tryParsedDate);
-Console.WriteLine(success); // Output: True
-Console.WriteLine(tryParsedDate); // Output: 7/19/2026 2:30:45 PM
-
-// Deserialize TimeSpan from JSON
-var jsonTimeSpan = "\"02:30:00\"";
-var parsedTimeSpan = DateTimeExtensionsTestsJsonExtensions.FromJsonToTimeSpan(jsonTimeSpan);
-Console.WriteLine(parsedTimeSpan); // Output: 02:30:00
-
-// Try-parse TimeSpan from JSON
-var successTimeSpan = DateTimeExtensionsTestsJsonExtensions.TryFromJsonToTimeSpan(jsonTimeSpan, out var tryParsedTimeSpan);
-Console.WriteLine(successTimeSpan); // Output: True
-Console.WriteLine(tryParsedTimeSpan); // Output: 02:30:00
-```
-
-## DateTimeExtensionsTestsExtensions
-
-The `DateTimeExtensionsTestsExtensions` class provides extension methods for creating and manipulating DateTime values specifically designed for testing scenarios. It includes methods for setting specific times of day, calculating business days and hours, determining month boundaries, and creating common holiday dates.
-
-### Usage Example
-
-```csharp
-using JiraAnalyticsCli.Tests.Utils;
-using System;
-
-// Current date
-var today = DateTime.UtcNow;
-var yesterday = today.AddDays(-1);
-var tomorrow = today.AddDays(1);
-
-// Set specific times of day
-var businessStart = today.AtBusinessStart();  // 9:00 AM
-var businessEnd = today.AtBusinessEnd();      // 5:00 PM
-var midnight = today.AtMidnight();            // 12:00 AM (midnight)
-var noon = today.AtNoon();                    // 12:00 PM (noon)
-
-Console.WriteLine(businessStart); // Output: 2026-07-19 09:00:00
-Console.WriteLine(businessEnd);   // Output: 2026-07-19 17:00:00
-
-// Calculate business days and hours
-var businessDays = yesterday.GetBusinessDays(tomorrow);
-Console.WriteLine($"Business days between yesterday and tomorrow: {string.Join(", ", businessDays)}");
-
-var businessHours = yesterday.GetBusinessHours(tomorrow);
-Console.WriteLine($"Business hours between yesterday and tomorrow: {businessHours.Count()} hours");
-
-// Month boundaries
-var firstDay = today.FirstDayOfMonth();  // 2026-07-01
-var lastDay = today.LastDayOfMonth();    // 2026-07-31
-
-Console.WriteLine(firstDay); // Output: 2026-07-01
-Console.WriteLine(lastDay);  // Output: 2026-07-31
-
-// Next/previous business week
-var nextWeekStart = today.AtNextBusinessWeekStart();      // Next Monday 9:00 AM
-var prevWeekEnd = today.AtPreviousBusinessWeekEnd();    // Last Friday 5:00 PM
-var weekendStart = today.AtWeekendStart();               // This Saturday midnight
-
-Console.WriteLine(nextWeekStart); // Output: 2026-07-20 09:00:00
-Console.WriteLine(prevWeekEnd);   // Output: 2026-07-18 17:00:00
-Console.WriteLine(weekendStart);  // Output: 2026-07-25 00:00:00
-
-// Common holidays (fixed date)
-var newYears2026 = DateTimeExtensionsTestsExtensions.NewYearsDay(2026);
-var christmas2026 = DateTimeExtensionsTestsExtensions.ChristmasDay(2026);
-var independenceDay2026 = DateTimeExtensionsTestsExtensions.IndependenceDay(2026);
-
-Console.WriteLine(newYears2026);         // Output: 2026-01-01
-Console.WriteLine(christmas2026);       // Output: 2026-12-25
-Console.WriteLine(independenceDay2026); // Output: 2026-07-04
-```
-
-## ValidationHelpersTestsExtensions
-
-The `ValidationHelpersTestsExtensions` class provides extension methods for the `ValidationHelpersTests` class that facilitate testing validation logic. It includes methods to retrieve test method names and run all validation tests, returning structured results that can be used for test reporting and validation assertions.
-
-### Usage Example
-
-```csharp
-using JiraAnalyticsCli.Tests.Utils;
-using System;
-
-// Create a ValidationHelpersTests instance
-var validationTests = new ValidationHelpersTests();
-
-// Get all test method names
-var testMethodNames = validationTests.GetTestMethodNames();
-Console.WriteLine($"Found {testMethodNames.Count} test methods:");
-foreach (var name in testMethodNames)
-{
-    Console.WriteLine($"  - {name}");
-}
-
-// Run all tests and get results
-var testResults = validationTests.RunAllTests();
-Console.WriteLine($"\nRan {testResults.Count} tests:");
-
-foreach (var result in testResults)
-{
-    Console.WriteLine($"  {result.TestMethodName}: {(result.Success ? "✓ PASS" : "✗ FAIL")}");
-}
-
-// Access individual test result
-var firstResult = testResults[0];
-Console.WriteLine($"\nFirst test: {firstResult.TestMethodName}");
-Console.WriteLine($"Success: {firstResult.Success}");
+// Get goal status
+var goalStatus = sprint.GetGoalStatus();
+Console.WriteLine($"Goal Status: {goalStatus}");
+// Output: Goal Status: 🎯 Goal likely achievable: Implement authentication and authorization features 
+// (25.0% complete, 3/18 story points)
 ```
