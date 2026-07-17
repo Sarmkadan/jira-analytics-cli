@@ -206,3 +206,85 @@ var ids = new List<int> { 1, 2, 3 };
 IReadOnlyList<string> collectionProblems = AnalyticsServiceValidation.ValidateCollection(ids, "ids");
 Console.WriteLine($"Collection problems: {collectionProblems.Count}");
 ```
+
+## SprintRepositoryJsonExtensions
+
+The `SprintRepositoryJsonExtensions` class provides extension methods for serializing and deserializing `SprintRepository` instances to and from JSON format. It includes methods for converting a repository to a JSON string, parsing JSON back into a repository, safe parsing with error handling, retrieving all sprints for serialization, and loading sprints into a repository.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Repositories;
+using System;
+using System.Collections.Generic;
+
+// Create a sample sprint repository with sprints
+var repository = new SprintRepository(null!);
+var sprints = new List<Sprint>
+{
+    new Sprint
+    {
+        Id = 1,
+        Name = "Sprint 1",
+        Goal = "Complete initial features",
+        StartDate = new DateTime(2026, 7, 1),
+        EndDate = new DateTime(2026, 7, 14),
+        State = "Active",
+        CompletedIssues = 15,
+        TotalIssues = 20,
+        CompletedStoryPoints = 45,
+        TotalStoryPoints = 50
+    },
+    new Sprint
+    {
+        Id = 2,
+        Name = "Sprint 2",
+        Goal = "Implement advanced features",
+        StartDate = new DateTime(2026, 7, 15),
+        EndDate = new DateTime(2026, 7, 28),
+        State = "Planned",
+        CompletedIssues = 0,
+        TotalIssues = 25,
+        CompletedStoryPoints = 0,
+        TotalStoryPoints = 60
+    }
+};
+repository.LoadSprints(sprints);
+
+// Serialize the repository to JSON (compact format)
+var json = repository.ToJson();
+Console.WriteLine(json);
+// Output: [{"id":1,"name":"Sprint 1","goal":"Complete initial features",...}]
+
+// Serialize with indentation for readability
+var prettyJson = repository.ToJson(indented: true);
+Console.WriteLine(prettyJson);
+
+// Deserialize JSON back to a repository
+var jsonData = """[
+    {"id":1,"name":"Sprint 1","goal":"Complete initial features","startDate":"2026-07-01T00:00:00","endDate":"2026-07-14T00:00:00","state":"Active","completedIssues":15,"totalIssues":20,"completedStoryPoints":45,"totalStoryPoints":50},
+    {"id":2,"name":"Sprint 2","goal":"Implement advanced features","startDate":"2026-07-15T00:00:00","endDate":"2026-07-28T00:00:00","state":"Planned","completedIssues":0,"totalIssues":25,"completedStoryPoints":0,"totalStoryPoints":60}
+]""";
+var deserializedRepo = SprintRepositoryJsonExtensions.FromJson(jsonData);
+Console.WriteLine($"Deserialized repository has {deserializedRepo?.GetAllSprints().Count} sprints");
+
+// Safe deserialization with error handling
+if (SprintRepositoryJsonExtensions.TryFromJson(jsonData, out var safeRepo))
+{
+    Console.WriteLine("Successfully deserialized using TryFromJson");
+}
+else
+{
+    Console.WriteLine("Failed to deserialize JSON");
+}
+
+// Get all sprints from a repository
+var allSprints = repository.GetAllSprints();
+Console.WriteLine($"Repository contains {allSprints.Count} sprints");
+
+// Load sprints into an empty repository
+var emptyRepo = new SprintRepository(null!);
+emptyRepo.LoadSprints(allSprints);
+Console.WriteLine($"Empty repository now has {emptyRepo.GetAllSprints().Count} sprints");
+```
