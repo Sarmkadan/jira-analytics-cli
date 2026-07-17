@@ -34,16 +34,19 @@ public static class JsonFormatterJsonExtensions
             WriteIndented = indented
         };
 
-        // Since JsonFormatter doesn't have a direct serializable state,
-        // we serialize the formatter's type information
         return JsonSerializer.Serialize(value, options);
     }
 
     /// <summary>
     /// Deserializes a JSON string to a <see cref="JsonFormatter"/> instance.
     /// </summary>
+    /// <remarks>
+    /// Note: <see cref="JsonFormatter"/> is a service class and is not designed to be deserialized from JSON.
+    /// This method exists for API consistency and always returns a new instance.
+    /// </remarks>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>A <see cref="JsonFormatter"/> instance, or null if the JSON is empty or whitespace.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid.</exception>
     public static JsonFormatter? FromJson(string json)
     {
@@ -54,10 +57,15 @@ public static class JsonFormatterJsonExtensions
             return null;
         }
 
-        // JsonFormatter is not meant to be deserialized from JSON as it's a service class
-        // This method exists for API consistency but returns a new instance
-        var doc = JsonDocument.Parse(json);
-        _ = doc.RootElement; // Validate JSON structure
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            _ = doc.RootElement; // Validate JSON structure
+        }
+        catch (JsonException)
+        {
+            throw;
+        }
 
         return new JsonFormatter(null!, false);
     }
@@ -65,9 +73,14 @@ public static class JsonFormatterJsonExtensions
     /// <summary>
     /// Attempts to deserialize a JSON string to a <see cref="JsonFormatter"/> instance.
     /// </summary>
+    /// <remarks>
+    /// Note: <see cref="JsonFormatter"/> is a service class and is not designed to be deserialized from JSON.
+    /// This method always returns true if the JSON is valid, and returns a new instance.
+    /// </remarks>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized formatter, or null on failure.</param>
-    /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <returns>True if the JSON is valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson(string json, out JsonFormatter? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -79,7 +92,7 @@ public static class JsonFormatterJsonExtensions
             value = FromJson(json);
             return true;
         }
-        catch (JsonException)
+        catch
         {
             return false;
         }
