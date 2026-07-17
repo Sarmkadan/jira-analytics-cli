@@ -7,6 +7,7 @@ public static class ValidationHelpersTestsExtensions
     /// </summary>
     /// <param name="tests">The <see cref="ValidationHelpersTests"/> instance.</param>
     /// <returns>An <see cref="IReadOnlyList{T}"/> of test method names.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> GetTestMethodNames(this ValidationHelpersTests tests)
     {
         ArgumentNullException.ThrowIfNull(tests);
@@ -41,6 +42,7 @@ public static class ValidationHelpersTestsExtensions
     /// </summary>
     /// <param name="tests">The <see cref="ValidationHelpersTests"/> instance.</param>
     /// <returns>An <see cref="IReadOnlyList{T}"/> of test results.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">Thrown if any test fails.</exception>
     public static IReadOnlyList<TestResult> RunAllTests(this ValidationHelpersTests tests)
     {
@@ -51,11 +53,24 @@ public static class ValidationHelpersTestsExtensions
 
         foreach (var testMethodName in testMethodNames)
         {
-            // Assuming TestResult is a class that represents the result of a test
-            // and has a constructor that takes the test method name and a boolean indicating success
-            var testResult = new TestResult(testMethodName, tests.GetType().GetMethod(testMethodName).Invoke(tests, null) is not null);
+            var testMethod = tests.GetType().GetMethod(testMethodName);
 
-            testResults.Add(testResult);
+            if (testMethod is null)
+            {
+                testResults.Add(new TestResult(testMethodName, false));
+                continue;
+            }
+
+            try
+            {
+                var result = testMethod.Invoke(tests, null);
+                var success = result is not null && (bool)result;
+                testResults.Add(new TestResult(testMethodName, success));
+            }
+            catch
+            {
+                testResults.Add(new TestResult(testMethodName, false));
+            }
         }
 
         if (testResults.Any(r => !r.Success))
