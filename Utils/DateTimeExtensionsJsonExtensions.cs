@@ -26,25 +26,32 @@ public static class DateTimeExtensionsJsonExtensions
     /// <param name="value">The DateTime value to serialize</param>
     /// <param name="indented">Whether to format the JSON with indentation</param>
     /// <returns>JSON string representation</returns>
-    public static string ToJson(this DateTime value, bool indented = false)
-    {
-        var options = indented
-            ? new JsonSerializerOptions(_jsonSerializerOptions)
-            {
-                WriteIndented = true
-            }
-            : _jsonSerializerOptions;
-
-        return JsonSerializer.Serialize(value, options);
-    }
+    public static string ToJson(this DateTime value, bool indented = false) =>
+        JsonSerializer.Serialize(value, indented
+            ? new JsonSerializerOptions(_jsonSerializerOptions) { WriteIndented = true }
+            : _jsonSerializerOptions);
 
     /// <summary>
     /// Deserializes a DateTime value from JSON string
     /// </summary>
     /// <param name="json">JSON string to deserialize</param>
-    /// <returns>Deserialized DateTime value or null if JSON is null/empty</returns>
+    /// <returns>Deserialized DateTime value</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is null</exception>
     /// <exception cref="JsonException">Thrown when JSON is invalid or cannot be deserialized</exception>
-    public static DateTime? FromJson(string json)
+    public static DateTime FromJson(string json)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+
+        return JsonSerializer.Deserialize<DateTime>(json, _jsonSerializerOptions);
+    }
+
+    /// <summary>
+    /// Deserializes a DateTime value from JSON string, returning null if the JSON is null or empty
+    /// </summary>
+    /// <param name="json">JSON string to deserialize</param>
+    /// <returns>Deserialized DateTime value, or null if JSON is null or empty</returns>
+    /// <exception cref="JsonException">Thrown when JSON is invalid or cannot be deserialized</exception>
+    public static DateTime? FromJsonNullable(string json)
     {
         if (string.IsNullOrEmpty(json))
         {
@@ -60,8 +67,11 @@ public static class DateTimeExtensionsJsonExtensions
     /// <param name="json">JSON string to deserialize</param>
     /// <param name="value">Output parameter for the deserialized value</param>
     /// <returns>True if deserialization succeeded, false otherwise</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is null</exception>
     public static bool TryFromJson(string json, out DateTime? value)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         value = null;
 
         if (string.IsNullOrEmpty(json))
