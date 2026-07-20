@@ -76,6 +76,7 @@ class Program
         services.AddSingleton<IAnalyticsService, AnalyticsService>();
         services.AddSingleton<IReportService, ReportService>();
         services.AddSingleton<IExportService, ExportService>();
+    services.AddSingleton<ICsvExportService, CsvExportService>();
         services.AddSingleton<IJqlQueryService, JqlQueryService>();
         services.AddSingleton<IHtmlReportService, HtmlReportService>();
         services.AddSingleton<ITeamComparisonService, TeamComparisonService>();
@@ -156,6 +157,61 @@ class Program
             }
         }, exportProjectOpt, exportFormatOpt, exportOutputOpt, exportOutputDirOpt);
 
+    // CSV export command
+    var csvExportCommand = new Command("export-csv", "Export sprint metrics to CSV format");
+    var csvExportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
+    var csvExportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output CSV file path") { IsRequired = true };
+    csvExportCommand.AddOption(csvExportProjectOpt);
+    csvExportCommand.AddOption(csvExportOutputOpt);
+
+    csvExportCommand.SetHandler(async (project, output) =>
+    {
+        var analyticsService = serviceProvider.GetRequiredService<IAnalyticsService>();
+        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            logger.LogInformation("Exporting sprint metrics for project {Project} to CSV at {Output}", project, output);
+            var analysis = await analyticsService.AnalyzeSprints(project, 5);
+            var csvService = serviceProvider.GetRequiredService<ICsvExportService>();
+            await csvService.ExportSprintMetrics(analysis.Metrics, output);
+            logger.LogInformation("Sprint metrics exported successfully to {Output}", output);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "CSV export command failed");
+            throw;
+        }
+    }, csvExportProjectOpt, csvExportOutputOpt);
+
+    // Team metrics CSV export command
+    var teamCsvExportCommand = new Command("export-team-csv", "Export team metrics to CSV format");
+    var teamCsvExportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
+    var teamCsvExportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output CSV file path") { IsRequired = true };
+    teamCsvExportCommand.AddOption(teamCsvExportProjectOpt);
+    teamCsvExportCommand.AddOption(teamCsvExportOutputOpt);
+
+    teamCsvExportCommand.SetHandler(async (project, output) =>
+    {
+        var analyticsService = serviceProvider.GetRequiredService<IAnalyticsService>();
+        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            logger.LogInformation("Exporting team metrics for project {Project} to CSV at {Output}", project, output);
+            var teamAnalysis = await analyticsService.AnalyzeTeam(project);
+            var csvService = serviceProvider.GetRequiredService<ICsvExportService>();
+            await csvService.ExportTeamMetrics(teamAnalysis.WorkloadDistribution, output);
+            logger.LogInformation("Team metrics exported successfully to {Output}", output);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Team CSV export command failed");
+            throw;
+        }
+    }, teamCsvExportProjectOpt, teamCsvExportOutputOpt);
+
+
         // Burndown command
         var burndownCommand = new Command("burndown", "Generate burndown chart for sprint");
         var burndownProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key");
@@ -189,6 +245,8 @@ class Program
         rootCommand.AddCommand(analyticsCommand);
         rootCommand.AddCommand(exportCommand);
         rootCommand.AddCommand(burndownCommand);
+rootCommand.AddCommand(csvExportCommand);
+rootCommand.AddCommand(teamCsvExportCommand);
 
         // JQL query command
         var jqlCommand         = new Command("jql", "Execute a custom JQL query and display results");

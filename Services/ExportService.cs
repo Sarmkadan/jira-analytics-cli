@@ -9,6 +9,7 @@ using System.Text.Json;
 using SkiaSharp;
 using JiraAnalyticsCli.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace JiraAnalyticsCli.Services;
 
@@ -20,12 +21,14 @@ public class ExportService : IExportService
     private readonly IJiraApiService _jiraService;
     private readonly IAnalyticsService _analyticsService;
     private readonly ILogger<ExportService> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
-    public ExportService(IJiraApiService jiraService, IAnalyticsService analyticsService, ILogger<ExportService> logger)
+    public ExportService(IJiraApiService jiraService, IAnalyticsService analyticsService, ILogger<ExportService> logger, IServiceProvider serviceProvider)
     {
         _jiraService = jiraService;
         _analyticsService = analyticsService;
         _logger = logger;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task ExportAnalytics(string projectKey, string format, string outputPath)
@@ -506,5 +509,17 @@ public class ExportService : IExportService
         }
 
         return value;
+    }
+
+    public async Task ExportSprintMetricsCsv(IEnumerable<SprintMetric> metrics, string path)
+    {
+        var csvService = _serviceProvider.GetRequiredService<ICsvExportService>();
+        await csvService.ExportSprintMetrics(metrics, path);
+    }
+
+    public async Task ExportTeamMetricsCsv(IEnumerable<KeyValuePair<string, int>> metrics, string path)
+    {
+        var csvService = _serviceProvider.GetRequiredService<ICsvExportService>();
+        await csvService.ExportTeamMetrics(metrics, path);
     }
 }
