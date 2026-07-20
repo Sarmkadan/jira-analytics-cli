@@ -3,6 +3,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using JiraAnalyticsCli.Models;
 namespace JiraAnalyticsCli.Services;
 
 /// <summary>
@@ -15,4 +16,6 @@ public interface IExportService
     Task ExportTeamMetrics(string projectKey, string format, string outputPath);
     Task ExportAsJson(object data, string outputPath);
     Task ExportAsCsv(List<Dictionary<string, object>> data, string outputPath);
+    Task ExportSprintMetricsCsv(IEnumerable<SprintMetric> metrics, string path);
+    Task ExportTeamMetricsCsv(IEnumerable<KeyValuePair<string, int>> metrics, string path);
 }
