@@ -45,6 +45,7 @@ public class ExportService : IExportService
                 "svg" => ExportAsImageSvg(analysis, outputPath),
                 "json" => ExportAsJson(analysis, outputPath),
                 "csv" => ExportAnalyticsAsCsv(analysis, outputPath),
+        "md" => ExportAsMarkdown(analysis, outputPath),
                 _ => throw new NotSupportedException($"Format {format} is not supported")
             });
 
@@ -56,6 +57,33 @@ public class ExportService : IExportService
             throw;
         }
     }
+
+    public async Task ExportAsMarkdown(SprintAnalysisResult analysis, string outputPath)
+    {
+        _logger.LogInformation("Exporting analytics as Markdown to {OutputPath}", outputPath);
+
+        try
+        {
+            var markdownService = _serviceProvider.GetRequiredService<IMarkdownReportService>();
+            var teamAnalysis = await _analyticsService.AnalyzeTeam("unknown");
+            
+            var markdown = markdownService.BuildMarkdown("unknown", analysis, teamAnalysis);
+            
+            var dir = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+            
+            await File.WriteAllTextAsync(outputPath, markdown, Encoding.UTF8);
+            
+            _logger.LogInformation("Markdown analytics exported successfully to {OutputPath}", outputPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting analytics as Markdown");
+            throw;
+        }
+    }
+
 
     public async Task ExportBurndownChart(int sprintId, string format, string outputPath)
     {

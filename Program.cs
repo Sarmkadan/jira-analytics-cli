@@ -79,6 +79,7 @@ class Program
     services.AddSingleton<ICsvExportService, CsvExportService>();
         services.AddSingleton<IJqlQueryService, JqlQueryService>();
         services.AddSingleton<IHtmlReportService, HtmlReportService>();
+    services.AddSingleton<IMarkdownReportService, MarkdownReportService>();
         services.AddSingleton<ITeamComparisonService, TeamComparisonService>();
     }
 
@@ -130,7 +131,7 @@ class Program
         // Export command
         var exportCommand = new Command("export", "Export analytics data to image or file");
         var exportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key");
-        var exportFormatOpt = new Option<string>(new[] { "-f", "--format" }, "Export format (png, jpg, pdf, json, csv)");
+        var exportFormatOpt = new Option<string>(new[] { "-f", "--format" }, "Export format (png, jpg, pdf, json, csv, md)");
         var exportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output file path");
         var exportOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save reports to (created if it does not exist)");
         exportCommand.AddOption(exportProjectOpt);
@@ -379,6 +380,42 @@ rootCommand.AddCommand(teamCsvExportCommand);
         rootCommand.AddCommand(jqlCommand);
         rootCommand.AddCommand(reportCommand);
         rootCommand.AddCommand(teamCompareCommand);
+
+    // Markdown report command
+    var markdownReportCommand = new Command("report-md", "Generate a Markdown analytics report");
+    var markdownReportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
+    var markdownReportSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include");
+    var markdownReportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output Markdown file path");
+    var markdownReportOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save the report (created if needed)");
+    markdownReportCommand.AddOption(markdownReportProjectOpt);
+    markdownReportCommand.AddOption(markdownReportSprintsOpt);
+    markdownReportCommand.AddOption(markdownReportOutputOpt);
+    markdownReportCommand.AddOption(markdownReportOutputDirOpt);
+
+    markdownReportCommand.SetHandler(async (project, sprints, output, outputDir) =>
+    {
+        var markdownService = serviceProvider.GetRequiredService<IMarkdownReportService>();
+        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            var resolvedOutput = ResolveOutputPath(output, outputDir, $"{project}-report.md");
+            if (string.IsNullOrEmpty(resolvedOutput))
+                resolvedOutput = $"{project}-report.md";
+
+            logger.LogInformation("Generating Markdown report for {Project} to {Output}", project, resolvedOutput);
+            await markdownService.GenerateReportAsync(project, sprints, resolvedOutput);
+            logger.LogInformation("Markdown report written to {Output}", resolvedOutput);
+            Console.WriteLine($"Markdown report saved to: {resolvedOutput}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Markdown report command failed");
+            throw;
+        }
+    }, markdownReportProjectOpt, markdownReportSprintsOpt, markdownReportOutputOpt, markdownReportOutputDirOpt);
+
+    rootCommand.AddCommand(markdownReportCommand);
 
         return rootCommand;
     }
