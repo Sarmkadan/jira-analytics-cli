@@ -307,4 +307,99 @@ public class AnalyticsService : IAnalyticsService
 
         return result;
     }
+
+    public async Task<CycleTimeResult> AnalyzeCycleTime(string projectKey)
+    {
+        _logger.LogInformation("Analyzing cycle time for project {ProjectKey}", projectKey);
+
+        var result = new CycleTimeResult
+        {
+            ProjectKey = projectKey
+        };
+
+        try
+        {
+            // Fetch all issues for the project
+            var issues = await _jiraService.GetProjectIssuesAsync(projectKey);
+
+            // Filter to only resolved issues for accurate cycle time calculation
+            var resolvedIssues = issues
+                .Where(i => i.ResolutionDate.HasValue)
+                .ToList();
+
+            if (resolvedIssues.Any())
+            {
+                // Calculate cycle times for all resolved issues
+                var cycleTimes = resolvedIssues
+                    .Select(i => i.GetCycleTime())
+                    .Where(ct => ct > 0)
+                    .ToList();
+
+                if (cycleTimes.Any())
+                {
+                    result.AverageCycleTime = cycleTimes.Average();
+                    result.MedianCycleTime = CalculateMedian(cycleTimes);
+                    result.P90CycleTime = CalculatePercentile(cycleTimes, 90);
+                }
+
+                // Create detailed per-issue list
+                result.IssueCycleTimes = resolvedIssues
+                    .Where(i => i.GetCycleTime() > 0)
+                    .Select(i => new IssueCycleTime
+                    {
+                        IssueKey = i.Key,
+                        Summary = i.Summary,
+                        CycleTimeDays = i.GetCycleTime(),
+                        CreatedDate = i.CreatedDate,
+                        ResolutionDate = i.ResolutionDate
+                    })
+                    .OrderByDescending(ict => ict.CycleTimeDays)
+                    .ToList();
+            }
+
+            _logger.LogInformation("Cycle time analysis completed: {IssueCount} issues analyzed, avg {Average:F2} days",
+                result.IssueCycleTimes.Count,
+                result.AverageCycleTime);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error analyzing cycle time");
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Calculates the median of a list of double values
+    /// </summary>
+    private static double CalculateMedian(List<double> values)
+    {
+        if (values.Count == 0) return 0;
+
+        var sorted = values.OrderBy(v => v).ToList();
+        var count = sorted.Count;
+
+        if (count % 2 == 0)
+        {
+            // Even number of elements - average the middle two
+            return (sorted[count / 2 - 1] + sorted[count / 2]) / 2.0;
+        }
+        else
+        {
+            // Odd number of elements - return the middle one
+            return sorted[count / 2];
+        }
+    }
+
+    /// <summary>
+    /// Calculates the Nth percentile of a list of double values
+    /// </summary>
+    private static double CalculatePercentile(List<double> values, double percentile)
+    {
+        if (values.Count == 0) return 0;
+
+        var sorted = values.OrderBy(v => v).ToList();
+        var n = (int)Math.Ceiling((percentile / 100.0) * sorted.Count);
+        return sorted[Math.Max(0, n - 1)];
+    }
 }
