@@ -125,6 +125,42 @@ public class TeamComparisonService : ITeamComparisonService
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Renders a <see cref="TeamComparisonReport"/> as a GitHub‑flavored markdown table.
+    /// Each team is a row and the key metrics are columns.
+    /// </summary>
+    /// <param name="report">The report to render.</param>
+    /// <returns>A markdown formatted string.</returns>
+    public static string RenderMarkdownTable(TeamComparisonReport report)
+    {
+        var sb = new StringBuilder();
+
+        // Header
+        sb.AppendLine("| Project | Avg Vel | Completion% | Pts Total | Defects | Cycle(d) | Health |");
+        sb.AppendLine("|---|---|---|---|---|---|---|");
+
+        if (!report.Teams.Any())
+        {
+            sb.AppendLine("| *No team data available* | | | | | | |");
+            return sb.ToString();
+        }
+
+        foreach (var team in report.Teams.OrderByDescending(t => t.AverageVelocity))
+        {
+            var awards = BuildAwardIcons(team, report);
+            sb.AppendLine(
+                $"| {team.ProjectKey} " +
+                $"| {team.AverageVelocity.ToString("F1", CultureInfo.InvariantCulture)} " +
+                $"| {team.AvgCompletionRate.ToString("F1", CultureInfo.InvariantCulture)} " +
+                $"| {team.TotalPointsDelivered.ToString(CultureInfo.InvariantCulture)} " +
+                $"| {team.TotalDefects.ToString(CultureInfo.InvariantCulture)} " +
+                $"| {team.AvgCycleTime.ToString("F1", CultureInfo.InvariantCulture)} " +
+                $"| {team.OverallHealth}{awards} |");
+        }
+
+        return sb.ToString();
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
