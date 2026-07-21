@@ -201,6 +201,9 @@ public class MarkdownReportService : IMarkdownReportService
         sb.AppendLine("|--------|-------|");
         sb.AppendLine($"| Average Cycle Time | {cycleTimeResult.AverageCycleTime:F2} days |");
         sb.AppendLine($"| Median Cycle Time | {cycleTimeResult.MedianCycleTime:F2} days |");
+
+        sb.AppendLine($"| P50 Cycle Time | {cycleTimeResult.P50CycleTime:F2} days |");
+        sb.AppendLine($"| P75 Cycle Time | {cycleTimeResult.P75CycleTime:F2} days |");
         sb.AppendLine($"| P90 Cycle Time | {cycleTimeResult.P90CycleTime:F2} days |");
         sb.AppendLine($"| Total Issues Analyzed | {cycleTimeResult.IssueCycleTimes.Count} |");
         sb.AppendLine();
