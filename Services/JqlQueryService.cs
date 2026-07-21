@@ -84,6 +84,27 @@ public class JqlQueryService : IJqlQueryService
     }
 
     /// <summary>
+    /// Builds a JQL query string for a project, with quote escaping.
+    /// </summary>
+    public static string BuildProjectJql(string projectKey) => $"project = \"{projectKey.Replace("\"", "\\\"")}\"";
+
+    /// <summary>
+    /// Builds a JQL query string for a label, with quote escaping.
+    /// </summary>
+    public static string BuildLabelJql(string label) => $"label = \"{label.Replace("\"", "\\\"")}\"";
+
+    /// <summary>
+    /// Builds a JQL date range clause.
+    /// </summary>
+    public static string BuildDateRangeJql(string field, DateTime? from, DateTime? to)
+    {
+        var sb = new StringBuilder();
+        if (from.HasValue) sb.Append($"{field} >= \"{from.Value:yyyy-MM-dd}\" ");
+        if (to.HasValue) sb.Append($"{field} <= \"{to.Value:yyyy-MM-dd}\" ");
+        return sb.ToString().Trim();
+    }
+
+    /// <summary>
     /// Formats a <see cref="JqlQueryResult"/> as a human-readable text table for console output.
     /// </summary>
     /// <param name="result">The query result to format.</param>
