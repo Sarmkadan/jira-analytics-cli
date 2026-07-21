@@ -120,6 +120,52 @@ public class JqlQueryServiceTests
         _jiraServiceMock.Verify(s => s.SearchByJqlAsync("project = PROJ ORDER BY created", 25, 50), Times.Once);
     }
 
+    [Fact]
+    public void BuildProjectJql_WithTypicalInput_ReturnsCorrectJql()
+    {
+        JqlQueryService.BuildProjectJql("PROJ").Should().Be("project = \"PROJ\"");
+    }
+
+    [Fact]
+    public void BuildProjectJql_WithQuotes_EscapesCorrectly()
+    {
+        JqlQueryService.BuildProjectJql("PROJ\"KEY").Should().Be("project = \"PROJ\\\"KEY\"");
+    }
+
+    [Fact]
+    public void BuildLabelJql_WithTypicalInput_ReturnsCorrectJql()
+    {
+        JqlQueryService.BuildLabelJql("my-label").Should().Be("label = \"my-label\"");
+    }
+
+    [Fact]
+    public void BuildLabelJql_WithQuotes_EscapesCorrectly()
+    {
+        JqlQueryService.BuildLabelJql("label\"name").Should().Be("label = \"label\\\"name\"");
+    }
+
+    [Fact]
+    public void BuildDateRangeJql_WithBothDates_ReturnsCorrectJql()
+    {
+        var from = new DateTime(2026, 01, 01);
+        var to = new DateTime(2026, 01, 31);
+        JqlQueryService.BuildDateRangeJql("created", from, to).Should().Be("created >= \"2026-01-01\" created <= \"2026-01-31\"");
+    }
+
+    [Fact]
+    public void BuildDateRangeJql_WithOnlyFrom_ReturnsCorrectJql()
+    {
+        var from = new DateTime(2026, 01, 01);
+        JqlQueryService.BuildDateRangeJql("created", from, null).Should().Be("created >= \"2026-01-01\"");
+    }
+
+    [Fact]
+    public void BuildDateRangeJql_WithOnlyTo_ReturnsCorrectJql()
+    {
+        var to = new DateTime(2026, 01, 31);
+        JqlQueryService.BuildDateRangeJql("created", null, to).Should().Be("created <= \"2026-01-31\"");
+    }
+
     /// <summary>
     /// Verifies that the FormatAsText method returns a string containing the issue keys when the result is successful.
     /// </summary>
