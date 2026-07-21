@@ -29,6 +29,7 @@
     <Compile Include="..\..\Models\JiraIssue.cs" />
     <Compile Include="..\..\Models\Sprint.cs" />
     <Compile Include="..\..\Models\SprintMetric.cs" />
+    <Compile Include="..\..\Models\SprintMetricExtensions.cs" />
     <Compile Include="..\..\Models\Developer.cs" />
     <Compile Include="..\..\Models\BurndownSnapshot.cs" />
     <Compile Include="..\..\Models\JiraProject.cs" />
