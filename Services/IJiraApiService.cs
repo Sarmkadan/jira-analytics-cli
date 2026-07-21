@@ -3,6 +3,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using JiraAnalyticsCli.Models;
 
@@ -65,6 +66,31 @@ public interface IJiraApiService
     /// <param name="startAt">Zero-based index of the first result for pagination.</param>
     /// <returns>A search result containing total count and issues.</returns>
     Task<JiraSearchResult> SearchByJqlAsync(string jql, int maxResults = 50, int startAt = 0);
+
+    /// <summary>
+    /// Executes an arbitrary JQL query and returns issues as a stream (order-independent).
+    /// This method fetches issues in pages but yields them immediately without accumulating all in memory.
+    /// </summary>
+    /// <param name="jql">The JQL query string.</param>
+    /// <param name="pageSize">Number of issues to fetch per page (recommended: 50-200).</param>
+    /// <returns>An async stream of issues.</returns>
+    IAsyncEnumerable<JiraIssue> StreamIssuesByJqlAsync(string jql, int pageSize = 100);
+
+    /// <summary>
+    /// Streams all issues in a project without accumulating them all in memory.
+    /// </summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <param name="pageSize">Number of issues to fetch per page.</param>
+    /// <returns>An async stream of issues.</returns>
+    IAsyncEnumerable<JiraIssue> StreamProjectIssuesAsync(string projectKey, int pageSize = 100);
+
+    /// <summary>
+    /// Streams all issues in a sprint without accumulating them all in memory.
+    /// </summary>
+    /// <param name="sprintId">The sprint identifier.</param>
+    /// <param name="pageSize">Number of issues to fetch per page.</param>
+    /// <returns>An async stream of issues.</returns>
+    IAsyncEnumerable<JiraIssue> StreamSprintIssuesAsync(int sprintId, int pageSize = 100);
 }
 
 /// <summary>
