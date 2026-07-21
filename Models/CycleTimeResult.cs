@@ -1,7 +1,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ===================================================================
 
 using System.ComponentModel.DataAnnotations;
 
@@ -20,9 +20,15 @@ public class CycleTimeResult
     /// <summary>Gets or sets the average cycle time in days.</summary>
     public double AverageCycleTime { get; set; }
 
-
+    
     /// <summary>Gets or sets the median cycle time in days.</summary>
     public double MedianCycleTime { get; set; }
+
+    /// <summary>Gets or sets the 50th percentile cycle time in days.</summary>
+    public double P50CycleTime { get; set; }
+
+    /// <summary>Gets or sets the 75th percentile cycle time in days.</summary>
+    public double P75CycleTime { get; set; }
 
     /// <summary>Gets or sets the 90th percentile cycle time in days.</summary>
     public double P90CycleTime { get; set; }

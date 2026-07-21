@@ -339,7 +339,9 @@ public class AnalyticsService : IAnalyticsService
                 {
                     result.AverageCycleTime = cycleTimes.Average();
                     result.MedianCycleTime = CalculateMedian(cycleTimes);
-                    result.P90CycleTime = CalculatePercentile(cycleTimes, 90);
+                    result.P50CycleTime = CalculatePercentile(cycleTimes, 50);
+                result.P75CycleTime = CalculatePercentile(cycleTimes, 75);
+                result.P90CycleTime = CalculatePercentile(cycleTimes, 90);
                 }
 
                 // Create detailed per-issue list

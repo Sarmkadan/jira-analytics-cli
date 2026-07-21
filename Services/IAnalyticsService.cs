@@ -89,6 +89,8 @@ public class CycleTimeResult
     public string ProjectKey { get; set; } = string.Empty;
     public double AverageCycleTime { get; set; }
     public double MedianCycleTime { get; set; }
+    public double P50CycleTime { get; set; }
+    public double P75CycleTime { get; set; }
     public double P90CycleTime { get; set; }
     public List<IssueCycleTime> IssueCycleTimes { get; set; } = new();
 }
