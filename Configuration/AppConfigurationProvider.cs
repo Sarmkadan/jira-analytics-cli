@@ -32,15 +32,15 @@ public class AppConfigurationProvider : IConfigurationProvider
 
         var config = new CliConfig();
 
-        // Load from environment variables (highest priority)
-        LoadFromEnvironment(config);
-
         // Load from JSON file if exists
         if (File.Exists(ConfigFileName))
         {
             _logger.LogInformation("Found configuration file: {ConfigFile}", ConfigFileName);
             LoadFromJsonFile(config);
         }
+
+        // Load from environment variables (highest priority, overrides JSON file)
+        LoadFromEnvironment(config);
 
         // Validate configuration
         try
@@ -61,25 +61,25 @@ public class AppConfigurationProvider : IConfigurationProvider
     {
         _logger.LogDebug("Loading configuration from environment variables");
 
-        var jiraUrl = Environment.GetEnvironmentVariable("JIRA_BASE_URL");
+        var jiraUrl = Environment.GetEnvironmentVariable("JIRA_URL") ?? Environment.GetEnvironmentVariable("JIRA_BASE_URL");
         if (!string.IsNullOrEmpty(jiraUrl))
         {
             config.JiraBaseUrl = jiraUrl;
-            _logger.LogDebug("JIRA_BASE_URL set from environment");
+            _logger.LogDebug("JIRA_URL/JIRA_BASE_URL set from environment");
         }
 
-        var jiraToken = Environment.GetEnvironmentVariable("JIRA_API_TOKEN");
+        var jiraToken = Environment.GetEnvironmentVariable("JIRA_TOKEN") ?? Environment.GetEnvironmentVariable("JIRA_API_TOKEN");
         if (!string.IsNullOrEmpty(jiraToken))
         {
             config.JiraApiToken = jiraToken;
-            _logger.LogDebug("JIRA_API_TOKEN set from environment");
+            _logger.LogDebug("JIRA_TOKEN/JIRA_API_TOKEN set from environment");
         }
 
-        var defaultProject = Environment.GetEnvironmentVariable("JIRA_DEFAULT_PROJECT");
+        var defaultProject = Environment.GetEnvironmentVariable("JIRA_PROJECT") ?? Environment.GetEnvironmentVariable("JIRA_DEFAULT_PROJECT");
         if (!string.IsNullOrEmpty(defaultProject))
         {
             config.DefaultProject = defaultProject;
-            _logger.LogDebug("JIRA_DEFAULT_PROJECT set from environment");
+            _logger.LogDebug("JIRA_PROJECT/JIRA_DEFAULT_PROJECT set from environment");
         }
 
         var cacheMinutes = Environment.GetEnvironmentVariable("CACHE_EXPIRATION_MINUTES");
