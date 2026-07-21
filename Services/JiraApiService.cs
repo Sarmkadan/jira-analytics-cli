@@ -520,4 +520,155 @@ public class JiraApiService : IJiraApiService
         => DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dt)
             ? dt
             : null;
+
+    /// <summary>
+    /// Streams issues from a JQL query in pages, yielding each issue as it's received.
+    /// This avoids accumulating all issues in memory and allows processing large result sets efficiently.
+    /// </summary>
+    /// <param name="jql">The JQL query string.</param>
+    /// <param name="pageSize">Number of issues to fetch per page.</param>
+    /// <returns>Async stream of issues.</returns>
+    public async IAsyncEnumerable<JiraIssue> StreamIssuesByJqlAsync(string jql, int pageSize = 100)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(pageSize, 0, nameof(pageSize));
+
+        _logger.LogInformation("Streaming issues by JQL (pageSize={PageSize}): {Jql}", pageSize, jql);
+
+        int startAt = 0;
+        bool hasMoreResults = true;
+
+        while (hasMoreResults)
+        {
+            List<JiraIssue>? pageIssues = null;
+            
+            try
+            {
+                var result = await SearchByJqlAsync(jql, pageSize, startAt);
+                pageIssues = result.Issues;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching page of issues for JQL: {Jql}", jql);
+                yield break;
+            }
+
+            if (pageIssues == null || pageIssues.Count == 0)
+            {
+                hasMoreResults = false;
+                break;
+            }
+
+            foreach (var issue in pageIssues)
+            {
+                yield return issue;
+            }
+
+            startAt += pageSize;
+
+            // Stop if we got fewer results than requested (last page)
+            if (pageIssues.Count < pageSize)
+            {
+                hasMoreResults = false;
+            }
+        }
+
+        _logger.LogInformation("Completed streaming {IssueCount} issues for JQL query", startAt);
+    }
+
+    public async IAsyncEnumerable<JiraIssue> StreamProjectIssuesAsync(string projectKey, int pageSize = 100)
+    {
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(pageSize, 0, nameof(pageSize));
+
+        _logger.LogInformation("Streaming issues for project {ProjectKey} (pageSize={PageSize})", projectKey, pageSize);
+
+        int startAt = 0;
+        bool hasMoreResults = true;
+
+        while (hasMoreResults)
+        {
+            List<JiraIssue>? pageIssues = null;
+
+            try
+            {
+                var result = await SearchByJqlAsync($"project = {projectKey} ORDER BY created DESC", pageSize, startAt);
+                pageIssues = result.Issues;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching page of issues for project {ProjectKey}", projectKey);
+                yield break;
+            }
+
+            if (pageIssues == null || pageIssues.Count == 0)
+            {
+                hasMoreResults = false;
+                break;
+            }
+
+            foreach (var issue in pageIssues)
+            {
+                yield return issue;
+            }
+
+            startAt += pageSize;
+
+            // Stop if we got fewer results than requested (last page)
+            if (pageIssues.Count < pageSize)
+            {
+                hasMoreResults = false;
+            }
+        }
+
+        _logger.LogInformation("Completed streaming issues for project {ProjectKey}", projectKey);
+    }
+
+    public async IAsyncEnumerable<JiraIssue> StreamSprintIssuesAsync(int sprintId, int pageSize = 100)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(pageSize, 0, nameof(pageSize));
+
+        _logger.LogInformation("Streaming issues for sprint {SprintId} (pageSize={PageSize})", sprintId, pageSize);
+
+        int startAt = 0;
+        bool hasMoreResults = true;
+
+        while (hasMoreResults)
+        {
+            List<JiraIssue>? pageIssues = null;
+
+            try
+            {
+                var result = await SearchByJqlAsync($"sprint = {sprintId} ORDER BY created DESC", pageSize, startAt);
+                pageIssues = result.Issues;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching page of issues for sprint {SprintId}", sprintId);
+                yield break;
+            }
+
+            if (pageIssues == null || pageIssues.Count == 0)
+            {
+                hasMoreResults = false;
+                break;
+            }
+
+            foreach (var issue in pageIssues)
+            {
+                yield return issue;
+            }
+
+            startAt += pageSize;
+
+            // Stop if we got fewer results than requested (last page)
+            if (pageIssues.Count < pageSize)
+            {
+                hasMoreResults = false;
+            }
+        }
+
+        _logger.LogInformation("Completed streaming issues for sprint {SprintId}", sprintId);
+    }
 }
