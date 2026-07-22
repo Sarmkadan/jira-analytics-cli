@@ -1,7 +1,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ===================================================================
 
 using System;
 using System.Collections.Generic;
@@ -22,14 +22,18 @@ public static class BurndownSnapshotExtensions
     /// </summary>
     /// <param name="snapshot">The current snapshot</param>
     /// <param name="historicalSnapshots">Historical snapshots sorted by timestamp (newest first)</param>
-    /// <returns>Velocity trend in story points per day, or 0 if insufficient data</returns>
+    /// <returns>Velocity trend in story points per day, or 0 if insufficient data or snapshot is invalid</returns>
     /// <exception cref="ArgumentNullException">Thrown when snapshot or historicalSnapshots is null</exception>
+    /// <exception cref="ArgumentException">Thrown when snapshot contains validation errors</exception>
     public static double CalculateVelocityTrend(
         this BurndownSnapshot snapshot,
         IReadOnlyList<BurndownSnapshot> historicalSnapshots)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(historicalSnapshots);
+
+        // Validate the snapshot before processing
+        snapshot.EnsureValid();
 
         if (historicalSnapshots.Count < 2)
             return 0;
@@ -62,12 +66,16 @@ public static class BurndownSnapshotExtensions
     /// <param name="historicalSnapshots">Historical snapshots sorted by timestamp (newest first)</param>
     /// <returns>True if velocity is accelerating (improving), false otherwise</returns>
     /// <exception cref="ArgumentNullException">Thrown when snapshot or historicalSnapshots is null</exception>
+    /// <exception cref="ArgumentException">Thrown when snapshot contains validation errors</exception>
     public static bool IsVelocityAccelerating(
         this BurndownSnapshot snapshot,
         IReadOnlyList<BurndownSnapshot> historicalSnapshots)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(historicalSnapshots);
+
+        // Validate the snapshot before processing
+        snapshot.EnsureValid();
 
         var velocityTrend = snapshot.CalculateVelocityTrend(historicalSnapshots);
         var oldestTimestamp = historicalSnapshots.LastOrDefault()?.Timestamp ?? snapshot.Timestamp.AddDays(-1);
@@ -86,12 +94,16 @@ public static class BurndownSnapshotExtensions
     /// <returns>Burn rate in story points per day</returns>
     /// <exception cref="ArgumentNullException">Thrown when snapshot is null</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when daysInSprint is not positive</exception>
+    /// <exception cref="ArgumentException">Thrown when snapshot contains validation errors</exception>
     public static double GetBurnRate(
         this BurndownSnapshot snapshot,
         int daysInSprint = 14)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(daysInSprint, 0);
+
+        // Validate the snapshot before processing
+        snapshot.EnsureValid();
 
         if (daysInSprint <= 0)
             return 0;
@@ -113,12 +125,17 @@ public static class BurndownSnapshotExtensions
     /// <param name="previous">The previous snapshot to compare against</param>
     /// <returns>A new <see cref="BurndownSnapshot"/> representing the delta, or null if comparison not possible (e.g., timestamps are not in chronological order)</returns>
     /// <exception cref="ArgumentNullException">Thrown when current or previous is null</exception>
+    /// <exception cref="ArgumentException">Thrown when current or previous snapshot contains validation errors</exception>
     public static BurndownSnapshot? CreateDeltaSnapshot(
         this BurndownSnapshot current,
         BurndownSnapshot previous)
     {
         ArgumentNullException.ThrowIfNull(current);
         ArgumentNullException.ThrowIfNull(previous);
+
+        // Validate both snapshots before processing
+        current.EnsureValid();
+        previous.EnsureValid();
 
         // Only create delta if timestamps are comparable
         if (current.Timestamp <= previous.Timestamp)
@@ -146,11 +163,15 @@ public static class BurndownSnapshotExtensions
     /// <param name="includeProjected">Whether to include projected completion info</param>
     /// <returns>Formatted status string</returns>
     /// <exception cref="ArgumentNullException">Thrown when snapshot is null</exception>
+    /// <exception cref="ArgumentException">Thrown when snapshot contains validation errors</exception>
     public static string ToStatusString(
         this BurndownSnapshot snapshot,
         bool includeProjected = true)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
+
+        // Validate the snapshot before processing
+        snapshot.EnsureValid();
 
         var parts = new List<string>
         {
@@ -183,12 +204,16 @@ public static class BurndownSnapshotExtensions
     /// <returns>True if scope creep is detected</returns>
     /// <exception cref="ArgumentNullException">Thrown when snapshot is null</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when threshold is negative</exception>
+    /// <exception cref="ArgumentException">Thrown when snapshot contains validation errors</exception>
     public static bool HasScopeCreep(
         this BurndownSnapshot snapshot,
         int threshold = 3)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentOutOfRangeException.ThrowIfNegative(threshold);
+
+        // Validate the snapshot before processing
+        snapshot.EnsureValid();
 
         return snapshot.ScopeChanges >= threshold;
     }
@@ -200,10 +225,17 @@ public static class BurndownSnapshotExtensions
     /// <param name="snapshots">List of snapshots sorted by timestamp (oldest first)</param>
     /// <returns>Sequence of completed story points values</returns>
     /// <exception cref="ArgumentNullException">Thrown when snapshots is null</exception>
+    /// <exception cref="ArgumentException">Thrown when any snapshot contains validation errors</exception>
     public static IEnumerable<int> GetCompletedStoryPointsOverTime(
         this IReadOnlyList<BurndownSnapshot> snapshots)
     {
         ArgumentNullException.ThrowIfNull(snapshots);
+
+        // Validate all snapshots before processing
+        foreach (var snapshot in snapshots)
+        {
+            snapshot.EnsureValid();
+        }
 
         return snapshots.Select(s => s.CompletedStoryPoints).ToList();
     }
@@ -215,10 +247,17 @@ public static class BurndownSnapshotExtensions
     /// <param name="snapshots">List of snapshots sorted by timestamp (oldest first)</param>
     /// <returns>Sequence of remaining story points values</returns>
     /// <exception cref="ArgumentNullException">Thrown when snapshots is null</exception>
+    /// <exception cref="ArgumentException">Thrown when any snapshot contains validation errors</exception>
     public static IEnumerable<int> GetRemainingStoryPointsOverTime(
         this IReadOnlyList<BurndownSnapshot> snapshots)
     {
         ArgumentNullException.ThrowIfNull(snapshots);
+
+        // Validate all snapshots before processing
+        foreach (var snapshot in snapshots)
+        {
+            snapshot.EnsureValid();
+        }
 
         return snapshots.Select(s => s.RemainingStoryPoints).ToList();
     }

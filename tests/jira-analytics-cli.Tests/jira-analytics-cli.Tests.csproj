@@ -32,6 +32,8 @@
     <Compile Include="..\..\Models\SprintMetricExtensions.cs" />
     <Compile Include="..\..\Models\Developer.cs" />
     <Compile Include="..\..\Models\BurndownSnapshot.cs" />
+<Compile Include="..\..\Models\BurndownSnapshotExtensions.cs" />
+<Compile Include="..\..\Models\BurndownSnapshotValidation.cs" />
     <Compile Include="..\..\Models\JiraProject.cs" />
     <Compile Include="..\..\Services\IAnalyticsService.cs" />
     <Compile Include="..\..\Services\IJiraApiService.cs" />
