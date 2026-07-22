@@ -52,6 +52,8 @@
     <Compile Include="..\..\Caching\InMemoryCache.cs" />
     <Compile Include="..\..\Caching\CachePolicy.cs" />
     <Compile Include="..\..\Services\JiraApiService.cs" />
+    <Compile Include="..\..\Services\ICsvExportService.cs" />
+    <Compile Include="..\..\Services\CsvExportService.cs" />
     <Compile Include="..\..\Configuration\ICliConfig.cs" />
     <Compile Include="..\..\Formatters\JsonFormatter.cs" />
   </ItemGroup>

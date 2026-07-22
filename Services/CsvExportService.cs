@@ -35,17 +35,17 @@ public class CsvExportService : ICsvExportService
         try
         {
             var data = metrics.ToList();
-            if (!data.Any())
-            {
-                _logger.LogWarning("No metrics provided for export");
-                await File.WriteAllTextAsync(path, string.Empty);
-                return;
-            }
-
             var sb = new StringBuilder();
 
             // Write CSV headers
             sb.AppendLine("SprintId,SprintName,StartDate,EndDate,PlannedStoryPoints,CompletedStoryPoints,CommittedStoryPoints,CompletedIssueCount,TotalIssueCount,DefectsCount,AverageCycleTime,OverdueIssueCount,TeamSize,ScopeChangeCount,Velocity,CompletionRate%,CommitmentAccuracy%,QualityScore,ProductivityPerTeamMember,DailyBurndownRate,HealthStatus");
+
+            if (!data.Any())
+            {
+                _logger.LogWarning("No metrics provided for export");
+                await File.WriteAllTextAsync(path, sb.ToString(), Encoding.UTF8);
+                return;
+            }
 
             // Write data rows
             foreach (var metric in data)
@@ -53,7 +53,7 @@ public class CsvExportService : ICsvExportService
                 var values = new object[]
                 {
                     metric.SprintId,
-                    EscapeCsvValue(metric.SprintName),
+                    metric.SprintName,
                     metric.StartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                     metric.EndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                     metric.PlannedStoryPoints,
@@ -101,24 +101,24 @@ public class CsvExportService : ICsvExportService
         try
         {
             var data = metrics.ToList();
-            if (!data.Any())
-            {
-                _logger.LogWarning("No team metrics provided for export");
-                await File.WriteAllTextAsync(path, string.Empty);
-                return;
-            }
-
             var sb = new StringBuilder();
 
             // Write CSV headers
             sb.AppendLine("Developer,AssignedIssues");
+
+            if (!data.Any())
+            {
+                _logger.LogWarning("No team metrics provided for export");
+                await File.WriteAllTextAsync(path, sb.ToString(), Encoding.UTF8);
+                return;
+            }
 
             // Write data rows
             foreach (var kvp in data)
             {
                 var values = new object[]
                 {
-                    EscapeCsvValue(kvp.Key),
+                    kvp.Key,
                     kvp.Value
                 };
 
