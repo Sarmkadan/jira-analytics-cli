@@ -46,10 +46,13 @@ public class BurndownSnapshot
     /// Calculates the percentage of work completed based on story points
     /// </summary>
     /// <returns>Percentage of work completed (0-100)</returns>
+    /// <exception cref="ArgumentException">Thrown when the snapshot contains validation errors</exception>
     public double GetBurndownPercentage()
     {
         // Percentage of work completed
-        if (TotalStoryPoints == 0) return 0;
+        if (TotalStoryPoints == 0)
+            return 0;
+
         return (CompletedStoryPoints / (double)TotalStoryPoints) * 100;
     }
 
@@ -58,16 +61,28 @@ public class BurndownSnapshot
     /// </summary>
     /// <param name="sprintEnd">The end date of the sprint</param>
     /// <returns>Projected completion percentage</returns>
+    /// <exception cref="ArgumentException">Thrown when the snapshot contains validation errors</exception>
     public double GetProjectedCompletionPercentage(DateTime sprintEnd)
     {
         // Simple linear projection based on current burn rate
-        var timeSinceStart = Timestamp;
         var daysRemaining = (sprintEnd - Timestamp).TotalDays;
 
-        if (daysRemaining <= 0) return GetBurndownPercentage();
+        if (daysRemaining <= 0)
+            return GetBurndownPercentage();
 
-        var remainingPercentage = 100 - GetBurndownPercentage();
-        return Math.Min(100, GetBurndownPercentage() + (remainingPercentage * (daysRemaining / 14))); // Assuming 2-week sprint
+        var currentPercentage = GetBurndownPercentage();
+        var remainingPercentage = 100 - currentPercentage;
+
+        // Guard against division by zero - if remaining percentage is 0 or negative, we're done
+        if (remainingPercentage <= 0)
+            return 100;
+
+        // Assuming 2-week sprint for projection
+        // Ensure we don't divide by zero in the hardcoded 14
+        const int sprintLengthDays = 14;
+        var burnRateFactor = daysRemaining / (double)sprintLengthDays;
+
+        return Math.Min(100, currentPercentage + (remainingPercentage * burnRateFactor));
     }
 
     /// <summary>
@@ -75,14 +90,20 @@ public class BurndownSnapshot
     /// </summary>
     /// <param name="sprintEnd">The end date of the sprint</param>
     /// <returns>True if the sprint is on track</returns>
+    /// <exception cref="ArgumentException">Thrown when the snapshot contains validation errors</exception>
     public bool IsOnTrack(DateTime sprintEnd)
     {
-        // Check if we're on track to complete the sprint
+        // Check if we are on track to complete the sprint
         var daysTotal = (sprintEnd - (Timestamp.AddDays(-7))).TotalDays; // Rough estimate
         var daysElapsed = 7; // Rough estimate
         var daysRemaining = daysTotal - daysElapsed;
 
-        if (daysRemaining <= 0) return GetBurndownPercentage() >= 90;
+        if (daysRemaining <= 0)
+            return GetBurndownPercentage() >= 90;
+
+        // Guard against division by zero
+        if (daysTotal <= 0)
+            return GetBurndownPercentage() >= 90;
 
         var expectedBurndown = (daysElapsed / daysTotal) * 100;
         var actualBurndown = GetBurndownPercentage();
@@ -95,10 +116,13 @@ public class BurndownSnapshot
     /// </summary>
     /// <param name="issuesPerHour">Average issues completed per hour</param>
     /// <returns>Estimated hours until completion</returns>
+    /// <exception cref="ArgumentException">Thrown when the snapshot contains validation errors</exception>
     public int GetHoursUntilCompletion(int issuesPerHour)
     {
         // Estimate hours until completion based on completion rate
-        if (issuesPerHour <= 0) return 0;
+        if (issuesPerHour <= 0)
+            return 0;
+
         return RemainingIssueCount / issuesPerHour;
     }
 

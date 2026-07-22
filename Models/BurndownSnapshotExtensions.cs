@@ -35,19 +35,25 @@ public static class BurndownSnapshotExtensions
         // Validate the snapshot before processing
         snapshot.EnsureValid();
 
-        if (historicalSnapshots.Count < 2)
+        if (historicalSnapshots.Count == 0)
             return 0;
 
+        // Ensure snapshots are in chronological order (oldest first) for proper comparison
+        // Sort by timestamp to handle unordered input
+        var sortedHistorical = historicalSnapshots
+            .OrderBy(h => h.Timestamp)
+            .ToList();
+
         // Find snapshots from previous days
-        var previousDaySnapshots = historicalSnapshots
+        var previousDaySnapshots = sortedHistorical
             .Where(h => h.Timestamp.Date < snapshot.Timestamp.Date)
             .ToList();
 
-        if (previousDaySnapshots.Count < 1)
+        if (previousDaySnapshots.Count == 0)
             return 0;
 
         // Calculate total story points burned between historical and current
-        var oldestHistorical = previousDaySnapshots.MinBy(h => h.Timestamp)?.Timestamp ?? DateTime.MinValue;
+        var oldestHistorical = previousDaySnapshots.First().Timestamp;
         var daysBetween = (snapshot.Timestamp - oldestHistorical).TotalDays;
 
         if (daysBetween <= 0)
@@ -55,6 +61,11 @@ public static class BurndownSnapshotExtensions
 
         var maxHistoricalCompleted = previousDaySnapshots.Max(h => h.CompletedStoryPoints);
         var totalStoryPointsBurned = snapshot.CompletedStoryPoints - maxHistoricalCompleted;
+
+        // Guard against division by zero - if no work was completed historically, return 0
+        if (maxHistoricalCompleted <= 0 && snapshot.CompletedStoryPoints <= 0)
+            return 0;
+
         return totalStoryPointsBurned / daysBetween;
     }
 
@@ -78,11 +89,30 @@ public static class BurndownSnapshotExtensions
         snapshot.EnsureValid();
 
         var velocityTrend = snapshot.CalculateVelocityTrend(historicalSnapshots);
-        var oldestTimestamp = historicalSnapshots.LastOrDefault()?.Timestamp ?? snapshot.Timestamp.AddDays(-1);
+
+        // Handle case where we don't have enough historical data
+        if (historicalSnapshots.Count == 0)
+            return false;
+
+        // Sort historical snapshots chronologically to find oldest timestamp
+        var sortedHistorical = historicalSnapshots
+            .OrderBy(h => h.Timestamp)
+            .ToList();
+
+        var oldestTimestamp = sortedHistorical.First().Timestamp;
         var daysBetween = (snapshot.Timestamp - oldestTimestamp).TotalDays;
-        var overallVelocity = daysBetween > 0 ? snapshot.CompletedStoryPoints / daysBetween : 0;
+
+        // Guard against division by zero
+        if (daysBetween <= 0)
+            return false;
+
+        var overallVelocity = snapshot.CompletedStoryPoints / daysBetween;
 
         // If we're burning story points significantly faster now than overall, velocity is accelerating
+        // Use a threshold to avoid false positives with small numbers
+        if (overallVelocity <= 0)
+            return false;
+
         return velocityTrend > overallVelocity * 1.1; // 10% improvement threshold
     }
 
