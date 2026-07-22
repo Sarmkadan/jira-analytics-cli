@@ -168,4 +168,35 @@ public class TeamComparisonServiceTests
         text.Should().Contain("Fastest team");
         text.Should().Contain("Highest quality");
     }
+
+    /// <summary>
+    /// Tests that the CompareTeamsAsync method handles identical teams by selecting the first one.
+    /// </summary>
+    [Fact]
+    public async Task CompareTeamsAsync_IdenticalTeams_Tie()
+    {
+        _analyticsMock.Setup(a => a.AnalyzeSprints("TEAM1", 5)).ReturnsAsync(BuildAnalysis(50, "Healthy", 0));
+        _analyticsMock.Setup(a => a.AnalyzeSprints("TEAM2", 5)).ReturnsAsync(BuildAnalysis(50, "Healthy", 0));
+
+        var report = await _sut.CompareTeamsAsync(new[] { "TEAM1", "TEAM2" });
+
+        report.Teams.Should().HaveCount(2);
+        // MaxBy returns the first element if multiple have the same maximum value.
+        report.FastestTeam.Should().Be("TEAM1");
+    }
+
+    /// <summary>
+    /// Tests that the CompareTeamsAsync method handles a project with no metrics without throwing divide-by-zero exceptions.
+    /// </summary>
+    [Fact]
+    public async Task CompareTeamsAsync_ProjectWithNoMetrics_HandledWithoutException()
+    {
+        _analyticsMock.Setup(a => a.AnalyzeSprints("EMPTY", 5)).ReturnsAsync(new SprintAnalysisResult { Metrics = new List<SprintMetric>() });
+
+        var report = await _sut.CompareTeamsAsync(new[] { "EMPTY" });
+
+        report.Teams.Should().HaveCount(1);
+        report.Teams.First().ProjectKey.Should().Be("EMPTY");
+        report.Teams.First().OverallHealth.Should().Be("Unknown");
+    }
 }
