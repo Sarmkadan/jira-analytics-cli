@@ -109,6 +109,34 @@ public class AppConfigurationProvider : IConfigurationProvider
             config.ExportFormat = format;
             _logger.LogDebug("EXPORT_FORMAT set to {Format}", format);
         }
+
+        var maxRetryAttempts = Environment.GetEnvironmentVariable("JIRA_API_MAX_RETRY_ATTEMPTS");
+        if (int.TryParse(maxRetryAttempts, out var retryAttempts))
+        {
+            config.JiraApiMaxRetryAttempts = retryAttempts;
+            _logger.LogDebug("JIRA_API_MAX_RETRY_ATTEMPTS set to {Attempts}", retryAttempts);
+        }
+
+        var circuitBreakerThreshold = Environment.GetEnvironmentVariable("JIRA_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD");
+        if (int.TryParse(circuitBreakerThreshold, out var threshold))
+        {
+            config.JiraApiCircuitBreakerFailureThreshold = threshold;
+            _logger.LogDebug("JIRA_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD set to {Threshold}", threshold);
+        }
+
+        var circuitBreakerDuration = Environment.GetEnvironmentVariable("JIRA_API_CIRCUIT_BREAKER_DURATION_SECONDS");
+        if (int.TryParse(circuitBreakerDuration, out var duration))
+        {
+            config.JiraApiCircuitBreakerDurationSeconds = duration;
+            _logger.LogDebug("JIRA_API_CIRCUIT_BREAKER_DURATION_SECONDS set to {Duration}", duration);
+        }
+
+        var timeoutSeconds = Environment.GetEnvironmentVariable("JIRA_API_TIMEOUT_SECONDS");
+        if (int.TryParse(timeoutSeconds, out var timeout))
+        {
+            config.JiraApiTimeoutSeconds = timeout;
+            _logger.LogDebug("JIRA_API_TIMEOUT_SECONDS set to {Timeout}", timeout);
+        }
     }
 
     private void LoadFromJsonFile(CliConfig config)
@@ -141,6 +169,18 @@ public class AppConfigurationProvider : IConfigurationProvider
 
             if (root.TryGetProperty("exportFormat", out var format))
                 config.ExportFormat = format.GetString() ?? config.ExportFormat;
+
+            if (root.TryGetProperty("jiraApiMaxRetryAttempts", out var maxRetryAttempts) && maxRetryAttempts.TryGetInt32(out var retryAttempts))
+                config.JiraApiMaxRetryAttempts = retryAttempts;
+
+            if (root.TryGetProperty("jiraApiCircuitBreakerFailureThreshold", out var circuitBreakerThreshold) && circuitBreakerThreshold.TryGetInt32(out var threshold))
+                config.JiraApiCircuitBreakerFailureThreshold = threshold;
+
+            if (root.TryGetProperty("jiraApiCircuitBreakerDurationSeconds", out var circuitBreakerDuration) && circuitBreakerDuration.TryGetInt32(out var duration))
+                config.JiraApiCircuitBreakerDurationSeconds = duration;
+
+            if (root.TryGetProperty("jiraApiTimeoutSeconds", out var timeoutSeconds) && timeoutSeconds.TryGetInt32(out var timeout))
+                config.JiraApiTimeoutSeconds = timeout;
 
             _logger.LogDebug("Configuration successfully loaded from JSON file");
         }

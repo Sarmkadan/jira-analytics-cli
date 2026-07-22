@@ -17,4 +17,8 @@ public interface ICliConfig
     bool EnableDetailedLogging { get; }
     int DefaultSprintCount { get; }
     string ExportFormat { get; }
+    int JiraApiMaxRetryAttempts { get; }
+    int JiraApiCircuitBreakerFailureThreshold { get; }
+    int JiraApiCircuitBreakerDurationSeconds { get; }
+    int JiraApiTimeoutSeconds { get; }
 }
