@@ -1,7 +1,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ===================================================================
 
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -42,6 +42,10 @@ public class BurndownSnapshot
     [JsonPropertyName("scopeChanges")]
     public int ScopeChanges { get; set; }
 
+    /// <summary>
+    /// Calculates the percentage of work completed based on story points
+    /// </summary>
+    /// <returns>Percentage of work completed (0-100)</returns>
     public double GetBurndownPercentage()
     {
         // Percentage of work completed
@@ -49,6 +53,11 @@ public class BurndownSnapshot
         return (CompletedStoryPoints / (double)TotalStoryPoints) * 100;
     }
 
+    /// <summary>
+    /// Calculates the projected completion percentage based on current burn rate
+    /// </summary>
+    /// <param name="sprintEnd">The end date of the sprint</param>
+    /// <returns>Projected completion percentage</returns>
     public double GetProjectedCompletionPercentage(DateTime sprintEnd)
     {
         // Simple linear projection based on current burn rate
@@ -61,6 +70,11 @@ public class BurndownSnapshot
         return Math.Min(100, GetBurndownPercentage() + (remainingPercentage * (daysRemaining / 14))); // Assuming 2-week sprint
     }
 
+    /// <summary>
+    /// Determines if the current burndown is on track to meet sprint goals
+    /// </summary>
+    /// <param name="sprintEnd">The end date of the sprint</param>
+    /// <returns>True if the sprint is on track</returns>
     public bool IsOnTrack(DateTime sprintEnd)
     {
         // Check if we're on track to complete the sprint
@@ -76,6 +90,11 @@ public class BurndownSnapshot
         return actualBurndown >= (expectedBurndown * 0.9); // Within 10% tolerance
     }
 
+    /// <summary>
+    /// Estimates hours until completion based on issue completion rate
+    /// </summary>
+    /// <param name="issuesPerHour">Average issues completed per hour</param>
+    /// <returns>Estimated hours until completion</returns>
     public int GetHoursUntilCompletion(int issuesPerHour)
     {
         // Estimate hours until completion based on completion rate
@@ -83,6 +102,10 @@ public class BurndownSnapshot
         return RemainingIssueCount / issuesPerHour;
     }
 
+    /// <summary>
+    /// Validates the burndown snapshot to ensure all invariants are satisfied.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when the snapshot contains validation errors</exception>
     public void Validate()
     {
         if (SprintId <= 0)
@@ -100,8 +123,35 @@ public class BurndownSnapshot
         if (TotalStoryPoints <= 0)
             throw new ArgumentException("Total story points must be positive");
 
+        if (CompletedStoryPoints > TotalStoryPoints)
+            throw new ArgumentException("Completed story points cannot exceed total story points");
+
+        if (RemainingStoryPoints > TotalStoryPoints)
+            throw new ArgumentException("Remaining story points cannot exceed total story points");
+
         if (CompletedStoryPoints + RemainingStoryPoints != TotalStoryPoints)
-            throw new ArgumentException("Completed + Remaining story points must equal total");
+            throw new ArgumentException("Completed + Remaining story points must equal total story points");
+
+        if (RemainingIssueCount < 0)
+            throw new ArgumentException("Remaining issue count cannot be negative");
+
+        if (CompletedIssueCount < 0)
+            throw new ArgumentException("Completed issue count cannot be negative");
+
+        if (TotalIssueCount <= 0)
+            throw new ArgumentException("Total issue count must be positive");
+
+        if (CompletedIssueCount > TotalIssueCount)
+            throw new ArgumentException("Completed issue count cannot exceed total issue count");
+
+        if (RemainingIssueCount > TotalIssueCount)
+            throw new ArgumentException("Remaining issue count cannot exceed total issue count");
+
+        if (CompletedIssueCount + RemainingIssueCount != TotalIssueCount)
+            throw new ArgumentException("Completed + Remaining issue count must equal total issue count");
+
+        if (ScopeChanges < -1000 || ScopeChanges > 1000)
+            throw new ArgumentException("Scope changes must be between -1000 and 1000");
     }
 
     public override string ToString()
