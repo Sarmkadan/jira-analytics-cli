@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using JiraAnalyticsCli.Configuration;
 using JiraAnalyticsCli.Services;
 using JiraAnalyticsCli.Repositories;
+using JiraAnalyticsCli.Models;
 namespace JiraAnalyticsCli;
 
 class Program
@@ -81,6 +82,7 @@ class Program
         services.AddSingleton<IHtmlReportService, HtmlReportService>();
     services.AddSingleton<IMarkdownReportService, MarkdownReportService>();
         services.AddSingleton<ITeamComparisonService, TeamComparisonService>();
+        services.AddSingleton<ISnapshotStore, SnapshotStore>();
     }
 
     static RootCommand BuildRootCommand(IServiceProvider serviceProvider)
@@ -416,6 +418,50 @@ rootCommand.AddCommand(teamCsvExportCommand);
     }, markdownReportProjectOpt, markdownReportSprintsOpt, markdownReportOutputOpt, markdownReportOutputDirOpt);
 
     rootCommand.AddCommand(markdownReportCommand);
+
+    // Trend command - analyzes the locally persisted snapshot history for a sprint
+    var trendCommand = new Command("trend", "Analyze historical burndown trend for a sprint from locally persisted snapshots");
+    var trendSprintIdOpt = new Option<int>(new[] { "--sprint-id" }, "Sprint ID") { IsRequired = true };
+    trendCommand.AddOption(trendSprintIdOpt);
+
+    trendCommand.SetHandler(async (int sprintId) =>
+    {
+        var snapshotStore = serviceProvider.GetRequiredService<ISnapshotStore>();
+        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            var history = await snapshotStore.LoadAsync(sprintId);
+            if (history.Count == 0)
+            {
+                Console.WriteLine($"No persisted snapshots found for sprint {sprintId}. Run 'burndown --sprint-id {sprintId}' first to start collecting history.");
+                return;
+            }
+
+            var orderedHistory = history.ToList();
+            var latest = orderedHistory[^1];
+            var priorSnapshots = orderedHistory.Count > 1
+                ? orderedHistory.GetRange(0, orderedHistory.Count - 1)
+                : new List<BurndownSnapshot>();
+
+            Console.WriteLine($"Trend analysis for sprint {sprintId} ({history.Count} snapshot(s))");
+            Console.WriteLine(new string('-', 70));
+            Console.WriteLine(latest.ToStatusString());
+            Console.WriteLine($"Velocity trend:       {latest.CalculateVelocityTrend(priorSnapshots):F2} pts/day");
+            Console.WriteLine($"Velocity accelerating: {latest.IsVelocityAccelerating(priorSnapshots)}");
+            Console.WriteLine($"Burn rate:             {latest.GetBurnRate():F2} pts/day");
+            Console.WriteLine($"Scope creep detected:  {latest.HasScopeCreep()}");
+            Console.WriteLine($"Completed pts over time: {string.Join(", ", orderedHistory.GetCompletedStoryPointsOverTime())}");
+            Console.WriteLine($"Remaining pts over time: {string.Join(", ", orderedHistory.GetRemainingStoryPointsOverTime())}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Trend command failed");
+            throw;
+        }
+    }, trendSprintIdOpt);
+
+    rootCommand.AddCommand(trendCommand);
 
         return rootCommand;
     }
