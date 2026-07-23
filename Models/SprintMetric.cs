@@ -22,10 +22,10 @@ public class SprintMetric
     public string SprintName { get; set; } = string.Empty;
 
     [JsonPropertyName("startDate")]
-    public DateTime StartDate { get; set; }
+    public DateTimeOffset StartDate { get; set; }
 
     [JsonPropertyName("endDate")]
-    public DateTime EndDate { get; set; }
+    public DateTimeOffset EndDate { get; set; }
 
     [JsonPropertyName("plannedStoryPoints")]
     public int PlannedStoryPoints { get; set; }
