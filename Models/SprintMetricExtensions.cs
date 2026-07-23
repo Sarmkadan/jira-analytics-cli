@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace JiraAnalyticsCli.Models;
 
 public static class SprintMetricExtensions
@@ -53,4 +55,56 @@ public static class SprintMetricExtensions
 
         return (double)sprintMetric.CompletedStoryPoints / daysElapsed;
     }
+
+    /// <summary>
+    /// Projects completed story points across sprints into the shared
+    /// <see cref="ITimeSeriesPoint"/> shape consumed by <see cref="TrendAnalysis"/>,
+    /// using each sprint's end date as the observation timestamp.
+    /// </summary>
+    /// <param name="sprintMetrics">List of sprint metrics in any order.</param>
+    /// <returns>The completed story points series as time-series points.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="sprintMetrics"/> is null.</exception>
+    public static IReadOnlyList<ITimeSeriesPoint> ToCompletedStoryPointsSeries(
+        this IReadOnlyList<SprintMetric> sprintMetrics)
+    {
+        ArgumentNullException.ThrowIfNull(sprintMetrics);
+
+        return sprintMetrics
+            .Select(m => (ITimeSeriesPoint)new TimeSeriesPoint(m.EndDate.UtcDateTime, m.CompletedStoryPoints))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Calculates the linear trend slope of completed story points across sprints,
+    /// in points per day, by delegating to <see cref="TrendAnalysis.CalculateSlope"/>.
+    /// </summary>
+    /// <param name="sprintMetrics">List of sprint metrics in any order.</param>
+    /// <returns>The slope in story points per day, or 0 when insufficient data.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="sprintMetrics"/> is null.</exception>
+    public static double GetCompletedStoryPointsTrendSlope(this IReadOnlyList<SprintMetric> sprintMetrics) =>
+        TrendAnalysis.CalculateSlope(sprintMetrics.ToCompletedStoryPointsSeries());
+
+    /// <summary>
+    /// Calculates the acceleration of completed story points across sprints by
+    /// delegating to <see cref="TrendAnalysis.CalculateAcceleration"/>.
+    /// </summary>
+    /// <param name="sprintMetrics">List of sprint metrics in any order.</param>
+    /// <returns>The acceleration in story points per day squared, or 0 when insufficient data.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="sprintMetrics"/> is null.</exception>
+    public static double GetCompletedStoryPointsAcceleration(this IReadOnlyList<SprintMetric> sprintMetrics) =>
+        TrendAnalysis.CalculateAcceleration(sprintMetrics.ToCompletedStoryPointsSeries());
+
+    /// <summary>
+    /// Calculates a trailing moving average of completed story points across sprints
+    /// by delegating to <see cref="TrendAnalysis.CalculateMovingAverage"/>.
+    /// </summary>
+    /// <param name="sprintMetrics">List of sprint metrics in any order.</param>
+    /// <param name="windowSize">The number of trailing points to average over.</param>
+    /// <returns>A list of moving-average values, one per sprint, in chronological order.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="sprintMetrics"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="windowSize"/> is not positive.</exception>
+    public static IReadOnlyList<double> GetCompletedStoryPointsMovingAverage(
+        this IReadOnlyList<SprintMetric> sprintMetrics,
+        int windowSize) =>
+        TrendAnalysis.CalculateMovingAverage(sprintMetrics.ToCompletedStoryPointsSeries(), windowSize);
 }
