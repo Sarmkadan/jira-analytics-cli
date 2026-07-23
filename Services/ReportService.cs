@@ -17,12 +17,23 @@ public class ReportService : IReportService
 {
     private readonly IJiraApiService _jiraService;
     private readonly IExportService _exportService;
+    private readonly ISnapshotStore _snapshotStore;
     private readonly ILogger<ReportService> _logger;
 
-    public ReportService(IJiraApiService jiraService, IExportService exportService, ILogger<ReportService> logger)
+    public ReportService(
+        IJiraApiService jiraService,
+        IExportService exportService,
+        ISnapshotStore snapshotStore,
+        ILogger<ReportService> logger)
     {
+        ArgumentNullException.ThrowIfNull(jiraService);
+        ArgumentNullException.ThrowIfNull(exportService);
+        ArgumentNullException.ThrowIfNull(snapshotStore);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _jiraService = jiraService;
         _exportService = exportService;
+        _snapshotStore = snapshotStore;
         _logger = logger;
     }
 
@@ -99,6 +110,19 @@ public class ReportService : IReportService
             if (!burndownData.Any())
             {
                 burndownData = GenerateSyntheticBurndown(sprint, issues);
+            }
+
+            // Persist a snapshot of the current sprint state so historical trend
+            // analysis (velocity trend, acceleration, burn rate) has data to work
+            // with across separate invocations of the CLI.
+            var currentSnapshot = BuildCurrentSnapshot(sprint, issues);
+            try
+            {
+                await _snapshotStore.AppendAsync(currentSnapshot);
+            }
+            catch (IOException ex)
+            {
+                _logger.LogWarning(ex, "Failed to persist burndown snapshot for sprint {SprintId}", sprintId);
             }
 
             // Generate chart image using SkiaSharp
@@ -229,6 +253,32 @@ public class ReportService : IReportService
         sb.AppendLine($"Health Status: {analysis.OverallHealth}");
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Builds a point-in-time <see cref="BurndownSnapshot"/> reflecting the current state
+    /// of the sprint's issues, for persistence via <see cref="ISnapshotStore"/>.
+    /// </summary>
+    private static BurndownSnapshot BuildCurrentSnapshot(Sprint sprint, List<JiraIssue> issues)
+    {
+        var countable = issues.Where(i => Sprint.CountableIssueTypes.Contains(i.IssueType)).ToList();
+        var totalStoryPoints = countable.Sum(i => i.StoryPoints ?? 0);
+        var completedStoryPoints = countable
+            .Where(i => i.Status is "Done" or "Closed")
+            .Sum(i => i.StoryPoints ?? 0);
+
+        return new BurndownSnapshot
+        {
+            Timestamp = DateTime.UtcNow,
+            SprintId = sprint.Id,
+            TotalStoryPoints = Math.Max(totalStoryPoints, 1),
+            CompletedStoryPoints = completedStoryPoints,
+            RemainingStoryPoints = Math.Max(totalStoryPoints, 1) - completedStoryPoints,
+            TotalIssueCount = Math.Max(issues.Count, 1),
+            CompletedIssueCount = issues.Count(i => i.Status is "Done" or "Closed"),
+            RemainingIssueCount = Math.Max(issues.Count, 1) - issues.Count(i => i.Status is "Done" or "Closed"),
+            ScopeChanges = 0
+        };
     }
 
     private List<BurndownSnapshot> GenerateSyntheticBurndown(Sprint sprint, List<JiraIssue> issues)
