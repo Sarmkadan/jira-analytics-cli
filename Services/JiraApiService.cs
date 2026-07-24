@@ -515,10 +515,16 @@ public class JiraApiService : IJiraApiService
 
     // Parses Jira's ISO-8601 timestamps using the invariant culture so parsing never depends
     // on the host machine's regional settings (a machine, not a human, produced this data).
+    // Jira emits timestamps with a numeric UTC offset (e.g. "+0200"), not "Z". Parsing those
+    // with DateTimeStyles.RoundtripKind yields DateTimeKind.Local, converted using whatever
+    // time zone the process happens to run in. Mixing that with DateTimeKind.Utc values
+    // (e.g. DateTime.UtcNow used elsewhere) silently corrupts duration math across a DST
+    // change, because plain DateTime subtraction ignores Kind entirely. Normalizing every
+    // parsed timestamp to UTC here makes all downstream DateTime arithmetic Kind-consistent.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static DateTime? ParseDateTimeInvariant(string? value)
-        => DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dt)
-            ? dt
+        => DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dto)
+            ? dto.UtcDateTime
             : null;
 
     /// <summary>
