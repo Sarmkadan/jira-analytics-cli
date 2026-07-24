@@ -13,9 +13,39 @@ namespace JiraAnalyticsCli.Models;
 /// </summary>
 public class BurndownSnapshot
 {
+    private DateTime _timestamp;
+
+    /// <summary>
+    /// Gets or sets the point in time this snapshot was captured, always normalized to UTC.
+    /// Jira returns ISO-8601 timestamps with numeric offsets and other parts of the pipeline
+    /// use local wall-clock values; storing everything as UTC keeps burn-rate and duration
+    /// math correct across DST transitions, since plain <see cref="DateTime"/> subtraction
+    /// ignores <see cref="DateTime.Kind"/> entirely and silently produces wrong deltas when
+    /// the two operands were captured under different offsets.
+    /// </summary>
     [Required]
     [JsonPropertyName("timestamp")]
-    public DateTime Timestamp { get; set; }
+    [JsonConverter(typeof(Utils.UtcDateTimeJsonConverter))]
+    public DateTime Timestamp
+    {
+        get => _timestamp;
+        set => _timestamp = NormalizeToUtc(value);
+    }
+
+    /// <summary>
+    /// Converts a <see cref="DateTime"/> of any <see cref="DateTimeKind"/> to an equivalent
+    /// UTC value. <see cref="DateTimeKind.Unspecified"/> values are treated as already being
+    /// UTC (the convention used throughout this codebase), while <see cref="DateTimeKind.Local"/>
+    /// values are converted using the host's time zone rules.
+    /// </summary>
+    /// <param name="value">The value to normalize.</param>
+    /// <returns>An equivalent <see cref="DateTime"/> with <see cref="DateTime.Kind"/> set to <see cref="DateTimeKind.Utc"/>.</returns>
+    private static DateTime NormalizeToUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc),
+    };
 
     [Required]
     [JsonPropertyName("sprintId")]
