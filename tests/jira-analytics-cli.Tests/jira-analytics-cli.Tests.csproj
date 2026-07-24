@@ -33,6 +33,9 @@
     <Compile Include="..\..\Models\Developer.cs" />
     <Compile Include="..\..\Models\BurndownSnapshot.cs" />
 <Compile Include="..\..\Models\BurndownSnapshotExtensions.cs" />
+<Compile Include="..\..\Models\ITimeSeriesPoint.cs" />
+<Compile Include="..\..\Models\TimeSeriesPoint.cs" />
+<Compile Include="..\..\Models\TrendAnalysis.cs" />
 <Compile Include="..\..\Models\BurndownSnapshotValidation.cs" />
     <Compile Include="..\..\Models\JiraProject.cs" />
     <Compile Include="..\..\Services\IAnalyticsService.cs" />
