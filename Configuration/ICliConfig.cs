@@ -21,4 +21,21 @@ public interface ICliConfig
     int JiraApiCircuitBreakerFailureThreshold { get; }
     int JiraApiCircuitBreakerDurationSeconds { get; }
     int JiraApiTimeoutSeconds { get; }
+    /// <summary>
+    /// Maximum number of issues to fetch per API request to prevent excessive data retrieval.
+    /// Default: 1000
+    /// </summary>
+    int JiraApiMaxResultsPerRequest { get; }
+
+    /// <summary>
+    /// Maximum number of pages to fetch when streaming results to prevent unbounded pagination loops.
+    /// Default: 100
+    /// </summary>
+    int JiraApiMaxPages { get; }
+
+    /// <summary>
+    /// Maximum allowed page size for pagination operations.
+    /// Default: 200
+    /// </summary>
+    int JiraApiMaxPageSize { get; }
 }

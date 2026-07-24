@@ -137,6 +137,27 @@ public class AppConfigurationProvider : IConfigurationProvider
             config.JiraApiTimeoutSeconds = timeout;
             _logger.LogDebug("JIRA_API_TIMEOUT_SECONDS set to {Timeout}", timeout);
         }
+
+        var maxResultsPerRequest = Environment.GetEnvironmentVariable("JIRA_API_MAX_RESULTS_PER_REQUEST");
+        if (int.TryParse(maxResultsPerRequest, out var maxResults))
+        {
+            config.JiraApiMaxResultsPerRequest = maxResults;
+            _logger.LogDebug("JIRA_API_MAX_RESULTS_PER_REQUEST set to {MaxResults}", maxResults);
+        }
+
+        var maxPages = Environment.GetEnvironmentVariable("JIRA_API_MAX_PAGES");
+        if (int.TryParse(maxPages, out var pages))
+        {
+            config.JiraApiMaxPages = pages;
+            _logger.LogDebug("JIRA_API_MAX_PAGES set to {Pages}", pages);
+        }
+
+        var maxPageSize = Environment.GetEnvironmentVariable("JIRA_API_MAX_PAGE_SIZE");
+        if (int.TryParse(maxPageSize, out var pageSize))
+        {
+            config.JiraApiMaxPageSize = pageSize;
+            _logger.LogDebug("JIRA_API_MAX_PAGE_SIZE set to {PageSize}", pageSize);
+        }
     }
 
     private void LoadFromJsonFile(CliConfig config)
@@ -181,6 +202,15 @@ public class AppConfigurationProvider : IConfigurationProvider
 
             if (root.TryGetProperty("jiraApiTimeoutSeconds", out var timeoutSeconds) && timeoutSeconds.TryGetInt32(out var timeout))
                 config.JiraApiTimeoutSeconds = timeout;
+
+            if (root.TryGetProperty("jiraApiMaxResultsPerRequest", out var maxResultsPerRequest) && maxResultsPerRequest.TryGetInt32(out var maxResults))
+            config.JiraApiMaxResultsPerRequest = maxResults;
+
+            if (root.TryGetProperty("jiraApiMaxPages", out var maxPages) && maxPages.TryGetInt32(out var pages))
+            config.JiraApiMaxPages = pages;
+
+            if (root.TryGetProperty("jiraApiMaxPageSize", out var maxPageSize) && maxPageSize.TryGetInt32(out var pageSize))
+            config.JiraApiMaxPageSize = pageSize;
 
             _logger.LogDebug("Configuration successfully loaded from JSON file");
         }

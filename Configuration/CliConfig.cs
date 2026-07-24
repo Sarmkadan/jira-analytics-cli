@@ -21,6 +21,9 @@ public class CliConfig : ICliConfig
     public int JiraApiCircuitBreakerFailureThreshold { get; set; } = 5;
     public int JiraApiCircuitBreakerDurationSeconds { get; set; } = 30;
     public int JiraApiTimeoutSeconds { get; set; } = 30;
+    public int JiraApiMaxResultsPerRequest { get; set; } = 1000;
+    public int JiraApiMaxPages { get; set; } = 100;
+    public int JiraApiMaxPageSize { get; set; } = 200;
 
     public void Validate()
     {
@@ -47,5 +50,14 @@ public class CliConfig : ICliConfig
 
         if (JiraApiTimeoutSeconds <= 0)
             throw new InvalidOperationException("JiraApiTimeoutSeconds must be positive");
+
+        if (JiraApiMaxResultsPerRequest <= 0)
+            throw new InvalidOperationException("JiraApiMaxResultsPerRequest must be positive");
+
+        if (JiraApiMaxPages <= 0)
+            throw new InvalidOperationException("JiraApiMaxPages must be positive");
+
+        if (JiraApiMaxPageSize <= 0)
+            throw new InvalidOperationException("JiraApiMaxPageSize must be positive");
     }
 }
