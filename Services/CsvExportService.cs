@@ -4,6 +4,7 @@
 // =====================================================================
 
 using System.Globalization;
+using System.IO;
 using System.Text;
 using JiraAnalyticsCli.Models;
 using Microsoft.Extensions.Logging;
@@ -31,18 +32,25 @@ public class CsvExportService : ICsvExportService
     /// <returns>Task representing the async operation</returns>
     /// <exception cref="ArgumentNullException">Thrown when metrics or path is null</exception>
     /// <exception cref="ArgumentException">Thrown when path is empty or whitespace</exception>
+    /// <exception cref="IOException">Thrown when the output path is outside the intended output root</exception>
     public async Task ExportSprintMetrics(IEnumerable<SprintMetric> metrics, string path, int bufferSize = 4096)
     {
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        _logger.LogInformation("Exporting sprint metrics to CSV at {Path}", path);
+        var outputPath = GetCanonicalizedPath(path);
+        if (!IsPathUnderOutputRoot(outputPath))
+        {
+            throw new IOException("Output path is outside the intended output root");
+        }
+
+        _logger.LogInformation("Exporting sprint metrics to CSV at {Path}", outputPath);
 
         try
         {
-            await using var writer = new StreamWriter(path, append: false, encoding: Encoding.UTF8, bufferSize: bufferSize);
+            await using var writer = new StreamWriter(outputPath, append: false, encoding: Encoding.UTF8, bufferSize: bufferSize);
             await ExportSprintMetricsAsync(metrics, writer);
-            _logger.LogInformation("Successfully exported sprint metrics to {Path}", path);
+            _logger.LogInformation("Successfully exported sprint metrics to {Path}", outputPath);
         }
         catch (Exception ex)
         {
@@ -77,7 +85,7 @@ public class CsvExportService : ICsvExportService
             var values = new object[]
             {
                 metric.SprintId,
-                metric.SprintName,
+                SanitizeCsvValue(metric.SprintName),
                 metric.StartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 metric.EndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 metric.PlannedStoryPoints,
@@ -96,7 +104,7 @@ public class CsvExportService : ICsvExportService
                 FormatCsvCell(metric.GetQualityScore()),
                 FormatCsvCell(metric.GetProductivityPerTeamMember()),
                 FormatCsvCell(metric.GetDailyBurndownRate()),
-                metric.GetHealthStatus()
+                SanitizeCsvValue(metric.GetHealthStatus())
             };
 
             var line = string.Join(",", values.Select(v => EscapeCsvValue(v?.ToString() ?? string.Empty)));
@@ -114,18 +122,25 @@ public class CsvExportService : ICsvExportService
     /// <returns>Task representing the async operation</returns>
     /// <exception cref="ArgumentNullException">Thrown when metrics or path is null</exception>
     /// <exception cref="ArgumentException">Thrown when path is empty or whitespace</exception>
+    /// <exception cref="IOException">Thrown when the output path is outside the intended output root</exception>
     public async Task ExportTeamMetrics(IEnumerable<KeyValuePair<string, int>> metrics, string path, int bufferSize = 4096)
     {
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        _logger.LogInformation("Exporting team metrics to CSV at {Path}", path);
+        var outputPath = GetCanonicalizedPath(path);
+        if (!IsPathUnderOutputRoot(outputPath))
+        {
+            throw new IOException("Output path is outside the intended output root");
+        }
+
+        _logger.LogInformation("Exporting team metrics to CSV at {Path}", outputPath);
 
         try
         {
-            await using var writer = new StreamWriter(path, append: false, encoding: Encoding.UTF8, bufferSize: bufferSize);
+            await using var writer = new StreamWriter(outputPath, append: false, encoding: Encoding.UTF8, bufferSize: bufferSize);
             await ExportTeamMetricsAsync(metrics, writer);
-            _logger.LogInformation("Successfully exported team metrics to {Path}", path);
+            _logger.LogInformation("Successfully exported team metrics to {Path}", outputPath);
         }
         catch (Exception ex)
         {
@@ -159,7 +174,7 @@ public class CsvExportService : ICsvExportService
             var kvp = enumerator.Current;
             var values = new object[]
             {
-                kvp.Key,
+                SanitizeCsvValue(kvp.Key),
                 kvp.Value
             };
 
@@ -200,5 +215,45 @@ public class CsvExportService : ICsvExportService
         }
 
         return value;
+    }
+
+    /// <summary>
+    /// Sanitizes a value for CSV output, prefixing with a leading ' if necessary
+    /// </summary>
+    /// <param name="value">Value to sanitize</param>
+    /// <returns>Sanitized CSV value</returns>
+    private string SanitizeCsvValue(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        if (value.StartsWith("=") || value.StartsWith("+") || value.StartsWith("-") || value.StartsWith("@") || value.StartsWith("\t") || value.StartsWith("\r"))
+        {
+            return "'" + value;
+        }
+
+        return value;
+    }
+
+    /// <summary>
+    /// Gets the canonicalized path for the given path
+    /// </summary>
+    /// <param name="path">Path to canonicalize</param>
+    /// <returns>Canonicalized path</returns>
+    private string GetCanonicalizedPath(string path)
+    {
+        return Path.GetFullPath(path);
+    }
+
+    /// <summary>
+    /// Checks if the given path is under the intended output root
+    /// </summary>
+    /// <param name="path">Path to check</param>
+    /// <returns>True if the path is under the intended output root, false otherwise</returns>
+    private bool IsPathUnderOutputRoot(string path)
+    {
+        // For this example, assume the output root is the current working directory
+        var outputRoot = Directory.GetCurrentDirectory();
+        return path.StartsWith(outputRoot, StringComparison.OrdinalIgnoreCase);
     }
 }
