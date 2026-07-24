@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using JiraAnalyticsCli.Models;
 using JiraAnalyticsCli.Configuration;
 using Microsoft.Extensions.Logging;
+using JiraAnalyticsCli.Services;
 
 namespace JiraAnalyticsCli.Services;
 
