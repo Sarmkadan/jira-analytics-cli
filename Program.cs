@@ -18,10 +18,8 @@ class Program
     {
         try
         {
-            // Initialize dependency injection container
-            var services = new ServiceCollection();
-            ConfigureServices(services);
-            var serviceProvider = services.BuildServiceProvider();
+            // Initialize dependency injection container via factory
+            var serviceProvider = ServiceFactory.CreateServiceProvider();
 
             // Get logger and log startup
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
