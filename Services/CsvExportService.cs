@@ -78,37 +78,78 @@ public class CsvExportService : ICsvExportService
             return;
         }
 
-        // Write data rows one by one to avoid loading everything into memory
+        // Reusable StringBuilder with a reasonable initial capacity to avoid per‑field allocations
+        var sb = new StringBuilder(256);
+
         do
         {
             var metric = enumerator.Current;
-            var values = new object[]
-            {
-                metric.SprintId,
-                SanitizeCsvValue(metric.SprintName),
-                metric.StartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                metric.EndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                metric.PlannedStoryPoints,
-                metric.CompletedStoryPoints,
-                metric.CommittedStoryPoints,
-                metric.CompletedIssueCount,
-                metric.TotalIssueCount,
-                metric.DefectsCount,
-                FormatCsvCell(metric.AverageCycleTime),
-                metric.OverdueIssueCount,
-                metric.TeamSize,
-                metric.ScopeChangeCount,
-                FormatCsvCell(metric.GetVelocity()),
-                FormatCsvCell(metric.GetCompletionRate()),
-                FormatCsvCell(metric.GetCommitmentAccuracy()),
-                FormatCsvCell(metric.GetQualityScore()),
-                FormatCsvCell(metric.GetProductivityPerTeamMember()),
-                FormatCsvCell(metric.GetDailyBurndownRate()),
-                SanitizeCsvValue(metric.GetHealthStatus())
-            };
+            sb.Clear();
 
-            var line = string.Join(",", values.Select(v => EscapeCsvValue(v?.ToString() ?? string.Empty)));
-            await writer.WriteLineAsync(line);
+            // Append each column, escaping / sanitising as required
+            AppendEscaped(sb, metric.SprintId.ToString());
+            sb.Append(',');
+
+            AppendEscaped(sb, SanitizeCsvValue(metric.SprintName));
+            sb.Append(',');
+
+            AppendEscaped(sb, metric.StartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            sb.Append(',');
+
+            AppendEscaped(sb, metric.EndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.PlannedStoryPoints));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.CompletedStoryPoints));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.CommittedStoryPoints));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.CompletedIssueCount));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.TotalIssueCount));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.DefectsCount));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.AverageCycleTime));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.OverdueIssueCount));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.TeamSize));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.ScopeChangeCount));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.GetVelocity()));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.GetCompletionRate()));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.GetCommitmentAccuracy()));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.GetQualityScore()));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.GetProductivityPerTeamMember()));
+            sb.Append(',');
+
+            AppendEscaped(sb, FormatCsvCell(metric.GetDailyBurndownRate()));
+            sb.Append(',');
+
+            AppendEscaped(sb, SanitizeCsvValue(metric.GetHealthStatus()));
+
+            await writer.WriteLineAsync(sb.ToString());
         }
         while (enumerator.MoveNext());
     }
@@ -168,18 +209,18 @@ public class CsvExportService : ICsvExportService
             return;
         }
 
-        // Write data rows one by one to avoid loading everything into memory
+        var sb = new StringBuilder(128);
+
         do
         {
             var kvp = enumerator.Current;
-            var values = new object[]
-            {
-                SanitizeCsvValue(kvp.Key),
-                kvp.Value
-            };
+            sb.Clear();
 
-            var line = string.Join(",", values.Select(v => EscapeCsvValue(v?.ToString() ?? string.Empty)));
-            await writer.WriteLineAsync(line);
+            AppendEscaped(sb, SanitizeCsvValue(kvp.Key));
+            sb.Append(',');
+            AppendEscaped(sb, kvp.Value.ToString());
+
+            await writer.WriteLineAsync(sb.ToString());
         }
         while (enumerator.MoveNext());
     }
@@ -233,6 +274,15 @@ public class CsvExportService : ICsvExportService
         }
 
         return value;
+    }
+
+    /// <summary>
+    /// Appends an escaped CSV field to the supplied StringBuilder.
+    /// This method centralises the escaping logic used by the builder‑based row construction.
+    /// </summary>
+    private void AppendEscaped(StringBuilder sb, string? raw)
+    {
+        sb.Append(EscapeCsvValue(raw));
     }
 
     /// <summary>
