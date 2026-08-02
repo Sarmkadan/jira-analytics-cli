@@ -7,18 +7,29 @@ using Xunit;
 
 namespace JiraAnalyticsCli.Tests.Services;
 
+/// <summary>
+/// Unit tests for <see cref="CsvExportService"/> verifying CSV export behavior for sprint and team metrics.
+/// </summary>
 public class CsvExportServiceTests
 {
     private readonly Mock<ILogger<CsvExportService>> _loggerMock;
     private readonly CsvExportService _service;
     private readonly string _testPath = "test_output.csv";
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="CsvExportServiceTests"/>.
+    /// Creates a mock <see cref="ILogger{CsvExportService}"/> and the service under test.
+    /// </summary>
     public CsvExportServiceTests()
     {
         _loggerMock = new Mock<ILogger<CsvExportService>>();
         _service = new CsvExportService(_loggerMock.Object);
     }
 
+    /// <summary>
+    /// Verifies that exporting an empty collection of sprint metrics writes only the CSV header.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test execution.</returns>
     [Fact]
     public async Task ExportSprintMetrics_ShouldWriteHeaderOnly_WhenMetricsIsEmpty()
     {
@@ -34,6 +45,10 @@ public class CsvExportServiceTests
         Assert.StartsWith("SprintId,SprintName", lines[0]);
     }
 
+    /// <summary>
+    /// Verifies that special characters in sprint names are correctly escaped in the CSV output.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test execution.</returns>
     [Fact]
     public async Task ExportSprintMetrics_ShouldEscapeSpecialCharactersInSprintName()
     {
@@ -71,6 +86,10 @@ public class CsvExportServiceTests
         Assert.Contains("\"Name\nwith newline\"", content);
     }
 
+    /// <summary>
+    /// Ensures that numeric and date values are formatted using the invariant culture (e.g., decimal point '.' and ISO date format).
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test execution.</returns>
     [Fact]
     public async Task ExportSprintMetrics_ShouldUseInvariantCultureForNumbersAndDates()
     {
@@ -97,6 +116,10 @@ public class CsvExportServiceTests
         Assert.Contains("2025-01-01", lines[1]);
     }
 
+    /// <summary>
+    /// Verifies that exporting team metrics writes the header and the data rows, including proper escaping for developer names containing commas.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test execution.</returns>
     [Fact]
     public async Task ExportTeamMetrics_ShouldWriteHeaderAndData()
     {
