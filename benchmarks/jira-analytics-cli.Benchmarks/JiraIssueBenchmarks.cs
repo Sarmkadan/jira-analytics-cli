@@ -1,29 +1,68 @@
-[Benchmark]
-[Benchmark(MinTime = 100, MaxTime = 500)]
-[MemoryDiagnoser]
-public class JiraIssueBenchmarks
+using System;
+using System.Reflection;
+using BenchmarkDotNet.Attributes;
+using JiraAnalyticsCli.Models;
+
+namespace JiraAnalyticsCli.Benchmarks
 {
-    [GlobalSetup]
-    public void Setup()
+    [MemoryDiagnoser]
+    public class JiraIssueBenchmarks
     {
-        // Initialize test data
-    }
+        [Params(10, 100, 1000)]
+        public int IssueCount;
 
-    [Benchmark]
-    public void Benchmark_CreateIssue()
-    {
-        // Test creating an issue
-    }
+        private JiraIssue _issue;
 
-    [Benchmark]
-    [Params(10, 100, 1000)]
-    public void Benchmark_CreateIssues()
-    {
-        // Test creating multiple issues
-    }
+        [GlobalSetup]
+        public void Setup()
+        {
+            _issue = new JiraIssue();
 
-    [Benchmark]
-    public void Benchmark_UpdateIssue()
-    {
-        // Test updating an issue
+            // Attempt to set common properties via reflection if they exist.
+            var type = typeof(JiraIssue);
+
+            var createdProp = type.GetProperty("CreatedDate");
+            createdProp?.SetValue(_issue, DateTime.UtcNow.AddDays(-5));
+
+            var dueProp = type.GetProperty("DueDate");
+            dueProp?.SetValue(_issue, DateTime.UtcNow.AddDays(2));
+
+            var priorityProp = type.GetProperty("Priority");
+            priorityProp?.SetValue(_issue, "High");
+
+            var statusProp = type.GetProperty("Status");
+            statusProp?.SetValue(_issue, "In Progress");
+
+            var updatedProp = type.GetProperty("UpdatedDate");
+            updatedProp?.SetValue(_issue, DateTime.UtcNow.AddDays(-1));
+        }
+
+        [Benchmark]
+        public void IsOverdue()
+        {
+            for (int i = 0; i < IssueCount; i++)
+                _issue.IsOverdue();
+        }
+
+        [Benchmark]
+        public void IsHighPriority()
+        {
+            for (int i = 0; i < IssueCount; i++)
+                _issue.IsHighPriority();
+        }
+
+        [Benchmark]
+        public void GetDaysOpenWithoutProgress()
+        {
+            for (int i = 0; i < IssueCount; i++)
+                _issue.GetDaysOpenWithoutProgress();
+        }
+
+        [Benchmark]
+        public void IsInProgress()
+        {
+            for (int i = 0; i < IssueCount; i++)
+                _issue.IsInProgress();
+        }
     }
+}
