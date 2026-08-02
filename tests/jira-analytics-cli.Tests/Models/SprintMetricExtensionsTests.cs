@@ -4,8 +4,15 @@ using Xunit;
 
 namespace JiraAnalyticsCli.Tests.Models;
 
+/// <summary>
+/// Contains unit tests for the <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions"/> class.
+/// </summary>
 public class SprintMetricExtensionsTests
 {
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetProgressPercentage"/> 
+    /// returns the correct percentage calculation based on planned and completed story points.
+    /// </summary>
     [Fact]
     public void GetProgressPercentage_ShouldReturnCorrectPercentage()
     {
@@ -19,6 +26,10 @@ public class SprintMetricExtensionsTests
         result.Should().Be(50.0);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetProgressPercentage"/> 
+    /// throws a <see cref="DivideByZeroException"/> when the planned points are zero.
+    /// </summary>
     [Fact]
     public void GetProgressPercentage_ShouldThrowDivideByZeroException_WhenPlannedPointsIsZero()
     {
@@ -32,6 +43,10 @@ public class SprintMetricExtensionsTests
         act.Should().Throw<DivideByZeroException>();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetProgressPercentage"/> 
+    /// throws an <see cref="ArgumentNullException"/> when the metric is null.
+    /// </summary>
     [Fact]
     public void GetProgressPercentage_ShouldThrowArgumentNullException_WhenMetricIsNull()
     {
@@ -45,6 +60,10 @@ public class SprintMetricExtensionsTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.IsSprintComplete"/> 
+    /// returns true when the sprint's end date is in the past.
+    /// </summary>
     [Fact]
     public void IsSprintComplete_ShouldReturnTrue_WhenEndDateIsInPast()
     {
@@ -58,6 +77,10 @@ public class SprintMetricExtensionsTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.IsSprintComplete"/> 
+    /// returns false when the sprint's end date is in the future.
+    /// </summary>
     [Fact]
     public void IsSprintComplete_ShouldReturnFalse_WhenEndDateIsInFuture()
     {
@@ -71,6 +94,10 @@ public class SprintMetricExtensionsTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.IsSprintComplete"/> 
+    /// throws an <see cref="ArgumentNullException"/> when the metric is null.
+    /// </summary>
     [Fact]
     public void IsSprintComplete_ShouldThrowArgumentNullException_WhenMetricIsNull()
     {
@@ -84,6 +111,10 @@ public class SprintMetricExtensionsTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetAverageDailyProgress"/> 
+    /// returns the correct average daily progress calculation.
+    /// </summary>
     [Fact]
     public void GetAverageDailyProgress_ShouldReturnCorrectAverage()
     {
@@ -102,6 +133,10 @@ public class SprintMetricExtensionsTests
         result.Should().Be(5.0);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetAverageDailyProgress"/> 
+    /// throws a <see cref="DivideByZeroException"/> when the sprint duration is zero.
+    /// </summary>
     [Fact]
     public void GetAverageDailyProgress_ShouldThrowDivideByZeroException_WhenDurationIsZero()
     {
@@ -121,6 +156,10 @@ public class SprintMetricExtensionsTests
         act.Should().Throw<DivideByZeroException>();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetAverageDailyProgress"/> 
+    /// throws an <see cref="ArgumentNullException"/> when the metric is null.
+    /// </summary>
     [Fact]
     public void GetAverageDailyProgress_ShouldThrowArgumentNullException_WhenMetricIsNull()
     {
