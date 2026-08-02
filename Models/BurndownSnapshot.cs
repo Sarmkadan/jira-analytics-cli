@@ -83,7 +83,7 @@ public class BurndownSnapshot
         if (TotalStoryPoints == 0)
             return 0;
 
-        return (CompletedStoryPoints / (double)TotalStoryPoints) * 100;
+        return (CompletedStoryPoints == 0 || TotalStoryPoints == 0) ? 0 : (CompletedStoryPoints / (double)TotalStoryPoints) * 100;
     }
 
     /// <summary>
