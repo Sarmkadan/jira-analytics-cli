@@ -86,12 +86,12 @@ public class JqlQueryService : IJqlQueryService
     /// <summary>
     /// Builds a JQL query string for a project, with quote escaping.
     /// </summary>
-    public static string BuildProjectJql(string projectKey) => $"project = \"{projectKey.Replace("\"", "\\\"")}\"";
+    public static string BuildProjectJql(string projectKey) => $"project = \"{projectKey.Replace("\"", "\"\"")}\"";
 
     /// <summary>
     /// Builds a JQL query string for a label, with quote escaping.
     /// </summary>
-    public static string BuildLabelJql(string label) => $"label = \"{label.Replace("\"", "\\\"")}\"";
+    public static string BuildLabelJql(string label) => $"label = \"{label.Replace("\"", "\"\"")}\"";
 
     /// <summary>
     /// Builds a JQL date range clause.
