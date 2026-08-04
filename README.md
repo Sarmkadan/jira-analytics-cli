@@ -1,3 +1,39 @@
+## SprintMetricExtensionsTests
+
+The `SprintMetricExtensionsTests` class contains a comprehensive suite of unit tests for the `SprintMetricExtensions` class. It validates critical functionalities such as progress percentage calculations, sprint completion status checks, and average daily progress metrics, including robust handling of edge cases and null inputs.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Tests.Models;
+using System;
+using Xunit;
+
+// Instantiate the test class
+var tests = new SprintMetricExtensionsTests();
+
+// These methods are typically executed by a test runner like Xunit.
+// The following shows how to manually invoke the tests.
+try
+{
+    tests.GetProgressPercentage_ShouldReturnCorrectPercentage();
+    tests.GetProgressPercentage_ShouldThrowDivideByZeroException_WhenPlannedPointsIsZero();
+    tests.GetProgressPercentage_ShouldThrowArgumentNullException_WhenMetricIsNull();
+    tests.IsSprintComplete_ShouldReturnTrue_WhenEndDateIsInPast();
+    tests.IsSprintComplete_ShouldReturnFalse_WhenEndDateIsInFuture();
+    tests.IsSprintComplete_ShouldThrowArgumentNullException_WhenMetricIsNull();
+    tests.GetAverageDailyProgress_ShouldReturnCorrectAverage();
+    tests.GetAverageDailyProgress_ShouldThrowDivideByZeroException_WhenDurationIsZero();
+    tests.GetAverageDailyProgress_ShouldThrowArgumentNullException_WhenMetricIsNull();
+    
+    Console.WriteLine("All tests executed successfully.");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Test execution failed: {ex.Message}");
+}
+```
+
 ## BurndownSnapshotExtensions
 
 The `BurndownSnapshotExtensions` class provides extension methods for the `BurndownSnapshot` model that enhance burndown chart analysis and reporting. It includes methods for calculating velocity trends, detecting acceleration/deceleration, computing burn rates, creating delta comparisons, formatting status strings, detecting scope creep, and extracting time-series data for charting.
