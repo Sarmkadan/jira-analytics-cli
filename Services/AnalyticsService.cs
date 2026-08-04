@@ -82,7 +82,7 @@ public class AnalyticsService : IAnalyticsService
             // Calculate aggregate metrics
             if (result.Metrics.Any())
             {
-                result.AverageVelocity = result.Metrics.Average(m => m.GetVelocity());
+                result.AverageVelocity = result.Metrics.Any() ? result.Metrics.Average(m => m.GetVelocity()) : 0;
                 var sortedMetrics = result.Metrics.OrderBy(m => m.EndDate).ToList();
 
                 if (sortedMetrics.Count >= 2)
@@ -143,7 +143,7 @@ public class AnalyticsService : IAnalyticsService
             var sortedByProductivity = team.OrderByDescending(d => d.GetProductivity()).ToList();
             result.TopPerformers = sortedByProductivity.Take(3).ToList();
             result.LowPerformers = sortedByProductivity.TakeLast(3).Reverse().ToList();
-            result.AverageProductivity = team.Average(d => d.GetProductivity());
+            result.AverageProductivity = team.Any() ? team.Average(d => d.GetProductivity()) : 0;
 
             // Workload distribution
             foreach (var developer in team)
