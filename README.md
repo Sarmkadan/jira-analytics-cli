@@ -411,12 +411,40 @@ else
     Console.WriteLine("Failed to deserialize JSON");
 }
 
-// Get all sprints from a repository
-var allSprints = repository.GetAllSprints();
-Console.WriteLine($"Repository contains {allSprints.Count} sprints");
-
 // Load sprints into an empty repository
 var emptyRepo = new SprintRepository(null!);
 emptyRepo.LoadSprints(allSprints);
 Console.WriteLine($"Empty repository now has {emptyRepo.GetAllSprints().Count} sprints");
+```
+
+## CsvExportServiceTests
+
+The `CsvExportServiceTests` class provides a comprehensive test suite for the `CsvExportService` to verify correct CSV export behavior. It covers edge cases such as empty datasets, escaping of special characters in sprint names, invariant culture formatting for numbers and dates, and proper header/data generation for team metrics.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Tests.Services;
+using System;
+using System.Threading.Tasks;
+using Xunit;
+
+// Instantiate the test class
+var tests = new CsvExportServiceTests();
+
+// These methods are typically executed by a test runner like Xunit.
+// The following shows how to manually invoke the tests.
+try
+{
+    await tests.ExportSprintMetrics_ShouldWriteHeaderOnly_WhenMetricsIsEmpty();
+    await tests.ExportSprintMetrics_ShouldEscapeSpecialCharactersInSprintName();
+    await tests.ExportSprintMetrics_ShouldUseInvariantCultureForNumbersAndDates();
+    await tests.ExportTeamMetrics_ShouldWriteHeaderAndData();
+    
+    Console.WriteLine("All tests executed successfully.");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Test execution failed: {ex.Message}");
+}
 ```
