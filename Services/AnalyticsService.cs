@@ -30,6 +30,12 @@ public class AnalyticsService : IAnalyticsService
     private readonly IMetricsRepository _metricsRepository;
     private readonly ILogger<AnalyticsService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="AnalyticsService"/>.
+    /// </summary>
+    /// <param name="jiraService">Client used to fetch sprints, issues and team data from Jira.</param>
+    /// <param name="metricsRepository">Repository used to persist computed metrics.</param>
+    /// <param name="logger">Logger used to record analysis progress and failures.</param>
     public AnalyticsService(IJiraApiService jiraService, IMetricsRepository metricsRepository, ILogger<AnalyticsService> logger)
     {
         _jiraService = jiraService;
@@ -37,6 +43,16 @@ public class AnalyticsService : IAnalyticsService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Analyzes the most recently closed sprints for a project, computing per-sprint
+    /// metrics (velocity, completion, defects, overdue issues) and aggregate trend/health.
+    /// </summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <param name="sprintCount">Number of most recent closed sprints to analyze.</param>
+    /// <returns>
+    /// A <see cref="SprintAnalysisResult"/> with per-sprint metrics and aggregate figures.
+    /// Returns an empty result (not thrown) if the analysis fails.
+    /// </returns>
     public async Task<SprintAnalysisResult> AnalyzeSprints(string projectKey, int sprintCount)
     {
         _logger.LogInformation("Analyzing {SprintCount} sprints for project {ProjectKey}", sprintCount, projectKey);
@@ -117,6 +133,15 @@ public class AnalyticsService : IAnalyticsService
         return result;
     }
 
+    /// <summary>
+    /// Analyzes team performance for a project by assigning issues to team members
+    /// and computing per-developer productivity and workload distribution.
+    /// </summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <returns>
+    /// A <see cref="TeamAnalysisResult"/> with top/low performers, average productivity
+    /// and workload distribution. Returns an empty result (not thrown) if the analysis fails.
+    /// </returns>
     public async Task<TeamAnalysisResult> AnalyzeTeam(string projectKey)
     {
         _logger.LogInformation("Analyzing team for project {ProjectKey}", projectKey);
@@ -161,6 +186,15 @@ public class AnalyticsService : IAnalyticsService
         return result;
     }
 
+    /// <summary>
+    /// Analyzes quality metrics for a project across all closed sprints, computing
+    /// defect count, defect rate and the components with the highest bug concentration.
+    /// </summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <returns>
+    /// A <see cref="QualityMetricsResult"/> with defect statistics and high-risk areas.
+    /// Returns an empty result (not thrown) if the analysis fails.
+    /// </returns>
     public async Task<QualityMetricsResult> AnalyzeQuality(string projectKey)
     {
         _logger.LogInformation("Analyzing quality metrics for project {ProjectKey}", projectKey);
@@ -209,6 +243,16 @@ public class AnalyticsService : IAnalyticsService
         return result;
     }
 
+    /// <summary>
+    /// Analyzes velocity trends over the most recent closed sprints, comparing the
+    /// average velocity of the earlier half against the later half of the range.
+    /// </summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <param name="sprintCount">Number of most recent closed sprints to include.</param>
+    /// <returns>
+    /// A <see cref="VelocityTrendResult"/> with per-sprint velocities, trend slope and
+    /// trend classification. Returns an empty result (not thrown) if the analysis fails.
+    /// </returns>
     public async Task<VelocityTrendResult> AnalyzeVelocityTrend(string projectKey, int sprintCount)
     {
         _logger.LogInformation("Analyzing velocity trend for project {ProjectKey}", projectKey);
@@ -275,6 +319,15 @@ public class AnalyticsService : IAnalyticsService
         return Math.Max(uniqueAssignees, 1);
     }
 
+    /// <summary>
+    /// Analyzes overdue issues in a project, computing the total and critical overdue
+    /// counts along with the average number of days past their due date.
+    /// </summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <returns>
+    /// An <see cref="OverdueIssuesResult"/> with overdue issues and derived statistics.
+    /// Returns an empty result (not thrown) if the analysis fails.
+    /// </returns>
     public async Task<OverdueIssuesResult> AnalyzeOverdueIssues(string projectKey)
     {
         _logger.LogInformation("Analyzing overdue issues for project {ProjectKey}", projectKey);
@@ -308,6 +361,15 @@ public class AnalyticsService : IAnalyticsService
         return result;
     }
 
+    /// <summary>
+    /// Analyzes cycle time metrics for a project's resolved issues, computing the average,
+    /// median and percentile (P50/P75/P90) cycle times along with a per-issue breakdown.
+    /// </summary>
+    /// <param name="projectKey">The project identifier.</param>
+    /// <returns>
+    /// A <see cref="CycleTimeResult"/> with aggregate and per-issue cycle time statistics.
+    /// Returns a partial result (not thrown) if the analysis fails.
+    /// </returns>
     public async Task<CycleTimeResult> AnalyzeCycleTime(string projectKey)
     {
         _logger.LogInformation("Analyzing cycle time for project {ProjectKey}", projectKey);
