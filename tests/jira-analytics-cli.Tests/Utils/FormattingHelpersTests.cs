@@ -3,6 +3,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System;
 using FluentAssertions;
 using JiraAnalyticsCli.Utils;
 using Xunit;
