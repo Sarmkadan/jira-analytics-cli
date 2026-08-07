@@ -58,6 +58,7 @@ public class AnalyticsService : IAnalyticsService
     /// </returns>
     public async Task<SprintAnalysisResult> AnalyzeSprints(string projectKey, int sprintCount)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
         _logger.LogInformation("Analyzing {SprintCount} sprints for project {ProjectKey}", sprintCount, projectKey);
 
         var result = new SprintAnalysisResult();
@@ -147,6 +148,7 @@ public class AnalyticsService : IAnalyticsService
     /// </returns>
     public async Task<TeamAnalysisResult> AnalyzeTeam(string projectKey)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
         _logger.LogInformation("Analyzing team for project {ProjectKey}", projectKey);
 
         var result = new TeamAnalysisResult();
@@ -200,6 +202,7 @@ public class AnalyticsService : IAnalyticsService
     /// </returns>
     public async Task<QualityMetricsResult> AnalyzeQuality(string projectKey)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
         _logger.LogInformation("Analyzing quality metrics for project {ProjectKey}", projectKey);
 
         var result = new QualityMetricsResult();
@@ -258,6 +261,7 @@ public class AnalyticsService : IAnalyticsService
     /// </returns>
     public async Task<VelocityTrendResult> AnalyzeVelocityTrend(string projectKey, int sprintCount)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
         _logger.LogInformation("Analyzing velocity trend for project {ProjectKey}", projectKey);
 
         var result = new VelocityTrendResult();
@@ -333,6 +337,7 @@ public class AnalyticsService : IAnalyticsService
     /// </returns>
     public async Task<OverdueIssuesResult> AnalyzeOverdueIssues(string projectKey)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
         _logger.LogInformation("Analyzing overdue issues for project {ProjectKey}", projectKey);
 
         var result = new OverdueIssuesResult();
@@ -375,6 +380,7 @@ public class AnalyticsService : IAnalyticsService
     /// </returns>
     public async Task<CycleTimeResult> AnalyzeCycleTime(string projectKey)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
         _logger.LogInformation("Analyzing cycle time for project {ProjectKey}", projectKey);
 
         var result = new CycleTimeResult
