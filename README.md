@@ -129,6 +129,33 @@ Console.WriteLine($"Remaining over time: [{string.Join(", ", remainingOverTime)}
 ```
 
 ## ReportServiceValidation
+## CycleTimeResult
+
+The `CycleTimeResult` type represents the outcome of cycle time analysis for a set of issues, providing insights into the average, median, and percentile cycle times. It also includes detailed cycle time information for each issue. Here's an example of how to use it:
+
+```csharp
+var result = new CycleTimeResult
+{
+    ProjectKey = "MYPROJECT",
+    AverageCycleTime = 10.5,
+    MedianCycleTime = 9.2,
+    P50CycleTime = 8.1,
+    P75CycleTime = 12.5,
+    P90CycleTime = 15.8,
+    IssueCycleTimes = new List<IssueCycleTime>
+    {
+        new IssueCycleTime { IssueKey = "MYISSUE-1", Summary = "Issue 1", CycleTimeDays = 7 },
+        new IssueCycleTime { IssueKey = "MYISSUE-2", Summary = "Issue 2", CycleTimeDays = 14 },
+    }
+};
+
+Console.WriteLine($"Average cycle time: {result.AverageCycleTime} days");
+Console.WriteLine($"Median cycle time: {result.MedianCycleTime} days");
+Console.WriteLine($"Issue cycle times:");
+foreach (var issue in result.IssueCycleTimes)
+{
+    Console.WriteLine($"  {issue.IssueKey}: {issue.CycleTimeDays} days");
+}
 
 The `ReportServiceValidation` class provides extension methods for validating `ReportService` instances and their parameters used in report generation. It includes methods for validating service instances, checking validity, ensuring validity with exceptions, and validating various report parameters like project keys, sprint IDs, output paths, and formats.
 
