@@ -20,6 +20,8 @@ public class CsvExportService : ICsvExportService
 
     public CsvExportService(ILogger<CsvExportService> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+
         _logger = logger;
     }
 
