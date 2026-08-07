@@ -38,6 +38,9 @@ public class AnalyticsService : IAnalyticsService
     /// <param name="logger">Logger used to record analysis progress and failures.</param>
     public AnalyticsService(IJiraApiService jiraService, IMetricsRepository metricsRepository, ILogger<AnalyticsService> logger)
     {
+        ArgumentNullException.ThrowIfNull(jiraService);
+        ArgumentNullException.ThrowIfNull(metricsRepository);
+        ArgumentNullException.ThrowIfNull(logger);
         _jiraService = jiraService;
         _metricsRepository = metricsRepository;
         _logger = logger;
