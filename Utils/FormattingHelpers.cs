@@ -41,6 +41,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string FormatDate(DateTime date, string format = "yyyy-MM-dd")
     {
+        ArgumentException.ThrowIfNullOrEmpty(format);
         return date.ToString(format, CultureInfo.InvariantCulture);
     }
 
@@ -49,6 +50,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string FormatDateTime(DateTime dateTime, string format = "yyyy-MM-dd HH:mm:ss")
     {
+        ArgumentException.ThrowIfNullOrEmpty(format);
         return dateTime.ToString(format, CultureInfo.InvariantCulture);
     }
 
@@ -75,6 +77,9 @@ public static class FormattingHelpers
     /// </summary>
     public static string CreateTable(string[] headers, List<string[]> rows)
     {
+        ArgumentNullException.ThrowIfNull(headers);
+        ArgumentNullException.ThrowIfNull(rows);
+
         if (headers == null || headers.Length == 0 || !rows.Any())
             return string.Empty;
 
@@ -132,6 +137,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string ColorText(string text, ConsoleColor color)
     {
+        ArgumentException.ThrowIfNullOrEmpty(text);
         return $"\x1b[{(int)color}m{text}\x1b[0m";
     }
 
@@ -140,6 +146,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string FormatStatus(string status)
     {
+        ArgumentException.ThrowIfNullOrEmpty(status);
         return status switch
         {
             "Done" or "Closed" => "✅ " + status,
@@ -164,6 +171,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string Indent(string text, int spaces = 2)
     {
+        ArgumentException.ThrowIfNullOrEmpty(text);
         var indentation = new string(' ', spaces);
         return indentation + text;
     }
@@ -173,6 +181,7 @@ public static class FormattingHelpers
     /// </summary>
     public static string CenterText(string text, int width)
     {
+        ArgumentException.ThrowIfNullOrEmpty(text);
         if (text.Length >= width)
             return text;
 
