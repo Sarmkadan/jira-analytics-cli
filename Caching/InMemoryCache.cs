@@ -21,6 +21,7 @@ public class InMemoryCache
 
     public InMemoryCache(ILogger<InMemoryCache> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
     }
 
@@ -30,8 +31,9 @@ public class InMemoryCache
     /// </summary>
     public void Set<T>(string key, T value, CachePolicy policy)
     {
-        if (string.IsNullOrEmpty(key))
-            throw new ArgumentException("Cache key cannot be empty", nameof(key));
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(policy);
 
         var serialized = JsonSerializer.Serialize(value);
         var entry = new CacheEntry
@@ -54,6 +56,8 @@ public class InMemoryCache
     /// </summary>
     public T? Get<T>(string key, T? defaultValue = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+
         if (_cache.TryGetValue(key, out var entry))
         {
             // Check expiration
@@ -93,6 +97,8 @@ public class InMemoryCache
     /// </summary>
     public bool Contains(string key)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+
         if (_cache.TryGetValue(key, out var entry))
         {
             if (entry.Policy.IsExpired(entry.CreatedAt, entry.LastAccessedAt))
@@ -112,6 +118,8 @@ public class InMemoryCache
     /// </summary>
     public void Remove(string key)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+
         _cache.TryRemove(key, out _);
         _logger.LogDebug("Cache removed: {Key}", key);
     }
@@ -121,6 +129,8 @@ public class InMemoryCache
     /// </summary>
     public int RemoveByPattern(string pattern)
     {
+        ArgumentException.ThrowIfNullOrEmpty(pattern);
+
         var removed = 0;
         var regex = new System.Text.RegularExpressions.Regex(
             "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
