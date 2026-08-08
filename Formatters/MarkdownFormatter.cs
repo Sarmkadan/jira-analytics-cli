@@ -18,6 +18,7 @@ public class MarkdownFormatter
 
     public MarkdownFormatter(ILogger<MarkdownFormatter> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
     }
 
@@ -27,6 +28,7 @@ public class MarkdownFormatter
     /// </summary>
     public string Header(string text, int level = 1)
     {
+        ArgumentException.ThrowIfNullOrEmpty(text);
         if (level < 1 || level > 6)
             level = 1;
 
@@ -63,6 +65,7 @@ public class MarkdownFormatter
     /// </summary>
     public string DefinitionList(Dictionary<string, string> items)
     {
+        ArgumentNullException.ThrowIfNull(items);
         var sb = new StringBuilder();
 
         foreach (var item in items)
@@ -78,6 +81,7 @@ public class MarkdownFormatter
     /// </summary>
     public string BulletList(IEnumerable<string> items)
     {
+        ArgumentNullException.ThrowIfNull(items);
         var sb = new StringBuilder();
 
         foreach (var item in items)
@@ -93,6 +97,7 @@ public class MarkdownFormatter
     /// </summary>
     public string NumberedList(IEnumerable<string> items)
     {
+        ArgumentNullException.ThrowIfNull(items);
         var sb = new StringBuilder();
         var index = 1;
 
@@ -110,6 +115,7 @@ public class MarkdownFormatter
     /// </summary>
     public string CodeBlock(string code, string language = "")
     {
+        ArgumentException.ThrowIfNullOrEmpty(code);
         var sb = new StringBuilder();
         sb.AppendLine($"```{language}");
         sb.AppendLine(code);
@@ -123,6 +129,7 @@ public class MarkdownFormatter
     /// </summary>
     public string BlockQuote(string text)
     {
+        ArgumentException.ThrowIfNullOrEmpty(text);
         var lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
         return string.Join("\n", lines.Select(l => "> " + l));
     }
@@ -132,6 +139,7 @@ public class MarkdownFormatter
     /// </summary>
     public string Bold(string text)
     {
+        ArgumentException.ThrowIfNullOrEmpty(text);
         return $"**{text}**";
     }
 
@@ -140,6 +148,7 @@ public class MarkdownFormatter
     /// </summary>
     public string Italic(string text)
     {
+        ArgumentException.ThrowIfNullOrEmpty(text);
         return $"*{text}*";
     }
 
@@ -156,6 +165,8 @@ public class MarkdownFormatter
     /// </summary>
     public string Link(string text, string url)
     {
+        ArgumentException.ThrowIfNullOrEmpty(text);
+        ArgumentException.ThrowIfNullOrEmpty(url);
         return $"[{EscapeMarkdown(text)}]({url})";
     }
 
@@ -164,6 +175,8 @@ public class MarkdownFormatter
     /// </summary>
     public string Document(string title, params (string SectionTitle, string Content)[] sections)
     {
+        ArgumentException.ThrowIfNullOrEmpty(title);
+        ArgumentNullException.ThrowIfNull(sections);
         var sb = new StringBuilder();
 
         sb.AppendLine($"# {title}");
