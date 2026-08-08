@@ -130,6 +130,9 @@ public sealed class UtcDateTimeJsonConverter : System.Text.Json.Serialization.Js
 	/// <exception cref="System.Text.Json.JsonException">Thrown when the token cannot be parsed as a valid ISO-8601 timestamp.</exception>
 	public override DateTime Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
 	{
+		ArgumentNullException.ThrowIfNull(typeToConvert);
+		ArgumentNullException.ThrowIfNull(options);
+
 		var value = reader.GetString();
 		return DateTimeOffset.TryParse(
 				value,
@@ -151,6 +154,7 @@ public sealed class UtcDateTimeJsonConverter : System.Text.Json.Serialization.Js
 	public override void Write(System.Text.Json.Utf8JsonWriter writer, DateTime value, System.Text.Json.JsonSerializerOptions options)
 	{
 		ArgumentNullException.ThrowIfNull(writer);
+		ArgumentNullException.ThrowIfNull(options);
 
 		var utc = value.Kind switch
 		{
