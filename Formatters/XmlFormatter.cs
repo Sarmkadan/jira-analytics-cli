@@ -1,8 +1,3 @@
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
-
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Linq;
@@ -31,6 +26,9 @@ public class XmlFormatter
     /// </summary>
     public string Format(object data, string rootElement = "data")
     {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentException.ThrowIfNullOrEmpty(rootElement);
+
         try
         {
             var xdoc = BuildXmlDocument(data, rootElement);
@@ -65,6 +63,8 @@ public class XmlFormatter
     /// </summary>
     public (bool IsValid, string? Error) Validate(string xml)
     {
+        ArgumentException.ThrowIfNullOrEmpty(xml);
+
         try
         {
             XDocument.Parse(xml);
@@ -85,6 +85,8 @@ public class XmlFormatter
     /// </summary>
     public string Prettify(string xml)
     {
+        ArgumentException.ThrowIfNullOrEmpty(xml);
+
         try
         {
             var xdoc = XDocument.Parse(xml);
@@ -115,6 +117,9 @@ public class XmlFormatter
     /// </summary>
     public List<string> SelectValues(string xml, string xpathExpression)
     {
+        ArgumentException.ThrowIfNullOrEmpty(xml);
+        ArgumentException.ThrowIfNullOrEmpty(xpathExpression);
+
         try
         {
             var xdoc = XDocument.Parse(xml);
