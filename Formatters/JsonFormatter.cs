@@ -20,6 +20,7 @@ public class JsonFormatter
 
     public JsonFormatter(ILogger<JsonFormatter> logger, bool prettyPrint = true)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
         _prettyPrint = prettyPrint;
     }
@@ -30,6 +31,7 @@ public class JsonFormatter
     /// </summary>
     public string Format(object data)
     {
+        ArgumentNullException.ThrowIfNull(data);
         try
         {
             var options = new JsonSerializerOptions
@@ -57,6 +59,9 @@ public class JsonFormatter
     /// </summary>
     public string FormatWithMetadata(object data, string title, string version = "1.0.0")
     {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentException.ThrowIfNullOrEmpty(title);
+        ArgumentException.ThrowIfNullOrEmpty(version);
         var wrapper = new
         {
             metadata = new
@@ -78,6 +83,8 @@ public class JsonFormatter
     /// </summary>
     public string FormatFiltered(object data, string[] includedFields)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(includedFields);
         try
         {
             var rawJson = JsonSerializer.Serialize(data);
@@ -115,6 +122,7 @@ public class JsonFormatter
     /// </summary>
     public string Prettify(string json)
     {
+        ArgumentException.ThrowIfNullOrEmpty(json);
         try
         {
             using var doc = JsonDocument.Parse(json);
@@ -133,6 +141,7 @@ public class JsonFormatter
     /// </summary>
     public (bool IsValid, string[] Errors) Validate(string json)
     {
+        ArgumentException.ThrowIfNullOrEmpty(json);
         var errors = new List<string>();
 
         try
