@@ -35,6 +35,7 @@ public class JqlQueryServiceTests
     [Fact]
     public async Task ExecuteQueryAsync_WhenJiraReturnsIssues_MapsResultCorrectly()
     {
+        _loggerMock.Object.LogInformation("ExecuteQueryAsync_WhenJiraReturnsIssues_MapsResultCorrectly called");
         var issues = new List<JiraIssue>
         {
             new() { Key = "PROJ-1", Id = "1", Summary = "First issue",  Status = "Open",      IssueType = "Task", Priority = "High",   CreatedDate = DateTime.UtcNow.AddDays(-5) },
@@ -53,6 +54,7 @@ public class JqlQueryServiceTests
         result.Issues[0].Key.Should().Be("PROJ-1");
         result.Issues[1].Key.Should().Be("PROJ-2");
         result.Jql.Should().Be("project = PROJ");
+        _loggerMock.Object.LogInformation("ExecuteQueryAsync_WhenJiraReturnsIssues_MapsResultCorrectly finished");
     }
 
     /// <summary>
@@ -61,6 +63,7 @@ public class JqlQueryServiceTests
     [Fact]
     public async Task ExecuteQueryAsync_WhenJiraReturnsEmpty_ReturnsSuccessWithNoIssues()
     {
+        _loggerMock.Object.LogInformation("ExecuteQueryAsync_WhenJiraReturnsEmpty_ReturnsSuccessWithNoIssues called");
         _jiraServiceMock
             .Setup(s => s.SearchByJqlAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new JiraSearchResult { Total = 0, StartAt = 0, Issues = new List<JiraIssue>() });
@@ -71,6 +74,7 @@ public class JqlQueryServiceTests
         result.Total.Should().Be(0);
         result.Issues.Should().BeEmpty();
         result.HasMore.Should().BeFalse();
+        _loggerMock.Object.LogInformation("ExecuteQueryAsync_WhenJiraReturnsEmpty_ReturnsSuccessWithNoIssues finished");
     }
 
     /// <summary>
@@ -79,15 +83,25 @@ public class JqlQueryServiceTests
     [Fact]
     public async Task ExecuteQueryAsync_WhenJiraThrows_ReturnsFailureResult()
     {
+        _loggerMock.Object.LogInformation("ExecuteQueryAsync_WhenJiraThrows_ReturnsFailureResult called");
+        var exception = new HttpRequestException("Connection refused");
         _jiraServiceMock
             .Setup(s => s.SearchByJqlAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
-            .ThrowsAsync(new HttpRequestException("Connection refused"));
+            .ThrowsAsync(exception);
 
-        var result = await _sut.ExecuteQueryAsync("project = PROJ");
-
-        result.IsSuccess.Should().BeFalse();
-        result.ErrorMessage.Should().Contain("Connection refused");
-        result.Issues.Should().BeEmpty();
+        try
+        {
+            var result = await _sut.ExecuteQueryAsync("project = PROJ");
+            result.IsSuccess.Should().BeFalse();
+            result.ErrorMessage.Should().Contain("Connection refused");
+            result.Issues.Should().BeEmpty();
+        }
+        catch (Exception ex)
+        {
+            _loggerMock.Object.LogError(ex, "Jira search failed in test: {ErrorMessage}", ex.Message);
+            throw;
+        }
+        _loggerMock.Object.LogInformation("ExecuteQueryAsync_WhenJiraThrows_ReturnsFailureResult finished");
     }
 
     /// <summary>
