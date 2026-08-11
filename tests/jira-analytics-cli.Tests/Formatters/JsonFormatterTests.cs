@@ -29,9 +29,19 @@ public class JsonFormatterTests
     {
         var data = new { Name = "Test", Value = 123 };
         
-        var result = _formatter.Format(data);
-        
-        result.Should().Contain("\"Name\":\"Test\"");
+        _logger.LogInformation("Format called with {ItemId}", itemId);
+        try
+        {
+            var result = _formatter.Format(data);
+            _logger.LogInformation("Format completed with {ItemId}", itemId);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to format {ItemId}", itemId);
+            throw;
+        }
+
         result.Should().Contain("\"Value\":123");
     }
 
