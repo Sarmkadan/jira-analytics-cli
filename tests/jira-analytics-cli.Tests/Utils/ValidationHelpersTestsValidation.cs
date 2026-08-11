@@ -59,6 +59,13 @@ public sealed partial class ValidationHelpersTests
     /// Gets or sets a percentage value for testing.
     /// </summary>
     public double Percentage { get; set; }
+
+    /// <summary>
+    /// Returns a concise, informative string representation of this instance.
+    /// </summary>
+    /// <returns>A string containing the key test data properties.</returns>
+    public override string ToString() =>
+        $"ValidationHelpersTests {{ IssueKey = {IssueKey}, ProjectKey = {ProjectKey}, Url = {Url}, Email = {Email}, SprintId = {SprintId}, StoryPoints = {StoryPoints} }}";
 }
 
 /// <summary>
