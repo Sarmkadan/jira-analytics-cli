@@ -33,16 +33,34 @@ public class CsvExportServiceTests
     [Fact]
     public async Task ExportSprintMetrics_ShouldWriteHeaderOnly_WhenMetricsIsEmpty()
     {
-        // Act
-        await _service.ExportSprintMetrics(Enumerable.Empty<SprintMetric>(), _testPath);
+        const string testName = nameof(ExportSprintMetrics_ShouldWriteHeaderOnly_WhenMetricsIsEmpty);
+        _loggerMock.Object.LogInformation("Starting test {TestName}", testName);
 
-        // Assert
-        var content = await File.ReadAllTextAsync(_testPath);
-        var lines = content.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-        
-        // According to requirement: "empty dataset produces header only"
-        Assert.Single(lines);
-        Assert.StartsWith("SprintId,SprintName", lines[0]);
+        try
+        {
+            // Act
+            await _service.ExportSprintMetrics(Enumerable.Empty<SprintMetric>(), _testPath);
+
+            // If the metrics collection is empty we are in a fallback path that only writes the header.
+            _loggerMock.Object.LogWarning("Metrics collection is empty; only header will be written.");
+
+            // Assert
+            var content = await File.ReadAllTextAsync(_testPath);
+            var lines = content.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+            
+            // According to requirement: "empty dataset produces header only"
+            Assert.Single(lines);
+            Assert.StartsWith("SprintId,SprintName", lines[0]);
+        }
+        catch (Exception ex)
+        {
+            _loggerMock.Object.LogError(ex, "Error in test {TestName}", testName);
+            throw;
+        }
+        finally
+        {
+            _loggerMock.Object.LogInformation("Finished test {TestName}", testName);
+        }
     }
 
     /// <summary>
@@ -52,38 +70,53 @@ public class CsvExportServiceTests
     [Fact]
     public async Task ExportSprintMetrics_ShouldEscapeSpecialCharactersInSprintName()
     {
-        // Arrange
-        var metrics = new List<SprintMetric>
+        const string testName = nameof(ExportSprintMetrics_ShouldEscapeSpecialCharactersInSprintName);
+        _loggerMock.Object.LogInformation("Starting test {TestName}", testName);
+
+        try
         {
-            new() { 
-                SprintId = 1, 
-                SprintName = "Name, with comma", 
-                StartDate = new DateTime(2025, 1, 1), 
-                EndDate = new DateTime(2025, 1, 14) 
-            },
-            new() { 
-                SprintId = 2, 
-                SprintName = "Name \"with quotes\"", 
-                StartDate = new DateTime(2025, 1, 15), 
-                EndDate = new DateTime(2025, 1, 28) 
-            },
-            new() { 
-                SprintId = 3, 
-                SprintName = "Name\nwith newline", 
-                StartDate = new DateTime(2025, 2, 1), 
-                EndDate = new DateTime(2025, 2, 14) 
-            }
-        };
+            // Arrange
+            var metrics = new List<SprintMetric>
+            {
+                new() { 
+                    SprintId = 1, 
+                    SprintName = "Name, with comma", 
+                    StartDate = new DateTime(2025, 1, 1), 
+                    EndDate = new DateTime(2025, 1, 14) 
+                },
+                new() { 
+                    SprintId = 2, 
+                    SprintName = "Name \"with quotes\"", 
+                    StartDate = new DateTime(2025, 1, 15), 
+                    EndDate = new DateTime(2025, 1, 28) 
+                },
+                new() { 
+                    SprintId = 3, 
+                    SprintName = "Name\nwith newline", 
+                    StartDate = new DateTime(2025, 2, 1), 
+                    EndDate = new DateTime(2025, 2, 14) 
+                }
+            };
 
-        // Act
-        await _service.ExportSprintMetrics(metrics, _testPath);
+            // Act
+            await _service.ExportSprintMetrics(metrics, _testPath);
 
-        // Assert
-        var content = await File.ReadAllTextAsync(_testPath);
-        
-        Assert.Contains("\"Name, with comma\"", content);
-        Assert.Contains("\"Name \"\"with quotes\"\"\"", content);
-        Assert.Contains("\"Name\nwith newline\"", content);
+            // Assert
+            var content = await File.ReadAllTextAsync(_testPath);
+            
+            Assert.Contains("\"Name, with comma\"", content);
+            Assert.Contains("\"Name \"\"with quotes\"\"\"", content);
+            Assert.Contains("\"Name\nwith newline\"", content);
+        }
+        catch (Exception ex)
+        {
+            _loggerMock.Object.LogError(ex, "Error in test {TestName}", testName);
+            throw;
+        }
+        finally
+        {
+            _loggerMock.Object.LogInformation("Finished test {TestName}", testName);
+        }
     }
 
     /// <summary>
@@ -93,27 +126,42 @@ public class CsvExportServiceTests
     [Fact]
     public async Task ExportSprintMetrics_ShouldUseInvariantCultureForNumbersAndDates()
     {
-        // Arrange
-        var metrics = new List<SprintMetric>
+        const string testName = nameof(ExportSprintMetrics_ShouldUseInvariantCultureForNumbersAndDates);
+        _loggerMock.Object.LogInformation("Starting test {TestName}", testName);
+
+        try
         {
-            new() { 
-                SprintId = 1, 
-                SprintName = "Test Sprint", 
-                StartDate = new DateTime(2025, 1, 1), 
-                EndDate = new DateTime(2025, 1, 14),
-                AverageCycleTime = 12.34
-            }
-        };
+            // Arrange
+            var metrics = new List<SprintMetric>
+            {
+                new() { 
+                    SprintId = 1, 
+                    SprintName = "Test Sprint", 
+                    StartDate = new DateTime(2025, 1, 1), 
+                    EndDate = new DateTime(2025, 1, 14),
+                    AverageCycleTime = 12.34
+                }
+            };
 
-        // Act
-        await _service.ExportSprintMetrics(metrics, _testPath);
+            // Act
+            await _service.ExportSprintMetrics(metrics, _testPath);
 
-        // Assert
-        var lines = await File.ReadAllLinesAsync(_testPath);
-        // AverageCycleTime is 12.34. Invariant culture should ensure 12.34, not 12,34
-        Assert.Contains("12.34", lines[1]);
-        // Start date should be 2025-01-01
-        Assert.Contains("2025-01-01", lines[1]);
+            // Assert
+            var lines = await File.ReadAllLinesAsync(_testPath);
+            // AverageCycleTime is 12.34. Invariant culture should ensure 12.34, not 12,34
+            Assert.Contains("12.34", lines[1]);
+            // Start date should be 2025-01-01
+            Assert.Contains("2025-01-01", lines[1]);
+        }
+        catch (Exception ex)
+        {
+            _loggerMock.Object.LogError(ex, "Error in test {TestName}", testName);
+            throw;
+        }
+        finally
+        {
+            _loggerMock.Object.LogInformation("Finished test {TestName}", testName);
+        }
     }
 
     /// <summary>
@@ -123,20 +171,35 @@ public class CsvExportServiceTests
     [Fact]
     public async Task ExportTeamMetrics_ShouldWriteHeaderAndData()
     {
-        // Arrange
-        var metrics = new List<KeyValuePair<string, int>>
+        const string testName = nameof(ExportTeamMetrics_ShouldWriteHeaderAndData);
+        _loggerMock.Object.LogInformation("Starting test {TestName}", testName);
+
+        try
         {
-            new("Dev1", 5),
-            new("Dev2, With Comma", 10)
-        };
+            // Arrange
+            var metrics = new List<KeyValuePair<string, int>>
+            {
+                new("Dev1", 5),
+                new("Dev2, With Comma", 10)
+            };
 
-        // Act
-        await _service.ExportTeamMetrics(metrics, _testPath);
+            // Act
+            await _service.ExportTeamMetrics(metrics, _testPath);
 
-        // Assert
-        var lines = await File.ReadAllLinesAsync(_testPath);
-        Assert.Equal(3, lines.Length); // Header + 2 data rows
-        Assert.Equal("Developer,AssignedIssues", lines[0]);
-        Assert.Contains("\"Dev2, With Comma\"", lines[2]);
+            // Assert
+            var lines = await File.ReadAllLinesAsync(_testPath);
+            Assert.Equal(3, lines.Length); // Header + 2 data rows
+            Assert.Equal("Developer,AssignedIssues", lines[0]);
+            Assert.Contains("\"Dev2, With Comma\"", lines[2]);
+        }
+        catch (Exception ex)
+        {
+            _loggerMock.Object.LogError(ex, "Error in test {TestName}", testName);
+            throw;
+        }
+        finally
+        {
+            _loggerMock.Object.LogInformation("Finished test {TestName}", testName);
+        }
     }
 }
