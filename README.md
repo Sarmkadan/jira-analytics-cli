@@ -475,3 +475,25 @@ catch (Exception ex)
     Console.WriteLine($"Test execution failed: {ex.Message}");
 }
 ```
+
+## JqlQueryService
+
+The `JqlQueryService` executes custom JQL queries via the Jira API and returns structured, paginated results. It also provides static helpers for building common JQL clauses and formatting results as text.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using JiraAnalyticsCli.Models;
+using System;
+using System.Threading.Tasks;
+
+// Example: query issues in a project updated in the last week
+var service = new JqlQueryService(jiraApiService, logger); // dependencies injected
+var projectJql = JqlQueryService.BuildProjectJql("PROJ");
+var dateJql = JqlQueryService.BuildDateRangeJql("updated", DateTime.UtcNow.AddDays(-7), null);
+var jql = $"{projectJql} AND {dateJql} ORDER BY updated DESC";
+
+JqlQueryResult result = await service.ExecuteQueryAsync(jql, maxResults: 20);
+Console.WriteLine(JqlQueryService.FormatAsText(result));
+```
