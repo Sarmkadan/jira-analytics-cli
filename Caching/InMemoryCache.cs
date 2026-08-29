@@ -17,7 +17,11 @@ public class InMemoryCache
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
     private readonly ILogger<InMemoryCache> _logger;
-    private readonly object _lockObj = new();
+    private readonly object _mutationLock = new();
+    private long _hits;
+    private long _misses;
+    private long _evictions;
+    private long _entryCount;
 
     public InMemoryCache(ILogger<InMemoryCache> logger)
     {
@@ -46,7 +50,18 @@ public class InMemoryCache
             Policy = policy
         };
 
-        _cache[key] = entry;
+        lock (_mutationLock)
+        {
+            if (_cache.TryAdd(key, entry))
+            {
+                Interlocked.Increment(ref _entryCount);
+            }
+            else
+            {
+                _cache[key] = entry;
+            }
+        }
+
         _logger.LogDebug("Cache set: {Key} ({Size} bytes)", key, serialized.Length);
     }
 
@@ -63,7 +78,8 @@ public class InMemoryCache
             // Check expiration
             if (entry.Policy.IsExpired(entry.CreatedAt, entry.LastAccessedAt))
             {
-                _cache.TryRemove(key, out _);
+                Evict(key);
+                Interlocked.Increment(ref _misses);
                 _logger.LogDebug("Cache expired: {Key}", key);
                 return defaultValue;
             }
@@ -77,17 +93,20 @@ public class InMemoryCache
             try
             {
                 var value = JsonSerializer.Deserialize<T>(entry.Value);
+                Interlocked.Increment(ref _hits);
                 _logger.LogDebug("Cache hit: {Key}", key);
                 return value;
             }
             catch (JsonException ex)
             {
                 _logger.LogError(ex, "Error deserializing cache entry: {Key}", key);
-                _cache.TryRemove(key, out _);
+                Evict(key);
+                Interlocked.Increment(ref _misses);
                 return defaultValue;
             }
         }
 
+        Interlocked.Increment(ref _misses);
         _logger.LogDebug("Cache miss: {Key}", key);
         return defaultValue;
     }
@@ -103,7 +122,7 @@ public class InMemoryCache
         {
             if (entry.Policy.IsExpired(entry.CreatedAt, entry.LastAccessedAt))
             {
-                _cache.TryRemove(key, out _);
+                Evict(key);
                 return false;
             }
 
@@ -120,7 +139,7 @@ public class InMemoryCache
     {
         ArgumentException.ThrowIfNullOrEmpty(key);
 
-        _cache.TryRemove(key, out _);
+        RemoveEntry(key);
         _logger.LogDebug("Cache removed: {Key}", key);
     }
 
@@ -141,8 +160,10 @@ public class InMemoryCache
         {
             if (regex.IsMatch(key))
             {
-                _cache.TryRemove(key, out _);
-                removed++;
+                if (RemoveEntry(key))
+                {
+                    removed++;
+                }
             }
         }
 
@@ -155,7 +176,12 @@ public class InMemoryCache
     /// </summary>
     public void Clear()
     {
-        _cache.Clear();
+        lock (_mutationLock)
+        {
+            _cache.Clear();
+            Interlocked.Exchange(ref _entryCount, 0);
+        }
+
         _logger.LogInformation("Cache cleared completely");
     }
 
@@ -164,30 +190,11 @@ public class InMemoryCache
     /// </summary>
     public CacheStatistics GetStatistics()
     {
-        lock (_lockObj)
-        {
-            var totalSize = 0L;
-            var expiredCount = 0;
-            var now = DateTime.UtcNow;
-
-            foreach (var entry in _cache.Values)
-            {
-                totalSize += entry.Value.Length;
-
-                if (entry.Policy.IsExpired(entry.CreatedAt, entry.LastAccessedAt))
-                {
-                    expiredCount++;
-                }
-            }
-
-            return new CacheStatistics
-            {
-                TotalEntries = _cache.Count,
-                TotalSizeBytes = totalSize,
-                ExpiredEntries = expiredCount,
-                CheckedAt = now
-            };
-        }
+        return new CacheStatistics(
+            Interlocked.Read(ref _hits),
+            Interlocked.Read(ref _misses),
+            Interlocked.Read(ref _evictions),
+            (int)Interlocked.Read(ref _entryCount));
     }
 
     /// <summary>
@@ -209,8 +216,10 @@ public class InMemoryCache
 
         foreach (var key in expiredKeys)
         {
-            _cache.TryRemove(key, out _);
-            removed++;
+            if (Evict(key))
+            {
+                removed++;
+            }
         }
 
         if (removed > 0)
@@ -219,6 +228,31 @@ public class InMemoryCache
         }
 
         return removed;
+    }
+
+    private bool RemoveEntry(string key)
+    {
+        lock (_mutationLock)
+        {
+            if (!_cache.TryRemove(key, out _))
+            {
+                return false;
+            }
+
+            Interlocked.Decrement(ref _entryCount);
+            return true;
+        }
+    }
+
+    private bool Evict(string key)
+    {
+        if (!RemoveEntry(key))
+        {
+            return false;
+        }
+
+        Interlocked.Increment(ref _evictions);
+        return true;
     }
 
     private class CacheEntry
@@ -231,11 +265,8 @@ public class InMemoryCache
         public CachePolicy Policy { get; set; } = new CachePolicy("unknown");
     }
 
-    public class CacheStatistics
+    public record CacheStatistics(long Hits, long Misses, long Evictions, int EntryCount)
     {
-        public int TotalEntries { get; set; }
-        public long TotalSizeBytes { get; set; }
-        public int ExpiredEntries { get; set; }
-        public DateTime CheckedAt { get; set; }
+        public double HitRate => Hits + Misses == 0 ? 0 : (double)Hits / (Hits + Misses);
     }
 }
