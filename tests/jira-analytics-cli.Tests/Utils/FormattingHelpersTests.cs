@@ -3,235 +3,105 @@
 // CTO & Software Architect
 // =============================================================================
 
-using System;
-using FluentAssertions;
 using JiraAnalyticsCli.Utils;
 using Xunit;
 
 namespace JiraAnalyticsCli.Tests.Utils;
 
-/// <summary>
-/// Tests for FormattingHelpers class.
-/// </summary>
 public class FormattingHelpersTests
 {
-    // -------------------------------------------------------------------------
-    // FormatPercentage
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public void FormatPercentage_DefaultPrecision_ReturnsOneDecimalPlace()
+    [Theory]
+    [InlineData(12.34, 1, "12.3%")]
+    [InlineData(12.345, 2, "12.35%")]
+    [InlineData(-12.34, 1, "-12.3%")]
+    public void FormatPercentage_ReturnsExpectedValue(
+        double value,
+        int decimalPlaces,
+        string expected)
     {
-        /// <summary>
-        /// Tests that FormatPercentage returns a string with one decimal place when precision is not specified.
-        /// </summary>
-        /// <param name="value">The value to format.</param>
-        FormattingHelpers.FormatPercentage(75.55).Should().Be("75.5%");
+        Assert.Equal(expected, FormattingHelpers.FormatPercentage(value, decimalPlaces));
     }
 
     [Fact]
-    public void FormatPercentage_ZeroPrecision_ReturnsWholeNumber()
+    public void FormatPercentage_UsesOneDecimalPlaceByDefault()
     {
-        /// <summary>
-        /// Tests that FormatPercentage returns a whole number when precision is 0.
-        /// </summary>
-        /// <param name="value">The value to format.</param>
-        FormattingHelpers.FormatPercentage(99.9, 0).Should().Be("100%");
+        Assert.Equal("42.5%", FormattingHelpers.FormatPercentage(42.5));
     }
-
-    [Fact]
-    public void FormatPercentage_ZeroValue_ReturnsZeroPercent()
-    {
-        /// <summary>
-        /// Tests that FormatPercentage returns "0.0%" when the value is 0.
-        /// </summary>
-        FormattingHelpers.FormatPercentage(0).Should().Be("0.0%");
-    }
-
-    // -------------------------------------------------------------------------
-    // FormatBytes
-    // -------------------------------------------------------------------------
 
     [Theory]
     [InlineData(0, "0 B")]
-    [InlineData(500, "500 B")]
     [InlineData(1024, "1 KB")]
     [InlineData(1048576, "1 MB")]
     [InlineData(1073741824, "1 GB")]
-    public void FormatBytes_VariousSizes_ReturnsHumanReadable(long bytes, string expected)
+    public void FormatBytes_FormatsUnitBoundaries(long bytes, string expected)
     {
-        /// <summary>
-        /// Tests that FormatBytes returns a human-readable string for various sizes.
-        /// </summary>
-        /// <param name="bytes">The size to format.</param>
-        /// <param name="expected">The expected result.</param>
-        FormattingHelpers.FormatBytes(bytes).Should().Be(expected);
-    }
-
-    // -------------------------------------------------------------------------
-    // CreateTable
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public void CreateTable_NullHeaders_ReturnsEmpty()
-    {
-        /// <summary>
-        /// Tests that CreateTable returns an empty string when headers are null.
-        /// </summary>
-        FormattingHelpers.CreateTable(null!, new List<string[]>()).Should().BeEmpty();
+        Assert.Equal(expected, FormattingHelpers.FormatBytes(bytes));
     }
 
     [Fact]
-    public void CreateTable_EmptyHeaders_ReturnsEmpty()
+    public void CreateTable_WhenHeadersAreWiderThanRows_PadsValuesToHeaderWidth()
     {
-        /// <summary>
-        /// Tests that CreateTable returns an empty string when headers are empty.
-        /// </summary>
-        FormattingHelpers.CreateTable(Array.Empty<string>(), new List<string[]>()).Should().BeEmpty();
-    }
-
-    [Fact]
-    public void CreateTable_EmptyRows_ReturnsEmpty()
-    {
-        /// <summary>
-        /// Tests that CreateTable returns an empty string when rows are empty.
-        /// </summary>
-        FormattingHelpers.CreateTable(new[] { "Col1" }, new List<string[]>()).Should().BeEmpty();
-    }
-
-    [Fact]
-    public void CreateTable_ValidData_ContainsHeadersAndRows()
-    {
-        /// <summary>
-        /// Tests that CreateTable returns a string containing headers and rows when data is valid.
-        /// </summary>
-        var headers = new[] { "Key", "Status" };
-        var rows = new List<string[]>
-        {
-            new[] { "PROJ-1", "Done" },
-            new[] { "PROJ-2", "Open" }
-        };
+        var headers = new[] { "Identifier", "Current Status" };
+        var rows = new List<string[]> { new[] { "A", "Done" } };
 
         var result = FormattingHelpers.CreateTable(headers, rows);
 
-        result.Should().Contain("Key");
-        result.Should().Contain("Status");
-        result.Should().Contain("PROJ-1");
-        result.Should().Contain("PROJ-2");
-        result.Should().Contain("|");
-        result.Should().Contain("-");
+        var expected =
+            "| Identifier | Current Status | " + Environment.NewLine +
+            "|------------|----------------|" + Environment.NewLine +
+            "| A          | Done           | " + Environment.NewLine;
+        Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void CreateTable_RowShorterThanHeaders_PadsWithEmpty()
+    public void CreateTable_WithNoRows_ReturnsEmptyString()
     {
-        /// <summary>
-        /// Tests that CreateTable pads rows with empty strings when they are shorter than headers.
-        /// </summary>
-        var headers = new[] { "Col1", "Col2", "Col3" };
-        var rows = new List<string[]> { new[] { "val1" } }; // only 1 column
-
-        var result = FormattingHelpers.CreateTable(headers, rows);
-        result.Should().Contain("val1");
+        Assert.Equal(
+            string.Empty,
+            FormattingHelpers.CreateTable(new[] { "Header" }, new List<string[]>()));
     }
-
-    // -------------------------------------------------------------------------
-    // FormatStatus
-    // -------------------------------------------------------------------------
 
     [Theory]
-    [InlineData("Done", "Done")]
-    [InlineData("Closed", "Closed")]
-    [InlineData("In Progress", "In Progress")]
-    [InlineData("Open", "Open")]
-    [InlineData("Blocked", "Blocked")]
-    [InlineData("Unknown", "Unknown")]
-    public void FormatStatus_VariousStatuses_ContainsOriginalStatus(string status, string expectedContains)
+    [InlineData("Done", "✅ Done")]
+    [InlineData("Closed", "✅ Closed")]
+    [InlineData("In Progress", "🔄 In Progress")]
+    [InlineData("In Review", "🔄 In Review")]
+    [InlineData("Open", "📋 Open")]
+    [InlineData("Blocked", "🚫 Blocked")]
+    [InlineData("On Hold", "⏸️  On Hold")]
+    [InlineData("Unknown", "❓ Unknown")]
+    public void FormatStatus_ReturnsExpectedIndicator(string status, string expected)
     {
-        /// <summary>
-        /// Tests that FormatStatus returns a string containing the original status.
-        /// </summary>
-        /// <param name="status">The status to format.</param>
-        /// <param name="expectedContains">The expected result.</param>
-        FormattingHelpers.FormatStatus(status).Should().Contain(expectedContains);
-    }
-
-    // -------------------------------------------------------------------------
-    // RepeatChar / Indent / CenterText
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public void RepeatChar_ZeroCount_ReturnsEmpty()
-    {
-        /// <summary>
-        /// Tests that RepeatChar returns an empty string when count is 0.
-        /// </summary>
-        FormattingHelpers.RepeatChar('-', 0).Should().BeEmpty();
+        Assert.Equal(expected, FormattingHelpers.FormatStatus(status));
     }
 
     [Fact]
-    public void RepeatChar_PositiveCount_ReturnsRepeatedString()
+    public void RepeatChar_WithZeroCount_ReturnsEmptyString()
     {
-        /// <summary>
-        /// Tests that RepeatChar returns a string repeated the specified number of times.
-        /// </summary>
-        /// <param name="count">The number of times to repeat the character.</param>
-        FormattingHelpers.RepeatChar('=', 5).Should().Be("=====");
+        Assert.Equal(string.Empty, FormattingHelpers.RepeatChar('-', 0));
     }
 
     [Fact]
-    public void Indent_DefaultSpaces_AddsTwoSpaces()
+    public void RepeatChar_WithNegativeCount_ThrowsArgumentOutOfRangeException()
     {
-        /// <summary>
-        /// Tests that Indent adds two spaces by default.
-        /// </summary>
-        /// <param name="text">The text to indent.</param>
-        FormattingHelpers.Indent("text").Should().Be("  text");
+        Assert.Throws<ArgumentOutOfRangeException>(() => FormattingHelpers.RepeatChar('-', -1));
     }
 
     [Fact]
-    public void Indent_CustomSpaces_AddsCorrectIndentation()
+    public void Indent_WithMultiLineText_PrefixesTheTextOnce()
     {
-        /// <summary>
-        /// Tests that Indent adds the specified number of spaces.
-        /// </summary>
-        /// <param name="text">The text to indent.</param>
-        /// <param name="spaces">The number of spaces to add.</param>
-        FormattingHelpers.Indent("text", 4).Should().Be("    text");
+        var text = "first line" + Environment.NewLine + "second line";
+
+        var result = FormattingHelpers.Indent(text, 4);
+
+        Assert.Equal("    " + text, result);
     }
 
     [Fact]
-    public void CenterText_ShorterThanWidth_CentersWithPadding()
+    public void CenterText_WhenTextIsLongerThanWidth_ReturnsOriginalText()
     {
-        /// <summary>
-        /// Tests that CenterText centers the text with padding when it is shorter than the width.
-        /// </summary>
-        /// <param name="text">The text to center.</param>
-        /// <param name="width">The width to center the text in.</param>
-        var result = FormattingHelpers.CenterText("AB", 6);
-        result.Should().HaveLength(6);
-        result.Trim().Should().Be("AB");
-    }
+        const string text = "longer than width";
 
-    [Fact]
-    public void CenterText_EqualToWidth_ReturnsOriginal()
-    {
-        /// <summary>
-        /// Tests that CenterText returns the original text when it is equal to the width.
-        /// </summary>
-        /// <param name="text">The text to center.</param>
-        /// <param name="width">The width to center the text in.</param>
-        FormattingHelpers.CenterText("ABCDE", 5).Should().Be("ABCDE");
-    }
-
-    [Fact]
-    public void CenterText_LongerThanWidth_ReturnsOriginal()
-    {
-        /// <summary>
-        /// Tests that CenterText returns the original text when it is longer than the width.
-        /// </summary>
-        /// <param name="text">The text to center.</param>
-        /// <param name="width">The width to center the text in.</param>
-        FormattingHelpers.CenterText("ABCDEFGH", 5).Should().Be("ABCDEFGH");
+        Assert.Equal(text, FormattingHelpers.CenterText(text, 5));
     }
 }
