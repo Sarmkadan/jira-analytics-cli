@@ -4,6 +4,7 @@
 // =============================================================================
 
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using System.Runtime.CompilerServices;
 using JiraAnalyticsCli.Models;
@@ -33,43 +34,31 @@ public class JiraApiService : IJiraApiService
     {
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
-        try
-        {
-            _logger.LogInformation("Fetching project {ProjectKey}", projectKey);
-            var response = await _httpClient.GetAsync($"/rest/api/3/projects/{projectKey}");
-
-            if (!response.IsSuccessStatusCode)
+        return await GetAndParseAsync(
+            $"/rest/api/3/projects/{projectKey}",
+            root =>
             {
-                _logger.LogWarning("Failed to fetch project {ProjectKey}: {StatusCode}", projectKey, response.StatusCode);
-                return null;
-            }
+                var createdStr = GetString(root, "created");
+                var createdDate = ParseDateTimeInvariant(createdStr) ?? DateTime.MinValue;
+                var project = new JiraProject
+                {
+                    Key = projectKey,
+                    Id = GetString(root, "id"),
+                    Name = GetString(root, "name"),
+                    Description = GetStringOrNull(root, "description"),
+                    ProjectType = GetString(root, "type", "software"),
+                    Lead = GetNestedStringOrNull(root, "lead", "displayName"),
+                    CreatedDate = createdDate,
+                    Url = GetStringOrNull(root, "url")
+                };
 
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            var createdStr = GetString(root, "created");
-            var createdDate = ParseDateTimeInvariant(createdStr) ?? DateTime.MinValue;
-            var project = new JiraProject
-            {
-                Key = projectKey,
-                Id = GetString(root, "id"),
-                Name = GetString(root, "name"),
-                Description = GetStringOrNull(root, "description"),
-                ProjectType = GetString(root, "type", "software"),
-                Lead = GetNestedStringOrNull(root, "lead", "displayName"),
-                CreatedDate = createdDate,
-                Url = GetStringOrNull(root, "url")
-            };
-
-            _logger.LogInformation("Successfully fetched project {ProjectKey}: {ProjectName}", projectKey, project.Name);
-            return project;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching project {ProjectKey}", projectKey);
-            return null;
-        }
+                _logger.LogInformation("Successfully fetched project {ProjectKey}: {ProjectName}", projectKey, project.Name);
+                return project;
+            },
+            $"project {projectKey}",
+            () => _logger.LogInformation("Fetching project {ProjectKey}", projectKey),
+            statusCode => _logger.LogWarning("Failed to fetch project {ProjectKey}: {StatusCode}", projectKey, statusCode),
+            ex => _logger.LogError(ex, "Error fetching project {ProjectKey}", projectKey));
     }
 
     public async Task<List<Sprint>> GetProjectSprintsAsync(string projectKey)
@@ -77,165 +66,113 @@ public class JiraApiService : IJiraApiService
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         var sprints = new List<Sprint>();
-
-        try
-        {
-            _logger.LogInformation("Fetching sprints for project {ProjectKey}", projectKey);
-            var response = await _httpClient.GetAsync($"/rest/api/3/projects/{projectKey}/sprints");
-
-            if (!response.IsSuccessStatusCode)
+        return await GetAndParseAsync(
+            $"/rest/api/3/projects/{projectKey}/sprints",
+            root =>
             {
-                _logger.LogWarning("Failed to fetch sprints: {StatusCode}", response.StatusCode);
-                return sprints;
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("values", out var sprintArray) && sprintArray.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var sprintData in sprintArray.EnumerateArray())
+                if (root.TryGetProperty("values", out var sprintArray) && sprintArray.ValueKind == JsonValueKind.Array)
                 {
-                    var sprint = new Sprint
+                    foreach (var sprintData in sprintArray.EnumerateArray())
                     {
-                        Id = GetInt(sprintData, "id"),
-                        Key = GetString(sprintData, "key"),
-                        Name = GetString(sprintData, "name"),
-                        State = GetString(sprintData, "state", "Open"),
-                        StartDate = ParseDateOrNull(GetStringOrNull(sprintData, "startDate")),
-                        EndDate = ParseDateOrNull(GetStringOrNull(sprintData, "endDate")),
-                        CompleteDate = ParseDateOrNull(GetStringOrNull(sprintData, "completeDate")),
-                        Goal = GetStringOrNull(sprintData, "goal"),
-                        ProjectKey = projectKey
-                    };
+                        var sprint = new Sprint
+                        {
+                            Id = GetInt(sprintData, "id"),
+                            Key = GetString(sprintData, "key"),
+                            Name = GetString(sprintData, "name"),
+                            State = GetString(sprintData, "state", "Open"),
+                            StartDate = ParseDateOrNull(GetStringOrNull(sprintData, "startDate")),
+                            EndDate = ParseDateOrNull(GetStringOrNull(sprintData, "endDate")),
+                            CompleteDate = ParseDateOrNull(GetStringOrNull(sprintData, "completeDate")),
+                            Goal = GetStringOrNull(sprintData, "goal"),
+                            ProjectKey = projectKey
+                        };
 
-                    sprints.Add(sprint);
+                        sprints.Add(sprint);
+                    }
                 }
-            }
 
-            _logger.LogInformation("Fetched {SprintCount} sprints for project {ProjectKey}", sprints.Count, projectKey);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching sprints for project {ProjectKey}", projectKey);
-        }
-
-        return sprints;
+                _logger.LogInformation("Fetched {SprintCount} sprints for project {ProjectKey}", sprints.Count, projectKey);
+                return sprints;
+            },
+            $"sprints for project {projectKey}",
+            () => _logger.LogInformation("Fetching sprints for project {ProjectKey}", projectKey),
+            statusCode => _logger.LogWarning("Failed to fetch sprints: {StatusCode}", statusCode),
+            ex => _logger.LogError(ex, "Error fetching sprints for project {ProjectKey}", projectKey)) ?? sprints;
     }
 
     public async Task<Sprint?> GetSprintAsync(int sprintId)
     {
         // Fix: Add input validation for sprintId
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
-        try
-        {
-            _logger.LogInformation("Fetching sprint {SprintId}", sprintId);
-            var response = await _httpClient.GetAsync($"/rest/api/3/sprints/{sprintId}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Failed to fetch sprint {SprintId}: {StatusCode}", sprintId, response.StatusCode);
-                return null;
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var sprintData = doc.RootElement;
-
-            var sprint = new Sprint
+        return await GetAndParseAsync(
+            $"/rest/api/3/sprints/{sprintId}",
+            sprintData => new Sprint
             {
                 Id = GetInt(sprintData, "id", sprintId),
                 Key = GetString(sprintData, "key"),
                 Name = GetString(sprintData, "name"),
                 State = GetString(sprintData, "state", "Open")
-            };
-
-            return sprint;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching sprint {SprintId}", sprintId);
-            return null;
-        }
+            },
+            $"sprint {sprintId}",
+            () => _logger.LogInformation("Fetching sprint {SprintId}", sprintId),
+            statusCode => _logger.LogWarning("Failed to fetch sprint {SprintId}: {StatusCode}", sprintId, statusCode),
+            ex => _logger.LogError(ex, "Error fetching sprint {SprintId}", sprintId));
     }
 
     public async Task<List<JiraIssue>> GetSprintIssuesAsync(int sprintId)
     {
         // Fix: Add input validation for sprintId
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
+        var jql = $"sprint = {sprintId} ORDER BY created DESC";
         var issues = new List<JiraIssue>();
-
-        try
-        {
-            _logger.LogInformation("Fetching issues for sprint {SprintId}", sprintId);
-            var jql = $"sprint = {sprintId} ORDER BY created DESC";
-            var response = await _httpClient.GetAsync($"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100");
-
-            if (!response.IsSuccessStatusCode)
+        return await GetAndParseAsync(
+            $"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100",
+            root =>
             {
-                _logger.LogWarning("Failed to fetch sprint issues: {StatusCode}", response.StatusCode);
-                return issues;
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var issueData in issueArray.EnumerateArray())
+                if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
                 {
-                    var issue = ParseIssueData(issueData, sprintId);
-                    if (issue != null) issues.Add(issue);
+                    foreach (var issueData in issueArray.EnumerateArray())
+                    {
+                        var issue = ParseIssueData(issueData, sprintId);
+                        if (issue != null) issues.Add(issue);
+                    }
                 }
-            }
 
-            _logger.LogInformation("Fetched {IssueCount} issues for sprint {SprintId}", issues.Count, sprintId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching sprint issues");
-        }
-
-        return issues;
+                _logger.LogInformation("Fetched {IssueCount} issues for sprint {SprintId}", issues.Count, sprintId);
+                return issues;
+            },
+            $"issues for sprint {sprintId}",
+            () => _logger.LogInformation("Fetching issues for sprint {SprintId}", sprintId),
+            statusCode => _logger.LogWarning("Failed to fetch sprint issues: {StatusCode}", statusCode),
+            ex => _logger.LogError(ex, "Error fetching sprint issues")) ?? issues;
     }
 
     public async Task<List<JiraIssue>> GetProjectIssuesAsync(string projectKey)
     {
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
+        var jql = $"project = {projectKey} ORDER BY created DESC";
         var issues = new List<JiraIssue>();
-
-        try
-        {
-            _logger.LogInformation("Fetching issues for project {ProjectKey}", projectKey);
-            var jql = $"project = {projectKey} ORDER BY created DESC";
-            var response = await _httpClient.GetAsync($"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100");
-
-            if (!response.IsSuccessStatusCode) return issues;
-
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
+        return await GetAndParseAsync(
+            $"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100",
+            root =>
             {
-                foreach (var issueData in issueArray.EnumerateArray())
+                if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
                 {
-                    var issue = ParseIssueData(issueData, 0);
-                    if (issue != null) issues.Add(issue);
+                    foreach (var issueData in issueArray.EnumerateArray())
+                    {
+                        var issue = ParseIssueData(issueData, 0);
+                        if (issue != null) issues.Add(issue);
+                    }
                 }
-            }
 
-            _logger.LogInformation("Fetched {IssueCount} issues for project {ProjectKey}", issues.Count, projectKey);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching project issues");
-        }
-
-        return issues;
+                _logger.LogInformation("Fetched {IssueCount} issues for project {ProjectKey}", issues.Count, projectKey);
+                return issues;
+            },
+            $"issues for project {projectKey}",
+            () => _logger.LogInformation("Fetching issues for project {ProjectKey}", projectKey),
+            logFailure: null,
+            ex => _logger.LogError(ex, "Error fetching project issues")) ?? issues;
     }
 
     public async Task<List<Developer>> GetProjectTeamAsync(string projectKey)
@@ -289,20 +226,13 @@ public class JiraApiService : IJiraApiService
     {
         // Fix: Add input validation for issueKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(issueKey, nameof(issueKey));
-        try
-        {
-            var response = await _httpClient.GetAsync($"/rest/api/3/issues/{issueKey}");
-            if (!response.IsSuccessStatusCode) return null;
-
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            return ParseIssueData(doc.RootElement, 0);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching issue {IssueKey}", issueKey);
-            return null;
-        }
+        return await GetAndParseAsync(
+            $"/rest/api/3/issues/{issueKey}",
+            root => ParseIssueData(root, 0),
+            $"issue {issueKey}",
+            logStart: null,
+            logFailure: null,
+            ex => _logger.LogError(ex, "Error fetching issue {IssueKey}", issueKey));
     }
 
     public async Task<List<BurndownSnapshot>> GetBurndownDataAsync(int sprintId)
@@ -354,44 +284,30 @@ public class JiraApiService : IJiraApiService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
 
-        var result = new JiraSearchResult { StartAt = startAt };
-
-        try
-        {
-            _logger.LogInformation("Executing JQL search (startAt={Start}, maxResults={Max}): {Jql}", startAt, maxResults, jql);
-
-            var url = $"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults={maxResults}&startAt={startAt}";
-            var response = await _httpClient.GetAsync(url);
-
-            if (!response.IsSuccessStatusCode)
+        var fallback = new JiraSearchResult { StartAt = startAt };
+        var url = $"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults={maxResults}&startAt={startAt}";
+        return await GetAndParseAsync(
+            url,
+            root =>
             {
-                _logger.LogWarning("JQL search returned {StatusCode}", response.StatusCode);
-                return result;
-            }
+                fallback.Total = GetInt(root, "total");
 
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            result.Total = GetInt(root, "total");
-
-            if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var issueData in issueArray.EnumerateArray())
+                if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
                 {
-                    var issue = ParseIssueData(issueData, 0);
-                    if (issue != null) result.Issues.Add(issue);
+                    foreach (var issueData in issueArray.EnumerateArray())
+                    {
+                        var issue = ParseIssueData(issueData, 0);
+                        if (issue != null) fallback.Issues.Add(issue);
+                    }
                 }
-            }
 
-            _logger.LogInformation("JQL search returned {Count} of {Total} issues", result.Issues.Count, result.Total);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error executing JQL search");
-        }
-
-        return result;
+                _logger.LogInformation("JQL search returned {Count} of {Total} issues", fallback.Issues.Count, fallback.Total);
+                return fallback;
+            },
+            "JQL search",
+            () => _logger.LogInformation("Executing JQL search (startAt={Start}, maxResults={Max}): {Jql}", startAt, maxResults, jql),
+            statusCode => _logger.LogWarning("JQL search returned {StatusCode}", statusCode),
+            ex => _logger.LogError(ex, "Error executing JQL search")) ?? fallback;
     }
 
     public async Task<bool> VerifyConnectionAsync()
@@ -414,6 +330,38 @@ public class JiraApiService : IJiraApiService
         {
             _logger.LogError(ex, "Error verifying Jira connection");
             return false;
+        }
+    }
+
+    private async Task<T?> GetAndParseAsync<T>(
+        string requestUri,
+        Func<JsonElement, T> map,
+        string operationName,
+        Action? logStart,
+        Action<HttpStatusCode>? logFailure,
+        Action<Exception> logError)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(operationName, nameof(operationName));
+
+        try
+        {
+            logStart?.Invoke();
+            var response = await _httpClient.GetAsync(requestUri);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logFailure?.Invoke(response.StatusCode);
+                return default;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            return map(doc.RootElement);
+        }
+        catch (Exception ex)
+        {
+            logError(ex);
+            return default;
         }
     }
 
