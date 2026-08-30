@@ -25,6 +25,11 @@ public class ExportService : IExportService
 
     public ExportService(IJiraApiService jiraService, IAnalyticsService analyticsService, ILogger<ExportService> logger, IServiceProvider serviceProvider)
     {
+        ArgumentNullException.ThrowIfNull(jiraService);
+        ArgumentNullException.ThrowIfNull(analyticsService);
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+
         _jiraService = jiraService;
         _analyticsService = analyticsService;
         _logger = logger;
