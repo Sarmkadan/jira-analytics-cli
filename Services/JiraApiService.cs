@@ -19,6 +19,25 @@ namespace JiraAnalyticsCli.Services;
 /// </summary>
 public class JiraApiService : IJiraApiService
 {
+    private const string ApiV3Base = "/rest/api/3";
+    private const string CreatedField = "created";
+    private const string DescriptionField = "description";
+    private const string DisplayNameField = "displayName";
+    private const string FieldsField = "fields";
+    private const string IdField = "id";
+    private const string IssuesField = "issues";
+    private const string KeyField = "key";
+    private const string NameField = "name";
+    private const string StateField = "state";
+    private const string EmptyDefault = "";
+    private const string MediumDefault = "Medium";
+    private const string NumericZeroDefault = "0";
+    private const string OpenDefault = "Open";
+    private const string SoftwareDefault = "software";
+    private const string TaskDefault = "Task";
+    private const string DefaultMaxResults = "100";
+    private const string OrderByCreatedDescending = $"ORDER BY {CreatedField} DESC";
+
     private readonly HttpClient _httpClient;
     private readonly ICliConfig _config;
     private readonly ILogger<JiraApiService> _logger;
@@ -35,19 +54,19 @@ public class JiraApiService : IJiraApiService
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         return await GetAndParseAsync(
-            $"/rest/api/3/projects/{projectKey}",
+            $"{ApiV3Base}/projects/{projectKey}",
             root =>
             {
-                var createdStr = GetString(root, "created");
+                var createdStr = GetString(root, CreatedField);
                 var createdDate = ParseDateTimeInvariant(createdStr) ?? DateTime.MinValue;
                 var project = new JiraProject
                 {
                     Key = projectKey,
-                    Id = GetString(root, "id"),
-                    Name = GetString(root, "name"),
-                    Description = GetStringOrNull(root, "description"),
-                    ProjectType = GetString(root, "type", "software"),
-                    Lead = GetNestedStringOrNull(root, "lead", "displayName"),
+                    Id = GetString(root, IdField),
+                    Name = GetString(root, NameField),
+                    Description = GetStringOrNull(root, DescriptionField),
+                    ProjectType = GetString(root, "type", SoftwareDefault),
+                    Lead = GetNestedStringOrNull(root, "lead", DisplayNameField),
                     CreatedDate = createdDate,
                     Url = GetStringOrNull(root, "url")
                 };
@@ -67,7 +86,7 @@ public class JiraApiService : IJiraApiService
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         var sprints = new List<Sprint>();
         return await GetAndParseAsync(
-            $"/rest/api/3/projects/{projectKey}/sprints",
+            $"{ApiV3Base}/projects/{projectKey}/sprints",
             root =>
             {
                 if (root.TryGetProperty("values", out var sprintArray) && sprintArray.ValueKind == JsonValueKind.Array)
@@ -76,10 +95,10 @@ public class JiraApiService : IJiraApiService
                     {
                         var sprint = new Sprint
                         {
-                            Id = GetInt(sprintData, "id"),
-                            Key = GetString(sprintData, "key"),
-                            Name = GetString(sprintData, "name"),
-                            State = GetString(sprintData, "state", "Open"),
+                            Id = GetInt(sprintData, IdField),
+                            Key = GetString(sprintData, KeyField),
+                            Name = GetString(sprintData, NameField),
+                            State = GetString(sprintData, StateField, OpenDefault),
                             StartDate = ParseDateOrNull(GetStringOrNull(sprintData, "startDate")),
                             EndDate = ParseDateOrNull(GetStringOrNull(sprintData, "endDate")),
                             CompleteDate = ParseDateOrNull(GetStringOrNull(sprintData, "completeDate")),
@@ -105,13 +124,13 @@ public class JiraApiService : IJiraApiService
         // Fix: Add input validation for sprintId
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
         return await GetAndParseAsync(
-            $"/rest/api/3/sprints/{sprintId}",
+            $"{ApiV3Base}/sprints/{sprintId}",
             sprintData => new Sprint
             {
-                Id = GetInt(sprintData, "id", sprintId),
-                Key = GetString(sprintData, "key"),
-                Name = GetString(sprintData, "name"),
-                State = GetString(sprintData, "state", "Open")
+                Id = GetInt(sprintData, IdField, sprintId),
+                Key = GetString(sprintData, KeyField),
+                Name = GetString(sprintData, NameField),
+                State = GetString(sprintData, StateField, OpenDefault)
             },
             $"sprint {sprintId}",
             () => _logger.LogInformation("Fetching sprint {SprintId}", sprintId),
@@ -123,13 +142,13 @@ public class JiraApiService : IJiraApiService
     {
         // Fix: Add input validation for sprintId
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
-        var jql = $"sprint = {sprintId} ORDER BY created DESC";
+        var jql = $"sprint = {sprintId} {OrderByCreatedDescending}";
         var issues = new List<JiraIssue>();
         return await GetAndParseAsync(
-            $"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100",
+            $"{ApiV3Base}/search?jql={Uri.EscapeDataString(jql)}&maxResults={DefaultMaxResults}",
             root =>
             {
-                if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
+                if (root.TryGetProperty(IssuesField, out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var issueData in issueArray.EnumerateArray())
                     {
@@ -151,13 +170,13 @@ public class JiraApiService : IJiraApiService
     {
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
-        var jql = $"project = {projectKey} ORDER BY created DESC";
+        var jql = $"project = {projectKey} {OrderByCreatedDescending}";
         var issues = new List<JiraIssue>();
         return await GetAndParseAsync(
-            $"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults=100",
+            $"{ApiV3Base}/search?jql={Uri.EscapeDataString(jql)}&maxResults={DefaultMaxResults}",
             root =>
             {
-                if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
+                if (root.TryGetProperty(IssuesField, out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var issueData in issueArray.EnumerateArray())
                     {
@@ -227,7 +246,7 @@ public class JiraApiService : IJiraApiService
         // Fix: Add input validation for issueKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(issueKey, nameof(issueKey));
         return await GetAndParseAsync(
-            $"/rest/api/3/issues/{issueKey}",
+            $"{ApiV3Base}/issues/{issueKey}",
             root => ParseIssueData(root, 0),
             $"issue {issueKey}",
             logStart: null,
@@ -285,14 +304,14 @@ public class JiraApiService : IJiraApiService
         ArgumentException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
 
         var fallback = new JiraSearchResult { StartAt = startAt };
-        var url = $"/rest/api/3/search?jql={Uri.EscapeDataString(jql)}&maxResults={maxResults}&startAt={startAt}";
+        var url = $"{ApiV3Base}/search?jql={Uri.EscapeDataString(jql)}&maxResults={maxResults}&startAt={startAt}";
         return await GetAndParseAsync(
             url,
             root =>
             {
                 fallback.Total = GetInt(root, "total");
 
-                if (root.TryGetProperty("issues", out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
+                if (root.TryGetProperty(IssuesField, out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var issueData in issueArray.EnumerateArray())
                     {
@@ -315,7 +334,7 @@ public class JiraApiService : IJiraApiService
         try
         {
             _logger.LogInformation("Verifying Jira API connection");
-            var response = await _httpClient.GetAsync("/rest/api/3/myself");
+            var response = await _httpClient.GetAsync($"{ApiV3Base}/myself");
 
             if (response.IsSuccessStatusCode)
             {
@@ -371,22 +390,22 @@ public class JiraApiService : IJiraApiService
 
         try
         {
-            var createdStr = GetNestedStringOrNull(issueData, "fields", "created");
-            var updatedStr = GetNestedStringOrNull(issueData, "fields", "updated");
-            var storyPtsStr = GetNestedStringOrNull(issueData, "fields", "customfield_10016") ?? "0";
+            var createdStr = GetNestedStringOrNull(issueData, FieldsField, CreatedField);
+            var updatedStr = GetNestedStringOrNull(issueData, FieldsField, "updated");
+            var storyPtsStr = GetNestedStringOrNull(issueData, FieldsField, "customfield_10016") ?? NumericZeroDefault;
 
             var createdDate = ParseDateTimeInvariant(createdStr) ?? DateTime.MinValue;
             var updatedDate = ParseDateTimeInvariant(updatedStr) ?? DateTime.MinValue;
             var issue = new JiraIssue
             {
-                Key = GetString(issueData, "key"),
-                Id = GetString(issueData, "id"),
-                Summary = GetNestedString(issueData, "fields", "summary"),
-                Description = GetNestedStringOrNull(issueData, "fields", "description"),
-                Status = GetPath(issueData, "fields", "status", "name") ?? "Open",
-                IssueType = GetPath(issueData, "fields", "issuetype", "name") ?? "Task",
-                Assignee = GetPath(issueData, "fields", "assignee", "displayName"),
-                Priority = GetPath(issueData, "fields", "priority", "name") ?? "Medium",
+                Key = GetString(issueData, KeyField),
+                Id = GetString(issueData, IdField),
+                Summary = GetNestedString(issueData, FieldsField, "summary"),
+                Description = GetNestedStringOrNull(issueData, FieldsField, DescriptionField),
+                Status = GetPath(issueData, FieldsField, "status", NameField) ?? OpenDefault,
+                IssueType = GetPath(issueData, FieldsField, "issuetype", NameField) ?? TaskDefault,
+                Assignee = GetPath(issueData, FieldsField, "assignee", DisplayNameField),
+                Priority = GetPath(issueData, FieldsField, "priority", NameField) ?? MediumDefault,
                 StoryPoints = double.TryParse(storyPtsStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var points)
                     ? (int)Math.Round(points, MidpointRounding.AwayFromZero)
                     : 0,
@@ -395,12 +414,12 @@ public class JiraApiService : IJiraApiService
                 SprintId = sprintId
             };
 
-            var dueStr = GetNestedStringOrNull(issueData, "fields", "duedate");
+            var dueStr = GetNestedStringOrNull(issueData, FieldsField, "duedate");
             var dueDate = ParseDateTimeInvariant(dueStr);
             if (dueDate.HasValue)
                 issue.DueDate = dueDate;
 
-            var resStr = GetNestedStringOrNull(issueData, "fields", "resolutiondate");
+            var resStr = GetNestedStringOrNull(issueData, FieldsField, "resolutiondate");
             var resDate = ParseDateTimeInvariant(resStr);
             if (resDate.HasValue)
                 issue.ResolutionDate = resDate;
@@ -415,7 +434,7 @@ public class JiraApiService : IJiraApiService
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static string GetString(JsonElement element, string property, string defaultValue = "")
+    private static string GetString(JsonElement element, string property, string defaultValue = EmptyDefault)
         => element.TryGetProperty(property, out var p) ? p.GetString() ?? defaultValue : defaultValue;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -432,7 +451,7 @@ public class JiraApiService : IJiraApiService
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static string GetNestedString(JsonElement element, string prop1, string prop2, string defaultValue = "")
+    private static string GetNestedString(JsonElement element, string prop1, string prop2, string defaultValue = EmptyDefault)
     {
         if (element.TryGetProperty(prop1, out var p1) && p1.TryGetProperty(prop2, out var p2))
             return p2.GetString() ?? defaultValue;
@@ -547,7 +566,7 @@ public class JiraApiService : IJiraApiService
 
             try
             {
-                var result = await SearchByJqlAsync($"project = {projectKey} ORDER BY created DESC", pageSize, startAt);
+                var result = await SearchByJqlAsync($"project = {projectKey} {OrderByCreatedDescending}", pageSize, startAt);
                 pageIssues = result.Issues;
             }
             catch (Exception ex)
@@ -595,7 +614,7 @@ public class JiraApiService : IJiraApiService
 
             try
             {
-                var result = await SearchByJqlAsync($"sprint = {sprintId} ORDER BY created DESC", pageSize, startAt);
+                var result = await SearchByJqlAsync($"sprint = {sprintId} {OrderByCreatedDescending}", pageSize, startAt);
                 pageIssues = result.Issues;
             }
             catch (Exception ex)
