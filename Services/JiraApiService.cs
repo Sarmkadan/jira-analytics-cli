@@ -20,6 +20,14 @@ namespace JiraAnalyticsCli.Services;
 public class JiraApiService : IJiraApiService
 {
     private const string ApiV3Base = "/rest/api/3";
+    private const string ProjectsRoute = "/projects";
+    private const string SprintsRoute = "/sprints";
+    private const string SearchRoute = "/search";
+    private const string IssuesRoute = "/issues";
+    private const string MyselfRoute = "/myself";
+    private const string JqlParam = "jql";
+    private const string MaxResultsParam = "maxResults";
+    private const string StartAtParam = "startAt";
     private const string CreatedField = "created";
     private const string DescriptionField = "description";
     private const string DisplayNameField = "displayName";
@@ -54,7 +62,7 @@ public class JiraApiService : IJiraApiService
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         return await GetAndParseAsync(
-            $"{ApiV3Base}/projects/{projectKey}",
+            $"{ApiV3Base}{ProjectsRoute}/{projectKey}",
             root =>
             {
                 var createdStr = GetString(root, CreatedField);
@@ -86,7 +94,7 @@ public class JiraApiService : IJiraApiService
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         var sprints = new List<Sprint>();
         return await GetAndParseAsync(
-            $"{ApiV3Base}/projects/{projectKey}/sprints",
+            $"{ApiV3Base}{ProjectsRoute}/{projectKey}{SprintsRoute}",
             root =>
             {
                 if (root.TryGetProperty("values", out var sprintArray) && sprintArray.ValueKind == JsonValueKind.Array)
@@ -124,7 +132,7 @@ public class JiraApiService : IJiraApiService
         // Fix: Add input validation for sprintId
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
         return await GetAndParseAsync(
-            $"{ApiV3Base}/sprints/{sprintId}",
+            $"{ApiV3Base}{SprintsRoute}/{sprintId}",
             sprintData => new Sprint
             {
                 Id = GetInt(sprintData, IdField, sprintId),
@@ -145,7 +153,7 @@ public class JiraApiService : IJiraApiService
         var jql = $"sprint = {sprintId} {OrderByCreatedDescending}";
         var issues = new List<JiraIssue>();
         return await GetAndParseAsync(
-            $"{ApiV3Base}/search?jql={Uri.EscapeDataString(jql)}&maxResults={DefaultMaxResults}",
+            $"{ApiV3Base}{SearchRoute}?{JqlParam}={Uri.EscapeDataString(jql)}&{MaxResultsParam}={DefaultMaxResults}",
             root =>
             {
                 if (root.TryGetProperty(IssuesField, out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
@@ -173,7 +181,7 @@ public class JiraApiService : IJiraApiService
         var jql = $"project = {projectKey} {OrderByCreatedDescending}";
         var issues = new List<JiraIssue>();
         return await GetAndParseAsync(
-            $"{ApiV3Base}/search?jql={Uri.EscapeDataString(jql)}&maxResults={DefaultMaxResults}",
+            $"{ApiV3Base}{SearchRoute}?{JqlParam}={Uri.EscapeDataString(jql)}&{MaxResultsParam}={DefaultMaxResults}",
             root =>
             {
                 if (root.TryGetProperty(IssuesField, out var issueArray) && issueArray.ValueKind == JsonValueKind.Array)
@@ -246,7 +254,7 @@ public class JiraApiService : IJiraApiService
         // Fix: Add input validation for issueKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(issueKey, nameof(issueKey));
         return await GetAndParseAsync(
-            $"{ApiV3Base}/issues/{issueKey}",
+            $"{ApiV3Base}{IssuesRoute}/{issueKey}",
             root => ParseIssueData(root, 0),
             $"issue {issueKey}",
             logStart: null,
@@ -304,7 +312,7 @@ public class JiraApiService : IJiraApiService
         ArgumentException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
 
         var fallback = new JiraSearchResult { StartAt = startAt };
-        var url = $"{ApiV3Base}/search?jql={Uri.EscapeDataString(jql)}&maxResults={maxResults}&startAt={startAt}";
+        var url = $"{ApiV3Base}{SearchRoute}?{JqlParam}={Uri.EscapeDataString(jql)}&{MaxResultsParam}={maxResults}&{StartAtParam}={startAt}";
         return await GetAndParseAsync(
             url,
             root =>
@@ -334,7 +342,7 @@ public class JiraApiService : IJiraApiService
         try
         {
             _logger.LogInformation("Verifying Jira API connection");
-            var response = await _httpClient.GetAsync($"{ApiV3Base}/myself");
+            var response = await _httpClient.GetAsync($"{ApiV3Base}{MyselfRoute}");
 
             if (response.IsSuccessStatusCode)
             {
