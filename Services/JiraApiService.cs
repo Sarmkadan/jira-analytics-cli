@@ -52,6 +52,10 @@ public class JiraApiService : IJiraApiService
 
     public JiraApiService(IHttpClientFactory httpClientFactory, ICliConfig config, ILogger<JiraApiService> logger)
     {
+        ArgumentNullException.ThrowIfNull(httpClientFactory, nameof(httpClientFactory));
+        ArgumentNullException.ThrowIfNull(config, nameof(config));
+        ArgumentNullException.ThrowIfNull(logger, nameof(logger));
+
         _httpClient = httpClientFactory.CreateClient("jira");
         _config = config;
         _logger = logger;
@@ -309,7 +313,9 @@ public class JiraApiService : IJiraApiService
 
     public async Task<JiraSearchResult> SearchByJqlAsync(string jql, int maxResults = 50, int startAt = 0)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxResults, nameof(maxResults));
+        ArgumentOutOfRangeException.ThrowIfNegative(startAt, nameof(startAt));
 
         var fallback = new JiraSearchResult { StartAt = startAt };
         var url = $"{ApiV3Base}{SearchRoute}?{JqlParam}={Uri.EscapeDataString(jql)}&{MaxResultsParam}={maxResults}&{StartAtParam}={startAt}";
@@ -512,8 +518,8 @@ public class JiraApiService : IJiraApiService
     /// <returns>Async stream of issues.</returns>
     public async IAsyncEnumerable<JiraIssue> StreamIssuesByJqlAsync(string jql, int pageSize = 100)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(pageSize, 0, nameof(pageSize));
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize, nameof(pageSize));
 
         _logger.LogInformation("Streaming issues by JQL (pageSize={PageSize}): {Jql}", pageSize, jql);
 
@@ -561,7 +567,7 @@ public class JiraApiService : IJiraApiService
     public async IAsyncEnumerable<JiraIssue> StreamProjectIssuesAsync(string projectKey, int pageSize = 100)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(pageSize, 0, nameof(pageSize));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize, nameof(pageSize));
 
         _logger.LogInformation("Streaming issues for project {ProjectKey} (pageSize={PageSize})", projectKey, pageSize);
 
@@ -609,7 +615,7 @@ public class JiraApiService : IJiraApiService
     public async IAsyncEnumerable<JiraIssue> StreamSprintIssuesAsync(int sprintId, int pageSize = 100)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(pageSize, 0, nameof(pageSize));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize, nameof(pageSize));
 
         _logger.LogInformation("Streaming issues for sprint {SprintId} (pageSize={PageSize})", sprintId, pageSize);
 
