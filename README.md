@@ -221,6 +221,43 @@ if (formatErrors.Count == 0)
 }
 ```
 
+## AnalyticsService
+
+`AnalyticsService` retrieves Jira project data, calculates delivery, team, quality, and flow metrics, and returns structured result models for reporting or further processing. It depends on `IJiraApiService` for Jira data, `IMetricsRepository`, and `ILogger<AnalyticsService>`; these dependencies are normally supplied through dependency injection.
+
+Its public methods are:
+
+- `AnalyzeSprints(projectKey, sprintCount)` — analyzes recent closed sprints, including velocity, completion, defects, overdue work, trends, and overall health. For each sprint, it fetches associated issues to calculate defects count, overdue issue count, team size, and average cycle time.
+- `AnalyzeTeam(projectKey)` — calculates developer productivity and workload distribution by assigning issues to team members based on assignee, then computing per-developer productivity metrics and identifying top/low performers.
+- `AnalyzeQuality(projectKey)` — calculates defect totals and rates across all closed sprints by counting issues with IssueType == "Bug", and identifies high-risk components (those with the highest concentration of bugs).
+- `AnalyzeVelocityTrend(projectKey, sprintCount)` — returns per-sprint velocities for the specified number of most recent closed sprints and classifies the recent trend as increasing, decreasing, or stable by comparing velocity averages between the first and second halves of the date range.
+- `AnalyzeOverdueIssues(projectKey)` — returns overdue issues with total count, critical count (high-priority overdue issues), and average days overdue calculated from issues past their due date.
+- `AnalyzeCycleTime(projectKey)` — calculates average, median, P50, P75, and P90 cycle times for resolved issues (those with ResolutionDate) and includes a per-issue breakdown with issue key, summary, and timeline dates.
+
+All methods are asynchronous. Invalid or empty project keys are rejected before analysis; Jira or calculation failures are logged and produce an empty or partial result rather than propagating the caught exception.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+
+// Dependencies are typically provided by the application's DI container.
+IAnalyticsService analytics = new AnalyticsService(
+    jiraApiService,
+    metricsRepository,
+    logger);
+
+var sprintAnalysis = await analytics.AnalyzeSprints("PROJ", sprintCount: 5);
+
+Console.WriteLine($"Health: {sprintAnalysis.OverallHealth}");
+Console.WriteLine($"Average velocity: {sprintAnalysis.AverageVelocity:F1}");
+
+foreach (var metric in sprintAnalysis.Metrics)
+{
+    Console.WriteLine($"{metric.SprintName}: {metric.GetVelocity():F1}");
+}
+```
+
 ## AnalyticsServiceValidation
 
 `AnalyticsServiceValidation` offers a set of static helper methods that validate an `AnalyticsService` instance and the parameters of its public API. The methods ensure that inputs such as project keys, sprint counts, dates, numeric values, and collections meet basic business rules before the service performs any calculations.
