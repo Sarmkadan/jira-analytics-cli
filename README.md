@@ -534,3 +534,33 @@ var jql = $"{projectJql} AND {dateJql} ORDER BY updated DESC";
 JqlQueryResult result = await service.ExecuteQueryAsync(jql, maxResults: 20);
 Console.WriteLine(JqlQueryService.FormatAsText(result));
 ```
+
+## TeamComparisonService
+
+`TeamComparisonService` compares delivery and quality metrics across Jira projects. It analyzes each project's recent closed sprints in parallel, creates a `TeamProjectSnapshot` for every project with available results, and identifies the teams with the highest average velocity, lowest defect rate, and highest average completion rate.
+
+Its public methods are:
+
+- `CompareTeamsAsync(projectKeys, sprintCount = 5, cancellationToken = default)` — returns a `TeamComparisonReport` containing the per-project snapshots and ranking winners. Blank project keys are ignored and duplicate keys are removed case-insensitively. At least one project key and a positive sprint count are required.
+- `FormatAsText(report)` — formats a report as a console-friendly table followed by its ranking winners. This method is static.
+- `RenderMarkdownTable(report)` — renders the per-project metrics as a GitHub-flavored Markdown table. This method is static.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+
+// Dependencies are typically supplied by the application's DI container.
+ITeamComparisonService comparisonService = new TeamComparisonService(
+    analyticsService,
+    logger);
+
+var report = await comparisonService.CompareTeamsAsync(
+    new[] { "PLATFORM", "MOBILE", "WEB" },
+    sprintCount: 5);
+
+Console.WriteLine(TeamComparisonService.FormatAsText(report));
+
+var markdown = TeamComparisonService.RenderMarkdownTable(report);
+await File.WriteAllTextAsync("team-comparison.md", markdown);
+```
