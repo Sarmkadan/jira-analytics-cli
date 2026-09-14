@@ -634,3 +634,49 @@ var teamAnalysis = await analyticsService.AnalyzeTeam("PROJ");
 var html = reportService.BuildHtml("PROJ", sprintAnalysis, teamAnalysis);
 await File.WriteAllTextAsync("./reports/custom-report.html", html);
 ```
+
+## SnapshotStore
+
+`SnapshotStore` is a file-backed implementation of `ISnapshotStore` that persists `BurndownSnapshot` instances across CLI invocations so historical trend analysis can be performed between separate runs of the tool. It keeps one JSON-lines (`.jsonl`) file per sprint under a configurable data directory; each line is an independently parseable JSON-serialized `BurndownSnapshot`, keyed for lookup by the file's `SprintId` and ordered within the file by `Timestamp`.
+
+Appending is append-only, so a run that is killed mid-write can at most corrupt its own last line, which `LoadAsync` skips over with a logged warning rather than failing the whole load. The data directory resolves in this order: the `dataDirectory` constructor argument, then the `JIRA_SNAPSHOT_DIR` environment variable, then a `snapshots` directory relative to the current working directory.
+
+Its public methods are:
+
+- `AppendAsync(snapshot, cancellationToken = default)` — validates the snapshot and appends it as a new JSON line to the file for its `SprintId`, creating the data directory if needed. Writes are serialized through a process-wide lock. Throws `ArgumentNullException` when the snapshot is null and `ArgumentException` when it fails validation.
+- `LoadAsync(sprintId, cancellationToken = default)` — loads the persisted snapshot series for a sprint, ordered chronologically (oldest first). Corrupt, empty, or invalid lines are skipped with a logged warning; returns an empty list when no file exists yet. Throws `ArgumentOutOfRangeException` when `sprintId` is not positive.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Services;
+using System;
+using System.Threading.Tasks;
+
+// Dependencies are typically provided by the application's DI container.
+ISnapshotStore store = new SnapshotStore(logger);
+
+// Capture a point-in-time burndown snapshot and persist it
+var snapshot = new BurndownSnapshot
+{
+    Timestamp = DateTime.UtcNow,
+    SprintId = 123,
+    TotalStoryPoints = 50,
+    CompletedStoryPoints = 25,
+    RemainingStoryPoints = 25,
+    TotalIssueCount = 20,
+    CompletedIssueCount = 10,
+    RemainingIssueCount = 10,
+    ScopeChanges = 0
+};
+await store.AppendAsync(snapshot);
+
+// Load the full history for the sprint, oldest first
+var history = await store.LoadAsync(sprintId: 123);
+Console.WriteLine($"Loaded {history.Count} snapshots for sprint 123");
+foreach (var entry in history)
+{
+    Console.WriteLine($"{entry.Timestamp:O} | {entry.CompletedStoryPoints}/{entry.TotalStoryPoints} pts");
+}
+```
