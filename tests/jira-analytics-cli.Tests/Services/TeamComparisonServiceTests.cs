@@ -62,6 +62,42 @@ public class TeamComparisonServiceTests
     }
 
     /// <summary>
+    /// Tests that the constructor throws an ArgumentNullException when the analytics service is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_ThrowsArgumentNullException_WhenAnalyticsServiceIsNull()
+    {
+        var logger = Mock.Of<ILogger<TeamComparisonService>>();
+        var exception = Assert.Throws<ArgumentNullException>(() => new TeamComparisonService(null!, logger));
+        Assert.Equal("analyticsService", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the constructor throws an ArgumentNullException when the logger is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_ThrowsArgumentNullException_WhenLoggerIsNull()
+    {
+        var analyticsService = Mock.Of<IAnalyticsService>();
+        var exception = Assert.Throws<ArgumentNullException>(() => new TeamComparisonService(analyticsService, null!));
+        Assert.Equal("logger", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that CompareTeamsAsync throws an ArgumentNullException when project keys are null.
+    /// </summary>
+    [Fact]
+    public async Task CompareTeamsAsync_ThrowsArgumentNullException_WhenProjectKeysIsNull()
+    {
+        var analyticsService = Mock.Of<IAnalyticsService>();
+        var logger = Mock.Of<ILogger<TeamComparisonService>>();
+        var service = new TeamComparisonService(analyticsService, logger);
+
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => service.CompareTeamsAsync(null!));
+        Assert.Equal("projectKeys", exception.ParamName);
+    }
+
+    /// <summary>
     /// Tests that the CompareTeamsAsync method returns both snapshots when given two projects.
     /// </summary>
     [Fact]
