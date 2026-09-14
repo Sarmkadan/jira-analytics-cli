@@ -599,3 +599,38 @@ await reportService.GenerateCycleTimeReportAsync(
     cycleTimeResult,
     outputPath: "./reports/cycle-time-report.md");
 ```
+
+## HtmlReportService
+
+`HtmlReportService` generates self-contained, responsive HTML reports with embedded CSS from sprint and team analytics data. The output file requires no external resources and can be opened directly in any browser.
+
+Its public methods are:
+
+- `GenerateReportAsync(projectKey, sprintCount, outputPath)` — runs sprint and team analysis in parallel, builds a styled HTML report, and writes it to the given output path (creating the directory if needed). Blank project keys or output paths are rejected, and a non-positive sprint count throws `ArgumentOutOfRangeException`.
+- `BuildHtml(projectKey, sprintAnalysis, teamAnalysis)` — builds the HTML string from already-computed `SprintAnalysisResult` and `TeamAnalysisResult` data without performing any analysis. This method is synchronous and static-free; it throws `ArgumentNullException` if either result is null.
+
+The generated report includes KPI cards (average velocity, velocity trend, overall health, issues delivered, bugs found, overdue issues), a sprint breakdown table, a team workload distribution section, and a top performers section. All dynamic values are HTML-encoded to prevent injection in generated reports.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using System.Threading.Tasks;
+
+// Dependencies are typically provided by the application's DI container.
+IHtmlReportService reportService = new HtmlReportService(
+    analyticsService,
+    logger);
+
+// Generate a full HTML report (runs sprint and team analysis internally)
+await reportService.GenerateReportAsync(
+    "PROJ",
+    sprintCount: 5,
+    outputPath: "./reports/sprint-report.html");
+
+// Build HTML from already-computed analysis results
+var sprintAnalysis = await analyticsService.AnalyzeSprints("PROJ", sprintCount: 5);
+var teamAnalysis = await analyticsService.AnalyzeTeam("PROJ");
+var html = reportService.BuildHtml("PROJ", sprintAnalysis, teamAnalysis);
+await File.WriteAllTextAsync("./reports/custom-report.html", html);
+```
