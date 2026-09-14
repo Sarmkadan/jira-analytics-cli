@@ -564,3 +564,38 @@ Console.WriteLine(TeamComparisonService.FormatAsText(report));
 var markdown = TeamComparisonService.RenderMarkdownTable(report);
 await File.WriteAllTextAsync("team-comparison.md", markdown);
 ```
+
+## MarkdownReportService
+
+`MarkdownReportService` generates Markdown reports from sprint and team analytics data, as well as cycle time reports. The output is a plain text Markdown file that can be viewed in any Markdown viewer.
+
+Its public methods are:
+
+- `GenerateReportAsync(projectKey, sprintCount, outputPath)` — generates a Markdown report containing sprint and team analytics for the specified project and number of sprints, writing it to the given output path.
+- `GenerateCycleTimeReportAsync(projectKey, cycleTimeResult, outputPath)` — generates a Markdown report for cycle time analysis, writing it to the given output path.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Services;
+using JiraAnalyticsCli.Models;
+using System.Threading.Tasks;
+
+// Dependencies are typically provided by the application's DI container.
+IMarkdownReportService reportService = new MarkdownReportService(
+    analyticsService,
+    logger);
+
+// Generate a sprint and team analytics report
+await reportService.GenerateReportAsync(
+    "PROJ",
+    sprintCount: 5,
+    outputPath: "./reports/sprint-report.md");
+
+// Generate a cycle time report
+var cycleTimeResult = await analyticsService.AnalyzeCycleTime("PROJ");
+await reportService.GenerateCycleTimeReportAsync(
+    "PROJ",
+    cycleTimeResult,
+    outputPath: "./reports/cycle-time-report.md");
+```
