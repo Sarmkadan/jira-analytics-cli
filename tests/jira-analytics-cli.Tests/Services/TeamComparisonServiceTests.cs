@@ -199,4 +199,28 @@ public class TeamComparisonServiceTests
         report.Teams.First().ProjectKey.Should().Be("EMPTY");
         report.Teams.First().OverallHealth.Should().Be("Unknown");
     }
+
+    /// <summary>
+    /// Tests that the FormatAsText method throws an ArgumentNullException when given a null report.
+    /// </summary>
+    [Fact]
+    public void FormatAsText_WithNullReport_ThrowsArgumentNullException()
+    {
+        var act = () => TeamComparisonService.FormatAsText(null!);
+
+        act.Should().Throw<ArgumentNullException>()
+            .Which.ParamName.Should().Be("report");
+    }
+
+    /// <summary>
+    /// Tests that the RenderMarkdownTable method throws an ArgumentNullException when given a null report.
+    /// </summary>
+    [Fact]
+    public void RenderMarkdownTable_WithNullReport_ThrowsArgumentNullException()
+    {
+        var act = () => TeamComparisonService.RenderMarkdownTable(null!);
+
+        act.Should().Throw<ArgumentNullException>()
+            .Which.ParamName.Should().Be("report");
+    }
 }
