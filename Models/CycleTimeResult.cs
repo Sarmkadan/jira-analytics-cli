@@ -8,7 +8,6 @@ using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
 
-
 /// <summary>
 /// Represents cycle time analysis results for a project
 /// </summary>
@@ -20,7 +19,6 @@ public class CycleTimeResult
 
     /// <summary>Gets or sets the average cycle time in days.</summary>
     public double AverageCycleTime { get; set; }
-
 
     /// <summary>Gets or sets the median cycle time in days.</summary>
     public double MedianCycleTime { get; set; }
@@ -62,6 +60,7 @@ public class IssueCycleTime
     /// <see cref="ResolutionDate"/> yields a correct elapsed duration regardless of which
     /// time zone or DST offset was in effect when either timestamp was captured.
     /// </summary>
+    [JsonPropertyName("createdDate")]
     public DateTimeOffset CreatedDate
     {
         get => _createdDate;
@@ -72,6 +71,7 @@ public class IssueCycleTime
     /// Gets or sets the resolution date (if resolved), always normalized to UTC for the same
     /// reason as <see cref="CreatedDate"/>.
     /// </summary>
+    [JsonPropertyName("resolutionDate")]
     public DateTimeOffset? ResolutionDate
     {
         get => _resolutionDate;
