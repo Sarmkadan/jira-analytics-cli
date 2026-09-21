@@ -13,39 +13,21 @@ namespace JiraAnalyticsCli.Models;
 /// </summary>
 public class BurndownSnapshot
 {
-    private DateTime _timestamp;
+    private DateTimeOffset _timestamp;
 
     /// <summary>
     /// Gets or sets the point in time this snapshot was captured, always normalized to UTC.
-    /// Jira returns ISO-8601 timestamps with numeric offsets and other parts of the pipeline
-    /// use local wall-clock values; storing everything as UTC keeps burn-rate and duration
-    /// math correct across DST transitions, since plain <see cref="DateTime"/> subtraction
-    /// ignores <see cref="DateTime.Kind"/> entirely and silently produces wrong deltas when
-    /// the two operands were captured under different offsets.
+    /// Storing timestamps as <see cref="DateTimeOffset"/> with UTC offset ensures correct
+    /// burn-rate and duration math across DST transitions, as the offset information is
+    /// preserved and used in arithmetic operations.
     /// </summary>
     [Required]
     [JsonPropertyName("timestamp")]
-    [JsonConverter(typeof(Utils.UtcDateTimeJsonConverter))]
-    public DateTime Timestamp
+    public DateTimeOffset Timestamp
     {
         get => _timestamp;
-        set => _timestamp = NormalizeToUtc(value);
+        set => _timestamp = value.ToUniversalTime();
     }
-
-    /// <summary>
-    /// Converts a <see cref="DateTime"/> of any <see cref="DateTimeKind"/> to an equivalent
-    /// UTC value. <see cref="DateTimeKind.Unspecified"/> values are treated as already being
-    /// UTC (the convention used throughout this codebase), while <see cref="DateTimeKind.Local"/>
-    /// values are converted using the host's time zone rules.
-    /// </summary>
-    /// <param name="value">The value to normalize.</param>
-    /// <returns>An equivalent <see cref="DateTime"/> with <see cref="DateTime.Kind"/> set to <see cref="DateTimeKind.Utc"/>.</returns>
-    private static DateTime NormalizeToUtc(DateTime value) => value.Kind switch
-    {
-        DateTimeKind.Utc => value,
-        DateTimeKind.Local => value.ToUniversalTime(),
-        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc),
-    };
 
     [Required]
     [JsonPropertyName("sprintId")]
@@ -92,7 +74,7 @@ public class BurndownSnapshot
     /// <param name="sprintEnd">The end date of the sprint</param>
     /// <returns>Projected completion percentage</returns>
     /// <exception cref="ArgumentException">Thrown when the snapshot contains validation errors</exception>
-    public double GetProjectedCompletionPercentage(DateTime sprintEnd)
+    public double GetProjectedCompletionPercentage(DateTimeOffset sprintEnd)
     {
         // Simple linear projection based on current burn rate
         var daysRemaining = (sprintEnd - Timestamp).TotalDays;
@@ -121,7 +103,7 @@ public class BurndownSnapshot
     /// <param name="sprintEnd">The end date of the sprint</param>
     /// <returns>True if the sprint is on track</returns>
     /// <exception cref="ArgumentException">Thrown when the snapshot contains validation errors</exception>
-    public bool IsOnTrack(DateTime sprintEnd)
+    public bool IsOnTrack(DateTimeOffset sprintEnd)
     {
         // Check if we are on track to complete the sprint
         var daysTotal = (sprintEnd - (Timestamp.AddDays(-7))).TotalDays; // Rough estimate
