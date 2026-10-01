@@ -309,7 +309,7 @@ public static class BurndownSnapshotExtensions
         }
 
         return snapshots
-            .Select(s => (ITimeSeriesPoint)new TimeSeriesPoint(s.Timestamp, s.CompletedStoryPoints))
+            .Select(s => (ITimeSeriesPoint)new TimeSeriesPoint(s.Timestamp.UtcDateTime, s.CompletedStoryPoints))
             .ToList();
     }
 

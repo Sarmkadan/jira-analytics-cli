@@ -26,7 +26,7 @@ public static class CycleTimeResultExtensions
         ArgumentNullException.ThrowIfNull(issueCycleTimes);
 
         return issueCycleTimes
-            .Select(i => (ITimeSeriesPoint)new TimeSeriesPoint(i.CreatedDate, i.CycleTimeDays))
+            .Select(i => (ITimeSeriesPoint)new TimeSeriesPoint(i.CreatedDate.UtcDateTime, i.CycleTimeDays))
             .ToList();
     }
 
