@@ -72,7 +72,8 @@ public class JiraProject
     public double GetAverageVelocity()
     {
         var completedSprints = GetRecentSprints(5);
-        if (!completedSprints.Any()) return 0;
+        if (!completedSprints.Any())
+            return 0;
 
         return completedSprints.Average(s => s.GetVelocity());
     }
@@ -104,10 +105,12 @@ public class JiraProject
 
     public double GetProjectHealthScore()
     {
-        if (!MetricsHistory.Any()) return 0;
+        if (!MetricsHistory.Any())
+            return 0;
 
         var recentMetrics = MetricsHistory.OrderByDescending(m => m.EndDate).Take(3);
-        if (!recentMetrics.Any()) return 0;
+        if (!recentMetrics.Any())
+            return 0;
 
         var avgCompletion = recentMetrics.Average(m => m.GetCompletionRate());
         var avgQuality = recentMetrics.Average(m => m.GetQualityScore());
