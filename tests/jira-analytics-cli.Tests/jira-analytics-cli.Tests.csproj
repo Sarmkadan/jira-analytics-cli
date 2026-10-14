@@ -71,6 +71,13 @@
     <Compile Include="Services\BurndownCalculatorTests.cs" />
     <Compile Include="..\..\Services\BurndownCalculator.cs" />
     <Compile Include="..\..\Services\ISnapshotStore.cs" />
+    <!-- Jira settings validation -->
+    <Compile Include="..\..\Configuration\JiraOptions.cs" />
+    <Compile Include="..\..\Configuration\JiraSettingLocations.cs" />
+    <Compile Include="..\..\Configuration\JiraOptionsValidator.cs" />
+    <Compile Include="..\..\Configuration\JiraOptionsLoader.cs" />
+    <Compile Include="Configuration\JiraOptionsValidatorTests.cs" />
+    <Compile Include="Configuration\JiraOptionsLoaderTests.cs" />
   </ItemGroup>
 
 </Project>

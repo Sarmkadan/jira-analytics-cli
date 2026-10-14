@@ -19,11 +19,13 @@ public interface IConfigurationProvider
 public class AppConfigurationProvider : IConfigurationProvider
 {
     private readonly ILogger<AppConfigurationProvider> _logger;
+    private readonly JiraOptions _jiraOptions;
     private const string ConfigFileName = "appsettings.json";
 
-    public AppConfigurationProvider(ILogger<AppConfigurationProvider> logger)
+    public AppConfigurationProvider(ILogger<AppConfigurationProvider> logger, JiraOptions jiraOptions)
     {
         _logger = logger;
+        _jiraOptions = jiraOptions;
     }
 
     public ICliConfig LoadConfiguration()
@@ -41,6 +43,12 @@ public class AppConfigurationProvider : IConfigurationProvider
 
         // Load from environment variables (highest priority, overrides JSON file)
         LoadFromEnvironment(config);
+
+        // Jira settings resolved at startup (CLI flags > env > appsettings) take precedence over the values above
+        config.JiraBaseUrl = _jiraOptions.BaseUrl;
+        config.JiraApiToken = _jiraOptions.ApiToken;
+        config.JiraApiTimeoutSeconds = _jiraOptions.TimeoutSeconds;
+        config.DefaultProject = _jiraOptions.ProjectKey;
 
         // Validate configuration
         try
