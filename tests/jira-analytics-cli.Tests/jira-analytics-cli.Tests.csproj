@@ -67,6 +67,10 @@
     <Compile Include="..\..\Services\JiraClient.cs" />
     <!-- JiraClient tests -->
     <Compile Include="Services\JiraClientTests.cs" />
+    <!-- BurndownCalculator tests -->
+    <Compile Include="Services\BurndownCalculatorTests.cs" />
+    <Compile Include="..\..\Services\BurndownCalculator.cs" />
+    <Compile Include="..\..\Services\ISnapshotStore.cs" />
   </ItemGroup>
 
 </Project>
