@@ -160,6 +160,370 @@ return 0;
 
 Run it with `dotnet run`.
 
+### 7. Reports and Output Formats
+
+The CLI supports multiple output formats for reports and analytics data. Below are examples of each format with sample commands and truncated output.
+
+#### Console Table (Default Text Report)
+The `analytics` command produces a formatted text table by default:
+
+```bash
+jira-analytics-cli analytics --project MYPROJ --sprints 3
+```
+
+Sample output:
+```
+╔════════════════════════════════════════════════════════════════╗
+║       JIRA ANALYTICS REPORT - SPRINT PERFORMANCE SUMMARY       ║
+╚════════════════════════════════════════════════════════════════╝
+
+📊 OVERALL METRICS
+──────────────────────────────────────────────────────────────────────
+Average Velocity:      42.50 pts/sprint
+Velocity Trend:        ↑ 5.2%
+Overall Health:        Good
+
+📈 SPRINT BREAKDOWN
+──────────────────────────────────────────────────────────────────────
+Sprint: MYPROJ Sprint 41
+  Planned:       45 pts
+  Completed:     38 pts (84.4%)
+  Issues:        15/18
+  Quality:       78.2/100
+  Cycle Time:    3.2 days
+  Status:        Healthy
+```
+
+#### Markdown Report
+Generate a Markdown report using the `report-md` command:
+
+```bash
+jira-analytics-cli report-md --project MYPROJ --sprints 3 --output reports/sprint-report.md
+```
+
+Sample content of `sprint-report.md`:
+```markdown
+# Jira Analytics Report
+
+**Generated:** 2026-10-14 14:30:00 UTC
+
+## Sprint Metrics
+
+| Sprint | Planned | Completed | Completion % | Quality | Health |
+|--------|---------|-----------|--------------|---------|--------|
+| MYPROJ Sprint 41 | 45 | 38 | 84.4% | 78.2 | Healthy |
+| MYPROJ Sprint 40 | 50 | 47 | 94.0% | 85.6 | Excellent |
+| MYPROJ Sprint 39 | 42 | 35 | 83.3% | 72.1 | Healthy |
+
+## Summary
+- **Sprints Analyzed:** 3
+- **Average Velocity:** 42.50 pts/sprint
+- **Trend:** Positive (5.2%)
+- **Health Status:** Good
+```
+
+#### HTML Report
+Generate a self-contained HTML report using the `report` command:
+
+```bash
+jira-analytics-cli report --project MYPROJ --sprints 3 --output reports/sprint-report.html
+```
+
+The HTML report includes styled KPI cards, sprint breakdown tables, and team performance sections. Open the file in any browser to view the responsive report.
+
+#### JSON Export
+Export analytics data as JSON using the `export` command:
+
+```bash
+jira-analytics-cli export --project MYPROJ --format json --output reports/analytics.json
+```
+
+Sample output (truncated):
+```json
+{
+  "AverageVelocity": 42.5,
+  "TrendPercentage": 5.2,
+  "OverallHealth": "Good",
+  "Metrics": [
+    {
+      "SprintName": "MYPROJ Sprint 41",
+      "PlannedStoryPoints": 45,
+      "CompletedStoryPoints": 38,
+      "TotalIssueCount": 18,
+      "CompletedIssueCount": 15,
+      "AverageCycleTime": 3.2,
+      "DefectsCount": 3
+    }
+  ]
+}
+```
+
+You can pipe JSON output to `jq` for filtering:
+```bash
+jira-analytics-cli export --project MYPROJ --format json --output - | jq '.Metrics[] | select(.CompletedStoryPoints > 40)'
+```
+
+#### CSV Export
+Export sprint metrics to CSV using the `export-csv` command:
+
+```bash
+jira-analytics-cli export-csv --project MYPROJ --output reports/sprint-metrics.csv
+```
+
+Sample content of `sprint-metrics.csv`:
+```csv
+Sprint Name,Planned Points,Completed Points,Completion Rate %,Quality Score,Velocity,Health Status
+MYPROJ Sprint 41,45,38,84.4,78.2,7.6,Healthy
+MYPROJ Sprint 40,50,47,94.0,85.6,9.4,Excellent
+MYPROJ Sprint 39,42,35,83.3,72.1,7.0,Healthy
+```
+
+Import CSV into a spreadsheet application (Excel, Google Sheets, etc.) for further analysis.
+
+#### Image Charts
+Generate visual charts as PNG or JPG using the `export` command:
+
+```bash
+jira-analytics-cli export --project MYPROJ --format png --output charts/velocity-chart.png
+```
+
+Supported image formats: `png`, `jpg`, `svg`.
+
+#### Burndown Charts
+Generate burndown charts for a specific sprint:
+
+```bash
+jira-analytics-cli burndown --project MYPROJ --sprint-id 4321 --output charts/burndown-4321.png
+```
+
+Burndown charts support formats: `png`, `jpg`, `svg`, `json`.
+
+### 8. Using in CI
+
+Example GitHub Actions workflow step that generates a sprint report as a job artifact:
+
+```yaml
+name: Generate Sprint Report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * MON'  # Every Monday at 9 AM
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Configure Jira Credentials
+        run: |
+          echo "JIRA_URL=${{ secrets.JIRA_URL }}" >> $GITHUB_ENV
+          echo "JIRA_API_TOKEN=${{ secrets.JIRA_API_TOKEN }}" >> $GITHUB_ENV
+      
+      - name: Build and Publish
+        run: |
+          dotnet build -c Release
+          dotnet pack JiraAnalyticsCli.csproj -c Release -o ./nupkg
+          dotnet tool install --global --add-source ./nupkg jira-analytics-cli
+      
+      - name: Generate Sprint Report
+        run: |
+          jira-analytics-cli report --project MYPROJ --sprints 5 --output jira-report.html
+      
+      - name: Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-report
+          path: jira-report.html
+```
+
+## SprintMetricExtensionsTests
+
+The CLI supports multiple output formats for reports and analytics data. Below are examples of each format with sample commands and truncated output.
+
+#### Console Table (Default Text Report)
+The `analytics` command produces a formatted text table by default:
+
+```bash
+jira-analytics-cli analytics --project MYPROJ --sprints 3
+```
+
+Sample output:
+```
+╔════════════════════════════════════════════════════════════════╗
+║       JIRA ANALYTICS REPORT - SPRINT PERFORMANCE SUMMARY       ║
+╚════════════════════════════════════════════════════════════════╝
+
+📊 OVERALL METRICS
+──────────────────────────────────────────────────────────────────────
+Average Velocity:      42.50 pts/sprint
+Velocity Trend:        ↑ 5.2%
+Overall Health:        Good
+
+📈 SPRINT BREAKDOWN
+──────────────────────────────────────────────────────────────────────
+Sprint: MYPROJ Sprint 41
+  Planned:       45 pts
+  Completed:     38 pts (84.4%)
+  Issues:        15/18
+  Quality:       78.2/100
+  Cycle Time:    3.2 days
+  Status:        Healthy
+```
+
+#### Markdown Report
+Generate a Markdown report using the `report-md` command:
+
+```bash
+jira-analytics-cli report-md --project MYPROJ --sprints 3 --output reports/sprint-report.md
+```
+
+Sample content of `sprint-report.md`:
+```markdown
+# Jira Analytics Report
+
+**Generated:** 2026-10-14 14:30:00 UTC
+
+## Sprint Metrics
+
+| Sprint | Planned | Completed | Completion % | Quality | Health |
+|--------|---------|-----------|--------------|---------|--------|
+| MYPROJ Sprint 41 | 45 | 38 | 84.4% | 78.2 | Healthy |
+| MYPROJ Sprint 40 | 50 | 47 | 94.0% | 85.6 | Excellent |
+| MYPROJ Sprint 39 | 42 | 35 | 83.3% | 72.1 | Healthy |
+
+## Summary
+- **Sprints Analyzed:** 3
+- **Average Velocity:** 42.50 pts/sprint
+- **Trend:** Positive (5.2%)
+- **Health Status:** Good
+```
+
+#### HTML Report
+Generate a self-contained HTML report using the `report` command:
+
+```bash
+jira-analytics-cli report --project MYPROJ --sprints 3 --output reports/sprint-report.html
+```
+
+The HTML report includes styled KPI cards, sprint breakdown tables, and team performance sections. Open the file in any browser to view the responsive report.
+
+#### JSON Export
+Export analytics data as JSON using the `export` command:
+
+```bash
+jira-analytics-cli export --project MYPROJ --format json --output reports/analytics.json
+```
+
+Sample output (truncated):
+```json
+{
+  "AverageVelocity": 42.5,
+  "TrendPercentage": 5.2,
+  "OverallHealth": "Good",
+  "Metrics": [
+    {
+      "SprintName": "MYPROJ Sprint 41",
+      "PlannedStoryPoints": 45,
+      "CompletedStoryPoints": 38,
+      "TotalIssueCount": 18,
+      "CompletedIssueCount": 15,
+      "AverageCycleTime": 3.2,
+      "DefectsCount": 3
+    }
+  ]
+}
+```
+
+You can pipe JSON output to `jq` for filtering:
+```bash
+jira-analytics-cli export --project MYPROJ --format json --output - | jq '.Metrics[] | select(.CompletedStoryPoints > 40)'
+```
+
+#### CSV Export
+Export sprint metrics to CSV using the `export-csv` command:
+
+```bash
+jira-analytics-cli export-csv --project MYPROJ --output reports/sprint-metrics.csv
+```
+
+Sample content of `sprint-metrics.csv`:
+```csv
+Sprint Name,Planned Points,Completed Points,Completion Rate %,Quality Score,Velocity,Health Status
+MYPROJ Sprint 41,45,38,84.4,78.2,7.6,Healthy
+MYPROJ Sprint 40,50,47,94.0,85.6,9.4,Excellent
+MYPROJ Sprint 39,42,35,83.3,72.1,7.0,Healthy
+```
+
+Import CSV into a spreadsheet application (Excel, Google Sheets, etc.) for further analysis.
+
+#### Image Charts
+Generate visual charts as PNG or JPG using the `export` command:
+
+```bash
+jira-analytics-cli export --project MYPROJ --format png --output charts/velocity-chart.png
+```
+
+Supported image formats: `png`, `jpg`, `svg`.
+
+#### Burndown Charts
+Generate burndown charts for a specific sprint:
+
+```bash
+jira-analytics-cli burndown --project MYPROJ --sprint-id 4321 --output charts/burndown-4321.png
+```
+
+### 8. Using in CI
+
+Example GitHub Actions workflow step that generates a sprint report as a job artifact:
+
+```yaml
+name: Generate Sprint Report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * MON'  # Every Monday at 9 AM
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Configure Jira Credentials
+        run: |
+          echo "JIRA_URL=${{ secrets.JIRA_URL }}" >> $GITHUB_ENV
+          echo "JIRA_API_TOKEN=${{ secrets.JIRA_API_TOKEN }}" >> $GITHUB_ENV
+      
+      - name: Build and Publish
+        run: |
+          dotnet build -c Release
+          dotnet pack JiraAnalyticsCli.csproj -c Release -o ./nupkg
+          dotnet tool install --global --add-source ./nupkg jira-analytics-cli
+      
+      - name: Generate Sprint Report
+        run: |
+          jira-analytics-cli report --project MYPROJ --sprints 5 --output jira-report.html
+      
+      - name: Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-report
+          path: jira-report.html
+```
+
 ## SprintMetricExtensionsTests
 
 The `SprintMetricExtensionsTests` class contains a comprehensive suite of unit tests for the `SprintMetricExtensions` class. It validates critical functionalities such as progress percentage calculations, sprint completion status checks, and average daily progress metrics, including robust handling of edge cases and null inputs.
