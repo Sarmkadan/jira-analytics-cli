@@ -8,6 +8,7 @@ using System.CommandLine.Parsing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using JiraAnalyticsCli.Configuration;
+using JiraAnalyticsCli.Diagnostics;
 using JiraAnalyticsCli.Services;
 using JiraAnalyticsCli.Repositories;
 using JiraAnalyticsCli.Models;
@@ -23,6 +24,10 @@ class Program
             // --check-config reports every problem itself, so it runs before the fail-fast check below.
             if (!IsHelpOrVersionRequest(args) && args.Contains(CheckConfigFlag))
                 return await RunConfigCheckAsync(args);
+
+            // doctor also reports every problem itself (missing settings become check results), so it runs before the fail-fast check.
+            if (!IsHelpOrVersionRequest(args) && IsDoctorRequest(args))
+                return await RunDoctorAsync(args);
 
             // Resolve and validate Jira settings before any command runs, so a bad setting fails before any HTTP call.
             // Help and version requests skip validation so they work without a configured token.
@@ -77,6 +82,9 @@ class Program
     /// <summary>Global flag that logs each Jira request and the summarized analysis inputs at Debug level.</summary>
     const string VerboseFlag = "--verbose";
 
+    /// <summary>Subcommand that runs the health checks and exits.</summary>
+    const string DoctorCommandName = "doctor";
+
     /// <summary>
     /// Runs every configuration check, prints one OK/FAIL/SKIP line per item, and returns 0 only when nothing failed.
     /// </summary>
@@ -87,6 +95,30 @@ class Program
 
         Console.WriteLine(JiraConfigChecker.Format(items));
         return items.Any(item => item.Status == ConfigCheckStatus.Failed) ? 1 : 0;
+    }
+
+    /// <summary>
+    /// Runs the <c>doctor</c> checks, prints the status table with remediation hints, and returns 1 when any check failed.
+    /// </summary>
+    static async Task<int> RunDoctorAsync(string[] args)
+    {
+        var jira = JiraOptionsLoader.Load(ReadJiraFlags(args), Environment.GetEnvironmentVariable, ReadAppSettings());
+        var velocity = VelocityOptionsLoader.Load(ReadVelocityFlags(args), Environment.GetEnvironmentVariable, ReadAppSettings());
+        var results = await JiraDoctor.RunAsync(jira, velocity);
+
+        Console.WriteLine(JiraDoctor.Format(results));
+        return JiraDoctor.HasFailures(results) ? 1 : 0;
+    }
+
+    /// <summary>
+    /// True when the parser selects the <c>doctor</c> subcommand. Parsing, rather than searching for the word,
+    /// keeps a value such as <c>-p doctor</c> from being read as the command.
+    /// </summary>
+    static bool IsDoctorRequest(string[] args)
+    {
+        var probe = new RootCommand();
+        probe.AddCommand(new Command(DoctorCommandName));
+        return probe.Parse(args).CommandResult.Command.Name == DoctorCommandName;
     }
 
     /// <summary>
@@ -145,6 +177,8 @@ class Program
         VelocityGlobalOptions.AddTo(rootCommand);
         // Handled in Main before this tree is used; declared here so it appears in --help.
         rootCommand.AddOption(new Option<bool>(CheckConfigFlag, "Check Jira settings, then the Jira connection (GET /myself), print OK/FAIL per item and exit. Run on its own."));
+        // Handled in Main before this tree is used; declared here so it appears in --help.
+        rootCommand.AddCommand(new Command(DoctorCommandName, "Check config, DNS/TLS, authentication, board, closed sprint and story-points field. Prints a table with a fix hint per failure and exits 1 if any check fails. Run on its own."));
         // Read in Main before the container is built, so the logger level is set from the start; declared here so it appears in --help and is accepted after a subcommand.
         rootCommand.AddGlobalOption(new Option<bool>(VerboseFlag, "Log each Jira request (method, URL, status, duration) and analysis input counts at Debug level. Secrets are never logged."));
 
