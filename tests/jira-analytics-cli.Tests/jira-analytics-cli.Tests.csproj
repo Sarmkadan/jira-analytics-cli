@@ -78,6 +78,11 @@
     <Compile Include="..\..\Configuration\JiraOptionsLoader.cs" />
     <Compile Include="Configuration\JiraOptionsValidatorTests.cs" />
     <Compile Include="Configuration\JiraOptionsLoaderTests.cs" />
+    <!-- Report/output option validation and the check-config flag -->
+    <Compile Include="..\..\Utils\OutputOptionsValidator.cs" />
+    <Compile Include="..\..\Configuration\JiraConfigChecker.cs" />
+    <Compile Include="Utils\OutputOptionsValidatorTests.cs" />
+    <Compile Include="Configuration\JiraConfigCheckerTests.cs" />
   </ItemGroup>
 
 </Project>

@@ -45,6 +45,14 @@ An empty environment variable or JSON value counts as unset. `-p/--project` on a
 
 Settings are validated before any command runs and before any HTTP call. If anything is wrong, the CLI prints every problem in one message, names each offending setting and where to set it, and exits with code 2. Help and version requests skip this check. Passing a token as a flag puts it in the process list, so prefer `JIRA_API_TOKEN`.
 
+To check your setup without running a command, use `--check-config`. It checks each setting, then sends one authenticated `GET /rest/api/3/myself` to Jira. It prints `OK`, `FAIL` or `SKIP` for each item and exits with 0 only when nothing failed. The token is never printed.
+
+```bash
+jira-analytics-cli --check-config
+```
+
+Output options are checked before any Jira call. An unsupported `--format` is rejected and the error lists the supported values. `--sprints` must be between 1 and 50. `--output` and `--output-dir` must point to a path whose directory already exists or can be created. `--check-config` does not check output options, because it takes no output flags.
+
 ### 3. Sprint report
 
 `analytics` summarizes the most recent sprints for a project and prints a text report (use `--output` to write it to a file instead):

@@ -4,12 +4,14 @@
 // =============================================================================
 
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using JiraAnalyticsCli.Configuration;
 using JiraAnalyticsCli.Services;
 using JiraAnalyticsCli.Repositories;
 using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Utils;
 namespace JiraAnalyticsCli;
 
 class Program
@@ -18,6 +20,10 @@ class Program
     {
         try
         {
+            // --check-config reports every problem itself, so it runs before the fail-fast check below.
+            if (!IsHelpOrVersionRequest(args) && args.Contains(CheckConfigFlag))
+                return await RunConfigCheckAsync(args);
+
             // Resolve and validate Jira settings before any command runs, so a bad setting fails before any HTTP call.
             // Help and version requests skip validation so they work without a configured token.
             var jiraOptions = new JiraOptions();
@@ -54,6 +60,42 @@ class Program
     }
 
     
+    /// <summary>Root flag that runs the configuration checks and exits.</summary>
+    const string CheckConfigFlag = "--check-config";
+
+    /// <summary>
+    /// Runs every configuration check, prints one OK/FAIL/SKIP line per item, and returns 0 only when nothing failed.
+    /// </summary>
+    static async Task<int> RunConfigCheckAsync(string[] args)
+    {
+        var loaded = JiraOptionsLoader.Load(ReadJiraFlags(args), Environment.GetEnvironmentVariable, ReadAppSettings());
+        var items = await JiraConfigChecker.RunAsync(loaded);
+
+        Console.WriteLine(JiraConfigChecker.Format(items));
+        return items.Any(item => item.Status == ConfigCheckStatus.Failed) ? 1 : 0;
+    }
+
+    /// <summary>
+    /// Reports a validation problem on an option, so System.CommandLine rejects the command before its handler runs and before any Jira call.
+    /// </summary>
+    static void Reject(OptionResult result, string? problem)
+    {
+        if (problem is not null)
+            result.ErrorMessage = problem;
+    }
+
+    static void ValidateFormat(Option<string> format, IReadOnlyCollection<string> supported) =>
+        format.AddValidator(result => Reject(result, OutputOptionsValidator.CheckFormat(result.GetValueOrDefault<string>(), supported)));
+
+    static void ValidateSprintCount(Option<int> sprints) =>
+        sprints.AddValidator(result => Reject(result, OutputOptionsValidator.CheckSprintCount(result.GetValueOrDefault<int>())));
+
+    static void ValidateOutputFile(Option<string> output) =>
+        output.AddValidator(result => Reject(result, OutputOptionsValidator.CheckOutputFile(result.GetValueOrDefault<string>())));
+
+    static void ValidateOutputDirectory(Option<string> outputDir) =>
+        outputDir.AddValidator(result => Reject(result, OutputOptionsValidator.CheckOutputDirectory(result.GetValueOrDefault<string>())));
+
     /// <summary>
     /// Parses only the global Jira flags, so settings can be validated before the command tree is built.
     /// </summary>
@@ -74,13 +116,18 @@ class Program
     {
         var rootCommand = new RootCommand("Jira Analytics CLI - Advanced sprint and team metrics analysis");
         JiraGlobalOptions.AddTo(rootCommand);
+        // Handled in Main before this tree is used; declared here so it appears in --help.
+        rootCommand.AddOption(new Option<bool>(CheckConfigFlag, "Check Jira settings, then the Jira connection (GET /myself), print OK/FAIL per item and exit. Run on its own."));
 
         // Analytics command
         var analyticsCommand = new Command("analytics", "Run analytics and generate reports");
         var analyticsProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key");
-        var analyticsSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, "Number of recent sprints to analyze") { IsRequired = false };
+        var analyticsSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to analyze (1-50)");
         var analyticsOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output file path") { IsRequired = false };
         var analyticsOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save reports to (created if it does not exist)");
+        ValidateSprintCount(analyticsSprintsOpt);
+        ValidateOutputFile(analyticsOutputOpt);
+        ValidateOutputDirectory(analyticsOutputDirOpt);
         analyticsCommand.AddOption(analyticsProjectOpt);
         analyticsCommand.AddOption(analyticsSprintsOpt);
         analyticsCommand.AddOption(analyticsOutputOpt);
@@ -95,7 +142,7 @@ class Program
             try
             {
                 logger.LogInformation("Starting analytics for project {Project} with {SprintCount} sprints", project, sprints);
-                var analysis = await analyticsService.AnalyzeSprints(project, sprints > 0 ? sprints : 5);
+                var analysis = await analyticsService.AnalyzeSprints(project, sprints);
                 var report = reportService.GenerateReport(analysis);
 
                 var resolvedOutput = ResolveOutputPath(output, outputDir, "report.txt");
@@ -119,9 +166,12 @@ class Program
         // Export command
         var exportCommand = new Command("export", "Export analytics data to image or file");
         var exportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key");
-        var exportFormatOpt = new Option<string>(new[] { "-f", "--format" }, "Export format (png, jpg, pdf, json, csv, md)");
+        var exportFormatOpt = new Option<string>(new[] { "-f", "--format" }, () => "json", $"Export format ({string.Join(", ", OutputOptionsValidator.ExportFormats)})");
         var exportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output file path");
         var exportOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save reports to (created if it does not exist)");
+        ValidateFormat(exportFormatOpt, OutputOptionsValidator.ExportFormats);
+        ValidateOutputFile(exportOutputOpt);
+        ValidateOutputDirectory(exportOutputDirOpt);
         exportCommand.AddOption(exportProjectOpt);
         exportCommand.AddOption(exportFormatOpt);
         exportCommand.AddOption(exportOutputOpt);
@@ -150,6 +200,7 @@ class Program
     var csvExportCommand = new Command("export-csv", "Export sprint metrics to CSV format");
     var csvExportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
     var csvExportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output CSV file path") { IsRequired = true };
+    ValidateOutputFile(csvExportOutputOpt);
     csvExportCommand.AddOption(csvExportProjectOpt);
     csvExportCommand.AddOption(csvExportOutputOpt);
 
@@ -177,6 +228,7 @@ class Program
     var teamCsvExportCommand = new Command("export-team-csv", "Export team metrics to CSV format");
     var teamCsvExportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
     var teamCsvExportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output CSV file path") { IsRequired = true };
+    ValidateOutputFile(teamCsvExportOutputOpt);
     teamCsvExportCommand.AddOption(teamCsvExportProjectOpt);
     teamCsvExportCommand.AddOption(teamCsvExportOutputOpt);
 
@@ -207,6 +259,8 @@ class Program
         var burndownSprintIdOpt = new Option<int>(new[] { "--sprint-id" }, "Sprint ID");
         var burndownOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output image path");
         var burndownOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save reports to (created if it does not exist)");
+        ValidateOutputFile(burndownOutputOpt);
+        ValidateOutputDirectory(burndownOutputDirOpt);
         burndownCommand.AddOption(burndownProjectOpt);
         burndownCommand.AddOption(burndownSprintIdOpt);
         burndownCommand.AddOption(burndownOutputOpt);
@@ -244,6 +298,8 @@ rootCommand.AddCommand(teamCsvExportCommand);
         var jqlStartAtOpt      = new Option<int>(new[] { "--start-at" }, () => 0, "Zero-based index of the first result (pagination)");
         var jqlOutputOpt       = new Option<string>(new[] { "-o", "--output" }, "Output file path (omit to print to console)");
         var jqlFormatOpt       = new Option<string>(new[] { "-f", "--format" }, () => "text", "Output format: text or json");
+        ValidateFormat(jqlFormatOpt, OutputOptionsValidator.TextOrJsonFormats);
+        ValidateOutputFile(jqlOutputOpt);
         jqlCommand.AddOption(jqlQueryOpt);
         jqlCommand.AddOption(jqlMaxResultsOpt);
         jqlCommand.AddOption(jqlStartAtOpt);
@@ -290,9 +346,12 @@ rootCommand.AddCommand(teamCsvExportCommand);
         // HTML report command
         var reportCommand        = new Command("report", "Generate a self-contained HTML analytics report");
         var reportProjectOpt     = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
-        var reportSprintsOpt     = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include");
+        var reportSprintsOpt     = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include (1-50)");
         var reportOutputOpt      = new Option<string>(new[] { "-o", "--output" }, "Output HTML file path");
         var reportOutputDirOpt   = new Option<string>(new[] { "--output-dir" }, "Directory to save the report (created if needed)");
+        ValidateSprintCount(reportSprintsOpt);
+        ValidateOutputFile(reportOutputOpt);
+        ValidateOutputDirectory(reportOutputDirOpt);
         reportCommand.AddOption(reportProjectOpt);
         reportCommand.AddOption(reportSprintsOpt);
         reportCommand.AddOption(reportOutputOpt);
@@ -324,9 +383,12 @@ rootCommand.AddCommand(teamCsvExportCommand);
         // Team comparison command
         var teamCompareCommand      = new Command("team-compare", "Compare metrics across multiple Jira projects side by side");
         var teamCompareProjectsOpt  = new Option<string>(new[] { "-p", "--projects" }, "Comma-separated list of project keys to compare") { IsRequired = true };
-        var teamCompareSprintsOpt   = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints per project");
+        var teamCompareSprintsOpt   = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints per project (1-50)");
         var teamCompareOutputOpt    = new Option<string>(new[] { "-o", "--output" }, "Output file path (omit to print to console)");
         var teamCompareFormatOpt    = new Option<string>(new[] { "-f", "--format" }, () => "text", "Output format: text or json");
+        ValidateSprintCount(teamCompareSprintsOpt);
+        ValidateOutputFile(teamCompareOutputOpt);
+        ValidateFormat(teamCompareFormatOpt, OutputOptionsValidator.TextOrJsonFormats);
         teamCompareCommand.AddOption(teamCompareProjectsOpt);
         teamCompareCommand.AddOption(teamCompareSprintsOpt);
         teamCompareCommand.AddOption(teamCompareOutputOpt);
@@ -372,9 +434,12 @@ rootCommand.AddCommand(teamCsvExportCommand);
     // Markdown report command
     var markdownReportCommand = new Command("report-md", "Generate a Markdown analytics report");
     var markdownReportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
-    var markdownReportSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include");
+    var markdownReportSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include (1-50)");
     var markdownReportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output Markdown file path");
     var markdownReportOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save the report (created if needed)");
+    ValidateSprintCount(markdownReportSprintsOpt);
+    ValidateOutputFile(markdownReportOutputOpt);
+    ValidateOutputDirectory(markdownReportOutputDirOpt);
     markdownReportCommand.AddOption(markdownReportProjectOpt);
     markdownReportCommand.AddOption(markdownReportSprintsOpt);
     markdownReportCommand.AddOption(markdownReportOutputOpt);
