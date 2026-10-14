@@ -29,8 +29,21 @@ export JIRA_API_TOKEN="your-api-token"
 
 PowerShell: `$env:JIRA_URL = "https://your-company.atlassian.net"` and `$env:JIRA_API_TOKEN = "your-api-token"`.
 
-- `JIRA_URL` (or `JIRA_BASE_URL`) is the base URL of your Jira instance.
-- `JIRA_API_TOKEN` (or `JIRA_TOKEN`) is sent as a Bearer token. The CLI does not read `JIRA_EMAIL`; see [Use JiraClient from C#](#6-use-jiraclient-from-c) for the case where it is needed.
+- `JIRA_URL` (or `JIRA_BASE_URL`) is the base URL of your Jira instance. It must be an absolute `https://` URI.
+- `JIRA_API_TOKEN` (or `JIRA_TOKEN`) is sent as a Bearer token. The CLI does not read `JIRA_EMAIL` for authentication; see [Use JiraClient from C#](#6-use-jiraclient-from-c) for the case where it is needed.
+- `JIRA_BOARD_ID` is optional. When set, it must be a positive integer.
+- `JIRA_API_TIMEOUT_SECONDS` sets the HTTP timeout for Jira requests. It must be between 1 and 300 (default 30).
+
+Each setting can also be given as a CLI flag (`--jira-url`, `--jira-email`, `--jira-token`, `--board-id`, `--timeout-seconds`) or as a key in `appsettings.json` (`jiraBaseUrl`, `jiraEmail`, `jiraApiToken`, `jiraBoardId`, `jiraApiTimeoutSeconds`). Precedence, highest first:
+
+1. CLI flag
+2. Environment variable
+3. `appsettings.json`
+4. Built-in default
+
+An empty environment variable or JSON value counts as unset. `-p/--project` on a command overrides the default project set by `JIRA_PROJECT` or `defaultProject`.
+
+Settings are validated before any command runs and before any HTTP call. If anything is wrong, the CLI prints every problem in one message, names each offending setting and where to set it, and exits with code 2. Help and version requests skip this check. Passing a token as a flag puts it in the process list, so prefer `JIRA_API_TOKEN`.
 
 ### 3. Sprint report
 

@@ -18,8 +18,23 @@ class Program
     {
         try
         {
+            // Resolve and validate Jira settings before any command runs, so a bad setting fails before any HTTP call.
+            // Help and version requests skip validation so they work without a configured token.
+            var jiraOptions = new JiraOptions();
+            if (!IsHelpOrVersionRequest(args))
+            {
+                var loaded = JiraOptionsLoader.Load(ReadJiraFlags(args), Environment.GetEnvironmentVariable, ReadAppSettings());
+                if (!loaded.IsValid)
+                {
+                    Console.Error.WriteLine(JiraOptionsLoader.FormatProblems(loaded.Problems));
+                    return 2;
+                }
+
+                jiraOptions = loaded.Options;
+            }
+
             // Initialize dependency injection container via factory
-            var serviceProvider = ServiceFactory.CreateServiceProvider();
+            var serviceProvider = ServiceFactory.CreateServiceProvider(jiraOptions);
 
             // Get logger and log startup
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
@@ -39,9 +54,26 @@ class Program
     }
 
     
+    /// <summary>
+    /// Parses only the global Jira flags, so settings can be validated before the command tree is built.
+    /// </summary>
+    static JiraOptionsOverrides ReadJiraFlags(string[] args)
+    {
+        var probe = new RootCommand();
+        var flags = JiraGlobalOptions.AddTo(probe);
+        return flags.Read(probe.Parse(args));
+    }
+
+    static string? ReadAppSettings() =>
+        File.Exists(JiraOptionsLoader.AppSettingsFileName) ? File.ReadAllText(JiraOptionsLoader.AppSettingsFileName) : null;
+
+    static bool IsHelpOrVersionRequest(string[] args) =>
+        args.Any(arg => arg is "-h" or "-?" or "/?" or "--help" or "--version");
+
     static RootCommand BuildRootCommand(IServiceProvider serviceProvider)
     {
         var rootCommand = new RootCommand("Jira Analytics CLI - Advanced sprint and team metrics analysis");
+        JiraGlobalOptions.AddTo(rootCommand);
 
         // Analytics command
         var analyticsCommand = new Command("analytics", "Run analytics and generate reports");

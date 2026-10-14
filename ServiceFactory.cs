@@ -9,9 +9,15 @@ namespace JiraAnalyticsCli
 {
     public static class ServiceFactory
     {
-        public static IServiceProvider CreateServiceProvider()
+        /// <summary>
+        /// Builds the DI container. <paramref name="jiraOptions"/> must already be validated.
+        /// </summary>
+        public static IServiceProvider CreateServiceProvider(JiraOptions jiraOptions)
         {
+            ArgumentNullException.ThrowIfNull(jiraOptions);
+
             var services = new ServiceCollection();
+            services.AddSingleton(jiraOptions);
 
             // Logging configuration
             services.AddLogging(builder =>
@@ -34,6 +40,7 @@ namespace JiraAnalyticsCli
                 {
                     var config = sp.GetRequiredService<ICliConfig>();
                     client.BaseAddress = new Uri(config.JiraBaseUrl);
+                    client.Timeout = TimeSpan.FromSeconds(config.JiraApiTimeoutSeconds);
                     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {config.JiraApiToken}");
                     client.DefaultRequestHeaders.Add("Accept", "application/json");
                 });
