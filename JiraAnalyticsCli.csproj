@@ -11,7 +11,7 @@
     <PackageId>jira-analytics-cli</PackageId>
     <Authors>Vladyslav Zaiets</Authors>
     <Description>A command-line tool for analyzing Jira project data and generating reports.</Description>
-    <PackageTags>jira;analytics;cli;reporting</PackageTags>
+    <PackageTags>jira;agile;sprint;analytics;cli</PackageTags>
     <PackageProjectUrl>https://github.com/sarmkadan/jira-analytics-cli</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sarmkadan/jira-analytics-cli</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
