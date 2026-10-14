@@ -12,12 +12,15 @@ namespace JiraAnalyticsCli
         /// <summary>
         /// Builds the DI container. <paramref name="jiraOptions"/> must already be validated.
         /// </summary>
-        public static IServiceProvider CreateServiceProvider(JiraOptions jiraOptions)
+        /// <param name="jiraOptions">Validated Jira settings.</param>
+        /// <param name="velocityOptions">Validated velocity settings; defaults are used when null.</param>
+        public static IServiceProvider CreateServiceProvider(JiraOptions jiraOptions, VelocityOptions? velocityOptions = null)
         {
             ArgumentNullException.ThrowIfNull(jiraOptions);
 
             var services = new ServiceCollection();
             services.AddSingleton(jiraOptions);
+            services.AddSingleton(velocityOptions ?? new VelocityOptions());
 
             // Logging configuration
             services.AddLogging(builder =>
@@ -52,6 +55,7 @@ namespace JiraAnalyticsCli
 
             // Business logic layer
             services.AddSingleton<IJiraApiService, JiraApiService>();
+            services.AddSingleton<VelocityTracker>();
             services.AddSingleton<IAnalyticsService, AnalyticsService>();
             services.AddSingleton<IReportService, ReportService>();
             services.AddSingleton<ICsvExportService, CsvExportService>();

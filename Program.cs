@@ -27,6 +27,7 @@ class Program
             // Resolve and validate Jira settings before any command runs, so a bad setting fails before any HTTP call.
             // Help and version requests skip validation so they work without a configured token.
             var jiraOptions = new JiraOptions();
+            var velocityOptions = new VelocityOptions();
             if (!IsHelpOrVersionRequest(args))
             {
                 var loaded = JiraOptionsLoader.Load(ReadJiraFlags(args), Environment.GetEnvironmentVariable, ReadAppSettings());
@@ -37,10 +38,20 @@ class Program
                 }
 
                 jiraOptions = loaded.Options;
+
+                // Velocity settings are checked here too, so a bad value stops the run before any Jira call.
+                var velocityLoaded = VelocityOptionsLoader.Load(ReadVelocityFlags(args), Environment.GetEnvironmentVariable, ReadAppSettings());
+                if (!velocityLoaded.IsValid)
+                {
+                    Console.Error.WriteLine(VelocityOptionsLoader.FormatProblems(velocityLoaded.Problems));
+                    return 2;
+                }
+
+                velocityOptions = velocityLoaded.Options!;
             }
 
             // Initialize dependency injection container via factory
-            var serviceProvider = ServiceFactory.CreateServiceProvider(jiraOptions);
+            var serviceProvider = ServiceFactory.CreateServiceProvider(jiraOptions, velocityOptions);
 
             // Get logger and log startup
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
@@ -106,6 +117,16 @@ class Program
         return flags.Read(probe.Parse(args));
     }
 
+    /// <summary>
+    /// Parses only the global velocity flags, so settings can be validated before the command tree is built.
+    /// </summary>
+    static VelocityOptionsOverrides ReadVelocityFlags(string[] args)
+    {
+        var probe = new RootCommand();
+        var flags = VelocityGlobalOptions.AddTo(probe);
+        return flags.Read(probe.Parse(args));
+    }
+
     static string? ReadAppSettings() =>
         File.Exists(JiraOptionsLoader.AppSettingsFileName) ? File.ReadAllText(JiraOptionsLoader.AppSettingsFileName) : null;
 
@@ -116,6 +137,7 @@ class Program
     {
         var rootCommand = new RootCommand("Jira Analytics CLI - Advanced sprint and team metrics analysis");
         JiraGlobalOptions.AddTo(rootCommand);
+        VelocityGlobalOptions.AddTo(rootCommand);
         // Handled in Main before this tree is used; declared here so it appears in --help.
         rootCommand.AddOption(new Option<bool>(CheckConfigFlag, "Check Jira settings, then the Jira connection (GET /myself), print OK/FAIL per item and exit. Run on its own."));
 
