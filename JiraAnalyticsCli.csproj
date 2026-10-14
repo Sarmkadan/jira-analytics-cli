@@ -17,6 +17,8 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>jira-analytics-cli</ToolCommandName>
   </PropertyGroup>
 
   <ItemGroup>

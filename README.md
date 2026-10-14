@@ -1,3 +1,165 @@
+## Getting Started
+
+Requires the .NET 10 SDK.
+
+### 1. Install as a global tool
+
+The package isn't published to NuGet, so build it from source and install the local package:
+
+```bash
+git clone https://github.com/sarmkadan/jira-analytics-cli.git
+cd jira-analytics-cli
+dotnet pack JiraAnalyticsCli.csproj -c Release -o ./nupkg
+dotnet tool install --global --add-source ./nupkg jira-analytics-cli
+jira-analytics-cli --help
+```
+
+To upgrade after pulling changes, run `dotnet pack` again, then:
+
+```bash
+dotnet tool update --global --add-source ./nupkg jira-analytics-cli
+```
+
+### 2. Configure credentials
+
+```bash
+export JIRA_URL="https://your-company.atlassian.net"
+export JIRA_API_TOKEN="your-api-token"
+```
+
+PowerShell: `$env:JIRA_URL = "https://your-company.atlassian.net"` and `$env:JIRA_API_TOKEN = "your-api-token"`.
+
+- `JIRA_URL` (or `JIRA_BASE_URL`) is the base URL of your Jira instance.
+- `JIRA_API_TOKEN` (or `JIRA_TOKEN`) is sent as a Bearer token. The CLI does not read `JIRA_EMAIL`; see [Use JiraClient from C#](#6-use-jiraclient-from-c) for the case where it is needed.
+
+### 3. Sprint report
+
+`analytics` summarizes the most recent sprints for a project and prints a text report (use `--output` to write it to a file instead):
+
+```bash
+jira-analytics-cli analytics --project MYPROJ --sprints 5
+```
+
+Example output (abbreviated; the values are illustrative):
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║       JIRA ANALYTICS REPORT - SPRINT PERFORMANCE SUMMARY       ║
+╚════════════════════════════════════════════════════════════════╝
+
+📊 OVERALL METRICS
+──────────────────────────────────────────────────────────────────────
+Average Velocity:      41.20 pts/sprint
+Velocity Trend:        ↑ 8.3%
+Overall Health:        Good
+
+📈 SPRINT BREAKDOWN
+──────────────────────────────────────────────────────────────────────
+Sprint: MYPROJ Sprint 41
+  Planned:       45 pts
+  Completed:     40 pts (88.9%)
+  Issues:        18/21
+  Quality:       82.5/100
+  Cycle Time:    3.4 days
+  Status:        ...
+```
+
+### 4. Burndown chart
+
+`burndown` renders a PNG for one sprint (default output is `burndown.png`). Each run also appends a snapshot for that sprint, which `trend` reads.
+
+```bash
+jira-analytics-cli burndown --project MYPROJ --sprint-id 4321 --output charts/burndown-4321.png
+```
+
+Example output (log lines):
+
+```
+info: JiraAnalyticsCli.Program[0]
+      Jira Analytics CLI starting...
+...
+info: JiraAnalyticsCli.Program[0]
+      Burndown chart saved to charts/burndown-4321.png
+```
+
+### 5. Velocity
+
+There is no `velocity` command. Velocity is reported in two places:
+
+- `analytics` (above) prints the average velocity and trend across sprints.
+- `trend` prints velocity for a single sprint, using the snapshots that earlier `burndown` runs recorded. Run `burndown --sprint-id` at least once first.
+
+```bash
+jira-analytics-cli trend --sprint-id 4321
+```
+
+Example output (values are illustrative):
+
+```
+Trend analysis for sprint 4321 (3 snapshot(s))
+----------------------------------------------------------------------
+Sprint 4321 @ 2026-10-13 17:00 | 28/50 pts (56.0%) | 14/20 issues | Projected: 88.0% in 7 days
+Velocity trend:       3.40 pts/day
+Velocity accelerating: True
+Burn rate:             4.10 pts/day
+Scope creep detected:  False
+Completed pts over time: 6, 17, 28
+Remaining pts over time: 44, 33, 22
+```
+
+### 6. Use JiraClient from C#
+
+`JiraClient` (namespace `JiraAnalyticsCli.Services`) is a low-level REST helper. It has no sprint-specific methods, so the snippet calls the endpoints directly. Unlike the CLI, it authenticates with Basic auth (`JIRA_EMAIL` plus the API token), so set all three variables.
+
+```bash
+export JIRA_EMAIL="you@example.com"
+mkdir SprintExplorer && cd SprintExplorer
+dotnet new console
+dotnet add reference ../jira-analytics-cli/JiraAnalyticsCli.csproj
+```
+
+Replace `Program.cs` with:
+
+```csharp
+using System.Text.Json;
+using JiraAnalyticsCli.Services;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+
+var sprintId = 4321;
+
+var options = Options.Create(new JiraClientOptions
+{
+    BaseUrl = Environment.GetEnvironmentVariable("JIRA_URL")!,
+    Username = Environment.GetEnvironmentVariable("JIRA_EMAIL")!,
+    ApiToken = Environment.GetEnvironmentVariable("JIRA_API_TOKEN")!
+});
+
+var client = new JiraClient(new HttpClient(), options, NullLogger<JiraClient>.Instance);
+
+if (!await client.TestConnectionAsync())
+{
+    Console.Error.WriteLine("Cannot reach Jira. Check JIRA_URL and credentials.");
+    return 1;
+}
+
+// Fetch the sprint
+var sprint = await client.GetAsync<JsonElement>($"/rest/api/3/sprints/{sprintId}");
+Console.WriteLine($"{sprint.GetProperty("name").GetString()} [{sprint.GetProperty("state").GetString()}]");
+
+// List the sprint's issues (all pages)
+var jql = Uri.EscapeDataString($"sprint = {sprintId} ORDER BY created DESC");
+var issues = await client.GetAllPaginatedAsync<JsonElement>($"/rest/api/3/search?jql={jql}", resultsProperty: "issues");
+foreach (var issue in issues)
+{
+    Console.WriteLine($"{issue.GetProperty("key").GetString()}  {issue.GetProperty("fields").GetProperty("summary").GetString()}");
+}
+
+return 0;
+```
+
+Run it with `dotnet run`.
+
 ## SprintMetricExtensionsTests
 
 The `SprintMetricExtensionsTests` class contains a comprehensive suite of unit tests for the `SprintMetricExtensions` class. It validates critical functionalities such as progress percentage calculations, sprint completion status checks, and average daily progress metrics, including robust handling of edge cases and null inputs.
