@@ -14,7 +14,8 @@ namespace JiraAnalyticsCli
         /// </summary>
         /// <param name="jiraOptions">Validated Jira settings.</param>
         /// <param name="velocityOptions">Validated velocity settings; defaults are used when null.</param>
-        public static IServiceProvider CreateServiceProvider(JiraOptions jiraOptions, VelocityOptions? velocityOptions = null)
+        /// <param name="verbose">When true, the CLI's own logs and the Jira request log (method, URL, status, duration) are written at Debug level.</param>
+        public static IServiceProvider CreateServiceProvider(JiraOptions jiraOptions, VelocityOptions? velocityOptions = null, bool verbose = false)
         {
             ArgumentNullException.ThrowIfNull(jiraOptions);
 
@@ -27,6 +28,8 @@ namespace JiraAnalyticsCli
             {
                 builder.AddConsole();
                 builder.SetMinimumLevel(LogLevel.Information);
+                // --verbose lowers only this CLI's categories, so framework logs stay quiet.
+                builder.AddFilter("JiraAnalyticsCli", verbose ? LogLevel.Debug : LogLevel.Information);
             });
 
             // Configuration
@@ -38,6 +41,7 @@ namespace JiraAnalyticsCli
             });
 
             // HTTP client for Jira API
+            services.AddTransient<JiraRequestLoggingHandler>();
             services.AddHttpClient("jira")
                 .ConfigureHttpClient((sp, client) =>
                 {
@@ -46,7 +50,8 @@ namespace JiraAnalyticsCli
                     client.Timeout = TimeSpan.FromSeconds(config.JiraApiTimeoutSeconds);
                     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {config.JiraApiToken}");
                     client.DefaultRequestHeaders.Add("Accept", "application/json");
-                });
+                })
+                .AddHttpMessageHandler<JiraRequestLoggingHandler>();
 
             // Data access layer
             services.AddSingleton<IIssueRepository, IssueRepository>();

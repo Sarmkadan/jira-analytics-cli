@@ -1,5 +1,7 @@
 ## [Unreleased]
 ### Added
+- `--verbose` global flag: logs each Jira request (method, URL, status, duration) and the summarized analysis inputs (sprint and issue counts, total story points) at Debug level. Tokens and URL user-info are never logged
+- `[DebuggerDisplay]` and `ToString()` on `Sprint`, `JiraIssue`, `SprintMetric` and `BurndownSnapshot` showing key, status, points and dates
 - `--check-config` root flag: checks each Jira setting, then runs an authenticated `GET /rest/api/3/myself`, printing OK/FAIL/SKIP per item
 - Output option validation before any Jira call: `--format` must be a supported value (listed in the error), `--sprints` must be 1-50, and `--output`/`--output-dir` must have an existing or creatable directory
 ### Changed

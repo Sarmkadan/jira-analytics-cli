@@ -51,7 +51,7 @@ class Program
             }
 
             // Initialize dependency injection container via factory
-            var serviceProvider = ServiceFactory.CreateServiceProvider(jiraOptions, velocityOptions);
+            var serviceProvider = ServiceFactory.CreateServiceProvider(jiraOptions, velocityOptions, IsVerboseRequest(args));
 
             // Get logger and log startup
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
@@ -73,6 +73,9 @@ class Program
     
     /// <summary>Root flag that runs the configuration checks and exits.</summary>
     const string CheckConfigFlag = "--check-config";
+
+    /// <summary>Global flag that logs each Jira request and the summarized analysis inputs at Debug level.</summary>
+    const string VerboseFlag = "--verbose";
 
     /// <summary>
     /// Runs every configuration check, prints one OK/FAIL/SKIP line per item, and returns 0 only when nothing failed.
@@ -133,6 +136,8 @@ class Program
     static bool IsHelpOrVersionRequest(string[] args) =>
         args.Any(arg => arg is "-h" or "-?" or "/?" or "--help" or "--version");
 
+    static bool IsVerboseRequest(string[] args) => args.Contains(VerboseFlag);
+
     static RootCommand BuildRootCommand(IServiceProvider serviceProvider)
     {
         var rootCommand = new RootCommand("Jira Analytics CLI - Advanced sprint and team metrics analysis");
@@ -140,6 +145,8 @@ class Program
         VelocityGlobalOptions.AddTo(rootCommand);
         // Handled in Main before this tree is used; declared here so it appears in --help.
         rootCommand.AddOption(new Option<bool>(CheckConfigFlag, "Check Jira settings, then the Jira connection (GET /myself), print OK/FAIL per item and exit. Run on its own."));
+        // Read in Main before the container is built, so the logger level is set from the start; declared here so it appears in --help and is accepted after a subcommand.
+        rootCommand.AddGlobalOption(new Option<bool>(VerboseFlag, "Log each Jira request (method, URL, status, duration) and analysis input counts at Debug level. Secrets are never logged."));
 
         // Analytics command
         var analyticsCommand = new Command("analytics", "Run analytics and generate reports");

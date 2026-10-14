@@ -4,6 +4,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
@@ -11,6 +12,7 @@ namespace JiraAnalyticsCli.Models;
 /// <summary>
 /// Represents a Jira issue with all relevant metadata for analytics
 /// </summary>
+[DebuggerDisplay("{ToString(),nq}")]
 public class JiraIssue
 {
     [Required]
@@ -123,6 +125,7 @@ public class JiraIssue
 
     public override string ToString()
     {
-        return $"[{Key}] {Summary} ({Status}) - {StoryPoints ?? 0} pts";
+        return $"[{Key}] {Status} - {StoryPoints ?? 0} pts, created {CreatedDate:yyyy-MM-dd}, " +
+               $"resolved {ResolutionDate?.ToString("yyyy-MM-dd") ?? "open"}";
     }
 }

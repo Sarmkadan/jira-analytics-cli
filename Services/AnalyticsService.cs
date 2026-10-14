@@ -99,6 +99,16 @@ public class AnalyticsService : IAnalyticsService
                 result.Metrics.Add(metric);
             }
 
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Analysis inputs for project {ProjectKey}: {SprintCount} sprints, {IssueCount} issues, {PlannedPoints} planned SP, {CompletedPoints} completed SP",
+                    projectKey,
+                    recentSprints.Count,
+                    recentSprints.Sum(s => s.Issues.Count),
+                    recentSprints.Sum(s => s.GetPlannedStoryPoints()),
+                    recentSprints.Sum(s => s.GetCompletedStoryPoints()));
+            }
+
             // Calculate aggregate metrics
             if (result.Metrics.Any())
             {
