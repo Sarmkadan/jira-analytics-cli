@@ -3,6 +3,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using JiraAnalyticsCli.Configuration;
 using JiraAnalyticsCli.Models;
 using JiraAnalyticsCli.Repositories;
 using Microsoft.Extensions.Logging;
@@ -16,32 +17,48 @@ public class VelocityTracker
 {
     private readonly IMetricsRepository _metricsRepository;
     private readonly ILogger<VelocityTracker> _logger;
+    private readonly VelocityOptions _options;
 
     /// <summary>
     /// Initializes a new instance of <see cref="VelocityTracker"/>.
     /// </summary>
     /// <param name="metricsRepository">Repository for persisted sprint metrics.</param>
     /// <param name="logger">Logger for diagnostic output.</param>
-    public VelocityTracker(IMetricsRepository metricsRepository, ILogger<VelocityTracker> logger)
+    /// <param name="options">Validated velocity settings: window size and zero-point exclusion.</param>
+    /// <exception cref="ArgumentException">Thrown when the options hold an out-of-range value.</exception>
+    public VelocityTracker(IMetricsRepository metricsRepository, ILogger<VelocityTracker> logger, VelocityOptions options)
     {
         _metricsRepository = metricsRepository ?? throw new ArgumentNullException(nameof(metricsRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+
+        // Re-check here: the record constructor already validates, but a `with` copy skips it.
+        VelocityOptionsValidator.ThrowIfInvalid(_options.WindowSize, _options.StoryPointsField);
     }
 
     /// <summary>
     /// Computes the rolling average velocity over the last N sprints.
     /// </summary>
     /// <param name="metrics">Sprint metrics ordered chronologically.</param>
-    /// <param name="windowSize">Number of sprints in the rolling window.</param>
-    /// <returns>Rolling average of completed story points.</returns>
-    public double GetRollingAverageVelocity(IReadOnlyList<SprintMetric> metrics, int windowSize = 3)
+    /// <param name="windowSize">Number of sprints in the rolling window (1 to 20). Defaults to <see cref="VelocityOptions.WindowSize"/>.</param>
+    /// <returns>Rolling average of completed story points, or 0 when no sprint is eligible.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="windowSize"/> is outside 1 to 20.</exception>
+    public double GetRollingAverageVelocity(IReadOnlyList<SprintMetric> metrics, int? windowSize = null)
     {
-        if (metrics.Count == 0)
+        ArgumentNullException.ThrowIfNull(metrics);
+
+        int size = windowSize ?? _options.WindowSize;
+        if (!VelocityOptionsValidator.IsValidWindowSize(size))
+            throw new ArgumentOutOfRangeException(nameof(windowSize), size,
+                $"WindowSize must be between {VelocityOptionsValidator.MinWindowSize} and {VelocityOptionsValidator.MaxWindowSize} (got {size}).");
+
+        var eligible = ApplyExclusion(metrics);
+        if (eligible.Count == 0)
             return 0.0;
 
-        var window = metrics
+        var window = eligible
             .OrderByDescending(m => m.EndDate)
-            .Take(windowSize)
+            .Take(size)
             .ToList();
 
         double avg = window.Average(m => m.CompletedStoryPoints);
@@ -56,13 +73,14 @@ public class VelocityTracker
     /// <returns>A <see cref="VelocityTrend"/> describing the velocity trend.</returns>
     public VelocityTrend DetectTrend(IReadOnlyList<SprintMetric> metrics)
     {
-        if (metrics.Count < 2)
+        var eligible = ApplyExclusion(metrics);
+        if (eligible.Count < 2)
         {
-            return new VelocityTrend("Stable", Slope: 0, SampleSize: metrics.Count);
+            return new VelocityTrend("Stable", Slope: 0, SampleSize: eligible.Count);
         }
 
         // Project sprint metrics into ITimeSeriesPoint for reuse of TrendAnalysis math.
-        var points = metrics
+        var points = eligible
             .OrderBy(m => m.EndDate)
             .Select(m => (ITimeSeriesPoint)new TimeSeriesPoint(m.EndDate.UtcDateTime, m.CompletedStoryPoints))
             .ToList();
@@ -89,10 +107,11 @@ public class VelocityTracker
     /// <returns>Forecasted velocity in story points.</returns>
     public double ForecastNextSprint(IReadOnlyList<SprintMetric> metrics, double alpha = 0.3)
     {
-        if (metrics.Count == 0)
+        var eligible = ApplyExclusion(metrics);
+        if (eligible.Count == 0)
             return 0.0;
 
-        var ordered = metrics.OrderBy(m => m.EndDate).ToList();
+        var ordered = eligible.OrderBy(m => m.EndDate).ToList();
         double ewma = ordered[0].CompletedStoryPoints;
 
         for (int i = 1; i < ordered.Count; i++)
@@ -115,6 +134,18 @@ public class VelocityTracker
             return 0.0;
 
         return (double)metric.CompletedStoryPoints / metric.PlannedStoryPoints * 100.0;
+    }
+
+    /// <summary>
+    /// Drops sprints with zero completed story points when <see cref="VelocityOptions.ExcludeZeroPointSprints"/> is set.
+    /// </summary>
+    private List<SprintMetric> ApplyExclusion(IReadOnlyList<SprintMetric> metrics)
+    {
+        ArgumentNullException.ThrowIfNull(metrics);
+
+        return _options.ExcludeZeroPointSprints
+            ? metrics.Where(m => m.CompletedStoryPoints > 0).ToList()
+            : metrics.ToList();
     }
 }
 

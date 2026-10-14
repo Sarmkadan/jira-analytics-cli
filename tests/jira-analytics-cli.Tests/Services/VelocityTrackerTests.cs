@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using JiraAnalyticsCli.Configuration;
 using JiraAnalyticsCli.Models;
 using JiraAnalyticsCli.Repositories;
 using JiraAnalyticsCli.Services;
@@ -34,8 +35,11 @@ namespace JiraAnalyticsCli.Tests.Services
         {
             _loggerMock = new Mock<ILogger<VelocityTracker>>();
             _repoMock = new Mock<IMetricsRepository>();
-            _tracker = new VelocityTracker(_repoMock.Object, _loggerMock.Object);
+            _tracker = CreateTracker(new VelocityOptions());
         }
+
+        private VelocityTracker CreateTracker(VelocityOptions options) =>
+            new(_repoMock.Object, _loggerMock.Object, options);
 
         /// <summary>
         /// Creates a <see cref="SprintMetric"/> fixture with the supplied values.
@@ -48,8 +52,8 @@ namespace JiraAnalyticsCli.Tests.Services
             return new SprintMetric
             {
                 EndDate = endDate,
-                CompletedStoryPoints = completed,
-                PlannedStoryPoints = planned
+                CompletedStoryPoints = (int)completed,
+                PlannedStoryPoints = (int)planned
             };
         }
 
@@ -157,6 +161,112 @@ namespace JiraAnalyticsCli.Tests.Services
 
             // The result must match the ordered calculation (average of 60,50,40)
             avg.Should().BeApproximately(50.0, 0.01);
+        }
+
+        [Fact]
+        public void GetRollingAverageVelocity_UsesWindowSizeFromOptions_WhenNotPassed()
+        {
+            // Arrange – window of 2 configured through the options
+            var metrics = GenerateSixSprints(DateTimeOffset.UtcNow, new[] { 10.0, 20.0, 30.0, 40.0, 50.0, 60.0 });
+            var tracker = CreateTracker(new VelocityOptions(windowSize: 2));
+
+            // Act
+            double avg = tracker.GetRollingAverageVelocity(metrics);
+
+            // Most recent two: 60, 50 → 55
+            avg.Should().BeApproximately(55.0, 0.01);
+        }
+
+        [Fact]
+        public void GetRollingAverageVelocity_ExplicitWindowSize_OverridesOptions()
+        {
+            var metrics = GenerateSixSprints(DateTimeOffset.UtcNow, new[] { 10.0, 20.0, 30.0, 40.0, 50.0, 60.0 });
+            var tracker = CreateTracker(new VelocityOptions(windowSize: 2));
+
+            double avg = tracker.GetRollingAverageVelocity(metrics, windowSize: 3);
+
+            avg.Should().BeApproximately(50.0, 0.01);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(21)]
+        public void GetRollingAverageVelocity_ExplicitWindowSizeOutOfRange_Throws(int windowSize)
+        {
+            var metrics = GenerateSixSprints(DateTimeOffset.UtcNow, new[] { 10.0, 20.0, 30.0, 40.0, 50.0, 60.0 });
+
+            var act = () => _tracker.GetRollingAverageVelocity(metrics, windowSize);
+
+            act.Should().Throw<ArgumentOutOfRangeException>()
+                .WithMessage($"*between 1 and 20*got {windowSize}*");
+        }
+
+        [Fact]
+        public void GetRollingAverageVelocity_ExcludeZeroPointSprints_SkipsZeroSprintsInWindow()
+        {
+            // Arrange – the zero-point sprint is the second most recent one
+            var completed = new[] { 10.0, 20.0, 30.0, 40.0, 0.0, 60.0 };
+            var metrics = GenerateSixSprints(DateTimeOffset.UtcNow, completed);
+            var tracker = CreateTracker(new VelocityOptions(windowSize: 3, excludeZeroPointSprints: true));
+
+            // Act
+            double avg = tracker.GetRollingAverageVelocity(metrics);
+
+            // Eligible most recent three: 60, 40, 30 → average = 43.33…
+            avg.Should().BeApproximately(43.33, 0.01);
+        }
+
+        [Fact]
+        public void GetRollingAverageVelocity_ExcludeZeroPointSprints_AllZero_ReturnsZero()
+        {
+            var metrics = GenerateSixSprints(DateTimeOffset.UtcNow, new double[6]);
+            var tracker = CreateTracker(new VelocityOptions(excludeZeroPointSprints: true));
+
+            tracker.GetRollingAverageVelocity(metrics).Should().Be(0.0);
+            tracker.ForecastNextSprint(metrics).Should().Be(0.0);
+        }
+
+        [Fact]
+        public void DetectTrend_ExcludeZeroPointSprints_CountsOnlyEligibleSprints()
+        {
+            var completed = new[] { 10.0, 0.0, 30.0, 40.0, 0.0, 60.0 };
+            var metrics = GenerateSixSprints(DateTimeOffset.UtcNow, completed);
+            var tracker = CreateTracker(new VelocityOptions(excludeZeroPointSprints: true));
+
+            var trend = tracker.DetectTrend(metrics);
+
+            trend.SampleSize.Should().Be(4);
+            trend.Direction.Should().Be("Increasing");
+        }
+
+        [Fact]
+        public void ForecastNextSprint_ExcludeZeroPointSprints_IgnoresZeroSprints()
+        {
+            var completed = new[] { 10.0, 0.0, 10.0, 0.0, 10.0, 0.0 };
+            var metrics = GenerateSixSprints(DateTimeOffset.UtcNow, completed);
+            var tracker = CreateTracker(new VelocityOptions(excludeZeroPointSprints: true));
+
+            tracker.ForecastNextSprint(metrics, alpha: 0.3).Should().BeApproximately(10.0, 0.01);
+        }
+
+        [Fact]
+        public void Constructor_InvalidWindowSize_ThrowsBeforeAnyRepositoryCall()
+        {
+            // The tracker must refuse invalid settings up front, so no data is ever requested.
+            var act = () => CreateTracker(new VelocityOptions() with { WindowSize = 0 });
+
+            act.Should().Throw<ArgumentException>()
+                .WithMessage("*WindowSize must be between 1 and 20 (got 0)*");
+            _repoMock.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public void Constructor_NullOptions_Throws()
+        {
+            var act = () => CreateTracker(null!);
+
+            act.Should().Throw<ArgumentNullException>();
+            _repoMock.VerifyNoOtherCalls();
         }
     }
 }

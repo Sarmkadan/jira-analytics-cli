@@ -85,4 +85,16 @@
     <Compile Include="Configuration\JiraConfigCheckerTests.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\..\Configuration\VelocityOptions.cs" />
+    <Compile Include="..\..\Configuration\VelocityOptionsValidator.cs" />
+    <Compile Include="..\..\Configuration\VelocityOptionsLoader.cs" />
+    <Compile Include="..\..\Services\VelocityTracker.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Configuration\VelocityOptionsLoaderTests.cs" />
+    <Compile Include="Services\VelocityTrackerTests.cs" />
+  </ItemGroup>
+
 </Project>
