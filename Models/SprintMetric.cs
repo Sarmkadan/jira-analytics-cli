@@ -4,6 +4,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
@@ -11,6 +12,7 @@ namespace JiraAnalyticsCli.Models;
 /// <summary>
 /// Aggregated metrics for a sprint including velocity, quality indicators
 /// </summary>
+[DebuggerDisplay("{ToString(),nq}")]
 public class SprintMetric
 {
     [Required]
@@ -156,6 +158,7 @@ public class SprintMetric
 
     public override string ToString()
     {
-        return $"Sprint {SprintName}: {CompletedStoryPoints}/{PlannedStoryPoints} pts ({GetCompletionRate():F1}%) - {GetHealthStatus()}";
+        return $"[{SprintId}] {SprintName} ({GetHealthStatus()}) - {CompletedStoryPoints}/{PlannedStoryPoints} pts " +
+               $"({GetCompletionRate():F1}%), {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}";
     }
 }

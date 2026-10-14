@@ -97,4 +97,12 @@
     <Compile Include="Services\VelocityTrackerTests.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\..\Services\JiraRequestLoggingHandler.cs" />
+    <Compile Include="Services\JiraRequestLoggingHandlerTests.cs" />
+    <Compile Include="Models\DebuggerDisplayTests.cs" />
+    <Compile Include="CapturingLogger.cs" />
+    <Compile Include="Services\AnalyticsServiceVerboseLoggingTests.cs" />
+  </ItemGroup>
+
 </Project>

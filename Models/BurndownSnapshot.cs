@@ -4,6 +4,7 @@
 // ===================================================================
 
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
@@ -11,6 +12,7 @@ namespace JiraAnalyticsCli.Models;
 /// <summary>
 /// Represents a point-in-time snapshot of sprint burndown data
 /// </summary>
+[DebuggerDisplay("{ToString(),nq}")]
 public class BurndownSnapshot
 {
     private DateTimeOffset _timestamp;
@@ -182,6 +184,7 @@ public class BurndownSnapshot
 
     public override string ToString()
     {
-        return $"Burndown [{Timestamp:yyyy-MM-dd HH:mm}] - {CompletedStoryPoints}/{TotalStoryPoints} pts ({GetBurndownPercentage():F1}%)";
+        return $"[sprint {SprintId}] {Timestamp:yyyy-MM-dd HH:mm} UTC - {CompletedStoryPoints}/{TotalStoryPoints} pts done " +
+               $"({GetBurndownPercentage():F1}%), {RemainingStoryPoints} remaining";
     }
 }

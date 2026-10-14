@@ -4,6 +4,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 namespace JiraAnalyticsCli.Models;
@@ -11,6 +12,7 @@ namespace JiraAnalyticsCli.Models;
 /// <summary>
 /// Represents a Jira sprint with its metadata and state
 /// </summary>
+[DebuggerDisplay("{ToString(),nq}")]
 public class Sprint
 {
     [Required]
@@ -151,6 +153,8 @@ public class Sprint
 
     public override string ToString()
     {
-        return $"Sprint: {Name} ({State}) - {GetCompletedIssueCount()}/{GetTotalIssueCount()} issues completed";
+        return $"[{Key}] {Name} ({State}) - {GetCompletedStoryPoints()}/{GetPlannedStoryPoints()} pts, " +
+               $"{StartDate?.ToString("yyyy-MM-dd") ?? "n/a"} to {EndDate?.ToString("yyyy-MM-dd") ?? "n/a"}, " +
+               $"{GetCompletedIssueCount()}/{GetTotalIssueCount()} issues completed";
     }
 }
