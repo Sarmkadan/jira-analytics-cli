@@ -14,6 +14,19 @@ namespace JiraAnalyticsCli.Formatters;
 /// </summary>
 public class MarkdownFormatter
 {
+    private const int MinHeaderLevel = 1;
+    private const int MaxHeaderLevel = 6;
+    private const string BulletPrefix = "- ";
+    private const string BlockQuotePrefix = "> ";
+    private const string CodeFence = "```";
+    private const string BoldMarker = "**";
+    private const string ItalicMarker = "*";
+    private const string HorizontalRuleMarker = "---";
+    private const string NullValuePlaceholder = "-";
+    private const string TableColumnSeparator = " | ";
+    private const string TableBorderChar = "-";
+    private const string GeneratedDateFormat = "yyyy-MM-dd HH:mm:ss UTC";
+
     private readonly ILogger<MarkdownFormatter> _logger;
 
     public MarkdownFormatter(ILogger<MarkdownFormatter> logger)
@@ -29,8 +42,8 @@ public class MarkdownFormatter
     public string Header(string text, int level = 1)
     {
         ArgumentException.ThrowIfNullOrEmpty(text);
-        if (level < 1 || level > 6)
-            level = 1;
+        if (level < MinHeaderLevel || level > MaxHeaderLevel)
+            level = MinHeaderLevel;
 
         return new string('#', level) + " " + text;
     }
@@ -51,7 +64,7 @@ public class MarkdownFormatter
         foreach (var item in data)
         {
             var values = properties
-                .Select(p => EscapeMarkdown(p.GetValue(item)?.ToString() ?? "-"))
+                .Select(p => EscapeMarkdown(p.GetValue(item)?.ToString() ?? NullValuePlaceholder))
                 .ToArray();
             rows.Add(values);
         }
@@ -70,7 +83,7 @@ public class MarkdownFormatter
 
         foreach (var item in items)
         {
-            sb.AppendLine($"**{EscapeMarkdown(item.Key)}**: {EscapeMarkdown(item.Value)}");
+            sb.AppendLine($"{BoldMarker}{EscapeMarkdown(item.Key)}{BoldMarker}: {EscapeMarkdown(item.Value)}");
         }
 
         return sb.ToString();
@@ -86,7 +99,7 @@ public class MarkdownFormatter
 
         foreach (var item in items)
         {
-            sb.AppendLine($"- {EscapeMarkdown(item)}");
+            sb.AppendLine($"{BulletPrefix}{EscapeMarkdown(item)}");
         }
 
         return sb.ToString();
@@ -117,9 +130,9 @@ public class MarkdownFormatter
     {
         ArgumentException.ThrowIfNullOrEmpty(code);
         var sb = new StringBuilder();
-        sb.AppendLine($"```{language}");
+        sb.AppendLine($"{CodeFence}{language}");
         sb.AppendLine(code);
-        sb.AppendLine("```");
+        sb.AppendLine(CodeFence);
 
         return sb.ToString();
     }
@@ -131,7 +144,7 @@ public class MarkdownFormatter
     {
         ArgumentException.ThrowIfNullOrEmpty(text);
         var lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        return string.Join("\n", lines.Select(l => "> " + l));
+        return string.Join("\n", lines.Select(l => BlockQuotePrefix + l));
     }
 
     /// <summary>
@@ -140,7 +153,7 @@ public class MarkdownFormatter
     public string Bold(string text)
     {
         ArgumentException.ThrowIfNullOrEmpty(text);
-        return $"**{text}**";
+        return $"{BoldMarker}{text}{BoldMarker}";
     }
 
     /// <summary>
@@ -149,7 +162,7 @@ public class MarkdownFormatter
     public string Italic(string text)
     {
         ArgumentException.ThrowIfNullOrEmpty(text);
-        return $"*{text}*";
+        return $"{ItalicMarker}{text}{ItalicMarker}";
     }
 
     /// <summary>
@@ -157,7 +170,7 @@ public class MarkdownFormatter
     /// </summary>
     public string HorizontalRule()
     {
-        return "---";
+        return HorizontalRuleMarker;
     }
 
     /// <summary>
@@ -181,7 +194,7 @@ public class MarkdownFormatter
 
         sb.AppendLine($"# {title}");
         sb.AppendLine();
-        sb.AppendLine($"*Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss UTC}*");
+        sb.AppendLine($"{ItalicMarker}Generated: {DateTime.UtcNow.ToString(GeneratedDateFormat)}{ItalicMarker}");
         sb.AppendLine();
 
         foreach (var (sectionTitle, content) in sections)
@@ -210,15 +223,15 @@ public class MarkdownFormatter
         }
 
         // Header row
-        sb.AppendLine("| " + string.Join(" | ", headers.Select((h, i) => h.PadRight(colWidths[i]))) + " |");
+        sb.AppendLine("| " + string.Join(TableColumnSeparator, headers.Select((h, i) => h.PadRight(colWidths[i]))) + " |");
 
         // Separator
-        sb.AppendLine("|" + string.Join("|", colWidths.Select(w => new string('-', w + 2))) + "|");
+        sb.AppendLine("|" + string.Join("|", colWidths.Select(w => new string(TableBorderChar[0], w + 2))) + "|");
 
         // Data rows
         foreach (var row in rows)
         {
-            sb.AppendLine("| " + string.Join(" | ", row.Select((v, i) => v.PadRight(colWidths[i]))) + " |");
+            sb.AppendLine("| " + string.Join(TableColumnSeparator, row.Select((v, i) => v.PadRight(colWidths[i]))) + " |");
         }
 
         return sb.ToString();
