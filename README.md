@@ -1227,3 +1227,53 @@ foreach (var entry in history)
     Console.WriteLine($"{entry.Timestamp:O} | {entry.CompletedStoryPoints}/{entry.TotalStoryPoints} pts");
 }
 ```
+
+## XmlFormatter
+
+`XmlFormatter` (namespace `JiraAnalyticsCli.Formatters`) formats analytics data as XML with proper structure and validation. It supports nested objects, dictionaries, and collections with customizable root element names. The constructor accepts an `ILogger<XmlFormatter>` and an optional `includeXmlDeclaration` flag (default `true`).
+
+Its public methods are:
+
+- `Format(object data, string rootElement = "data")` - serializes an object to an indented XML string. Dictionaries become child elements keyed by entry key, collections become `<item index="N">` elements, and plain objects are reflected by their public properties. Throws `InvalidOperationException` on failure.
+- `Validate(string xml)` - checks whether an XML string is well-formed. Returns a tuple `(bool IsValid, string? Error)` without throwing on invalid input.
+- `Prettify(string xml)` - re-formats an XML string with consistent two-space indentation. Throws `InvalidOperationException` on failure.
+- `SelectValues(string xml, string xpathExpression)` - evaluates an XPath expression against the XML and returns matching element values as a `List<string>`. Returns an empty list on error instead of throwing.
+
+Element names are sanitized to contain only letters, digits, underscores, and hyphens; names that do not start with a letter or underscore are prefixed with `_`. Null property values are represented as an element with a `null="true"` attribute. `DateTime` values are formatted in round-trip ("O") format.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Formatters;
+using Microsoft.Extensions.Logging.Abstractions;
+
+var formatter = new XmlFormatter(NullLogger<XmlFormatter>.Instance);
+
+// Format an object as XML
+var data = new Dictionary<string, object>
+{
+    ["ProjectKey"] = "PROJ",
+    ["SprintCount"] = 5,
+    ["Velocity"] = 42.5
+};
+var xml = formatter.Format(data, rootElement: "analytics");
+Console.WriteLine(xml);
+// <?xml version="1.0" encoding="utf-8" standalone="yes"?>
+// <analytics>
+//   <ProjectKey>PROJ</ProjectKey>
+//   <SprintCount>5</SprintCount>
+//   <Velocity>42.5</Velocity>
+// </analytics>
+
+// Validate XML
+var (isValid, error) = formatter.Validate(xml);
+Console.WriteLine($"Valid: {isValid}"); // Valid: True
+
+// Prettify existing XML
+var ugly = "<root><a>1</a><b>2</b></root>";
+Console.WriteLine(formatter.Prettify(ugly));
+
+// Extract values with XPath
+var values = formatter.SelectValues(xml, "//Velocity");
+Console.WriteLine($"Velocity: {values.FirstOrDefault()}"); // Velocity: 42.5
+```
