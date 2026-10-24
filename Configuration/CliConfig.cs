@@ -32,6 +32,14 @@ public class CliConfig : ICliConfig
             throw new InvalidOperationException("JiraBaseUrl cannot be empty");
         }
 
+        // The URL is not echoed: it may carry user info, and it is also the host every request is sent to.
+        if (!Uri.TryCreate(this.JiraBaseUrl, UriKind.Absolute, out var baseUri)
+            || baseUri.Scheme is not ("http" or "https")
+            || string.IsNullOrEmpty(baseUri.Host))
+        {
+            throw new InvalidOperationException("JiraBaseUrl must be an absolute http or https URL");
+        }
+
         if (string.IsNullOrWhiteSpace(this.JiraApiToken))
         {
             throw new InvalidOperationException("JiraApiToken must be set. Set JIRA_API_TOKEN environment variable");
@@ -82,4 +90,12 @@ public class CliConfig : ICliConfig
             throw new InvalidOperationException("JiraApiMaxPageSize must be positive");
         }
     }
+
+    /// <summary>
+    /// Describes the settings for diagnostics. The API token is replaced with a placeholder so it never reaches logs.
+    /// </summary>
+    /// <returns>A single-line summary without the API token.</returns>
+    public override string ToString() =>
+        $"CliConfig {{ JiraBaseUrl = {this.JiraBaseUrl}, JiraApiToken = <redacted>, DefaultProject = {this.DefaultProject}, " +
+        $"JiraApiTimeoutSeconds = {this.JiraApiTimeoutSeconds}, JiraApiMaxPageSize = {this.JiraApiMaxPageSize}, JiraApiMaxPages = {this.JiraApiMaxPages} }}";
 }

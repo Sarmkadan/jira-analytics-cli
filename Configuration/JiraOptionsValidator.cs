@@ -31,7 +31,9 @@ public static class JiraOptionsValidator
 
         if (!IsAbsoluteHttpsUri(options.BaseUrl))
         {
-            problems.Add(JiraSettingLocations.BaseUrl.Problem("must be an absolute https URI, e.g. https://your-company.atlassian.net", options.BaseUrl));
+            // A URL containing '@' may carry user-info credentials, so it is not echoed back.
+            var echoedUrl = options.BaseUrl is { } url && !url.Contains('@') ? url : null;
+            problems.Add(JiraSettingLocations.BaseUrl.Problem("must be an absolute https URI, e.g. https://your-company.atlassian.net", echoedUrl));
         }
 
         // The token is a secret, so the offending value is deliberately not echoed.

@@ -154,7 +154,8 @@ public static class JiraOptionsLoader
         }
         catch (JsonException ex)
         {
-            problems.Add($"{AppSettingsFileName} is not valid JSON ({ex.Message}). Fix the file.");
+            // The parser message quotes the offending character, which may be part of a token, so only the position is reported.
+            problems.Add($"{AppSettingsFileName} is not valid JSON (line {ex.LineNumber}, byte {ex.BytePositionInLine}). Fix the file.");
             return null;
         }
     }

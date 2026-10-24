@@ -29,4 +29,12 @@ public class JiraOptions
 
     /// <summary>HTTP timeout for Jira requests, in seconds. Must be between 1 and 300.</summary>
     public int TimeoutSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Describes the options for diagnostics. The API token is replaced with a placeholder so it never reaches logs.
+    /// </summary>
+    /// <returns>A single-line summary without the API token.</returns>
+    public override string ToString() =>
+        $"JiraOptions {{ BaseUrl = {this.BaseUrl}, ApiToken = <redacted>, ProjectKey = {this.ProjectKey}, " +
+        $"BoardId = {this.BoardId}, TimeoutSeconds = {this.TimeoutSeconds} }}";
 }

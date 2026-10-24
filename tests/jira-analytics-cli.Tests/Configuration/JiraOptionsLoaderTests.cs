@@ -297,6 +297,31 @@ public class JiraOptionsLoaderTests
     }
 
     [Fact]
+    public void Load_EnvUrlWithNonHttpScheme_ReportsProblem()
+    {
+        var result = JiraOptionsLoader.Load(
+            new JiraOptionsOverrides(),
+            Env(("JIRA_URL", "ftp://files.example.com"), ("JIRA_API_TOKEN", ValidToken)),
+            null);
+
+        result.IsValid.Should().BeFalse();
+        result.Problems.Should().ContainSingle()
+            .Which.Should().StartWith("BaseUrl must be an absolute https URI").And.Contain("ftp://files.example.com");
+    }
+
+    [Fact]
+    public void Load_EnvUrlWithUserInfo_DoesNotEchoCredentials()
+    {
+        var result = JiraOptionsLoader.Load(
+            new JiraOptionsOverrides(),
+            Env(("JIRA_URL", "ftp://deploy:hunter2-secret@files.example.com"), ("JIRA_API_TOKEN", ValidToken)),
+            null);
+
+        result.Problems.Should().ContainSingle()
+            .Which.Should().StartWith("BaseUrl must be an absolute https URI").And.NotContain("hunter2-secret");
+    }
+
+    [Fact]
     public void Load_NullOverrides_Throws()
     {
         var act = () => JiraOptionsLoader.Load(null!, NoEnv, null);

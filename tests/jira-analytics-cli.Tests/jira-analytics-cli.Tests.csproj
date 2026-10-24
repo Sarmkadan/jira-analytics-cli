@@ -79,6 +79,11 @@
     <Compile Include="..\..\Configuration\JiraOptionsLoader.cs" />
     <Compile Include="Configuration\JiraOptionsValidatorTests.cs" />
     <Compile Include="Configuration\JiraOptionsLoaderTests.cs" />
+    <!-- Environment-variable configuration rules and token redaction -->
+    <Compile Include="..\..\Configuration\CliConfig.cs" />
+    <Compile Include="..\..\Configuration\AppConfigurationProvider.cs" />
+    <Compile Include="..\..\Exceptions\ConfigurationException.cs" />
+    <Compile Include="Configuration\AppConfigurationProviderTests.cs" />
     <!-- Report/output option validation and the check-config flag -->
     <Compile Include="..\..\Utils\OutputOptionsValidator.cs" />
     <Compile Include="..\..\Configuration\JiraConfigChecker.cs" />

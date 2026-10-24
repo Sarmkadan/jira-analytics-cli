@@ -3,7 +3,9 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
 using System.Text.Json;
+using JiraAnalyticsCli.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace JiraAnalyticsCli.Configuration;
@@ -16,16 +18,69 @@ public interface IConfigurationProvider
     public ICliConfig LoadConfiguration();
 }
 
+/// <summary>
+/// Builds <see cref="ICliConfig"/> from appsettings.json, environment variables and the resolved <see cref="JiraOptions"/>.
+/// Numeric environment variables are rejected when they are not whole numbers or fall outside their allowed range,
+/// so a bad value can neither be silently ignored nor set an unbounded page size or a zero timeout.
+/// </summary>
 public class AppConfigurationProvider : IConfigurationProvider
 {
     private readonly ILogger<AppConfigurationProvider> _logger;
     private readonly JiraOptions _jiraOptions;
+    private readonly Func<string, string?> _getEnv;
     private const string ConfigFileName = "appsettings.json";
 
+    /// <summary>Upper bound for CACHE_EXPIRATION_MINUTES (one week).</summary>
+    private const int MaxCacheExpirationMinutes = 10080;
+
+    /// <summary>Upper bound for DEFAULT_SPRINT_COUNT.</summary>
+    private const int MaxDefaultSprintCount = 100;
+
+    /// <summary>Upper bound for JIRA_API_MAX_RETRY_ATTEMPTS.</summary>
+    private const int MaxRetryAttempts = 10;
+
+    /// <summary>Upper bound for JIRA_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD.</summary>
+    private const int MaxCircuitBreakerFailureThreshold = 100;
+
+    /// <summary>Upper bound for JIRA_API_CIRCUIT_BREAKER_DURATION_SECONDS (one hour).</summary>
+    private const int MaxCircuitBreakerDurationSeconds = 3600;
+
+    /// <summary>Upper bound for JIRA_API_MAX_RESULTS_PER_REQUEST.</summary>
+    private const int MaxResultsPerRequestLimit = 1000;
+
+    /// <summary>Upper bound for JIRA_API_MAX_PAGES.</summary>
+    private const int MaxPagesLimit = 1000;
+
+    /// <summary>Upper bound for JIRA_API_MAX_PAGE_SIZE.</summary>
+    private const int MaxPageSizeLimit = 1000;
+
+    /// <summary>
+    /// Creates a provider that reads environment variables from the process.
+    /// </summary>
+    /// <param name="logger">Logger for configuration diagnostics.</param>
+    /// <param name="jiraOptions">Jira settings already resolved from CLI flags, environment and appsettings.json.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="jiraOptions"/> is <see langword="null"/>.</exception>
     public AppConfigurationProvider(ILogger<AppConfigurationProvider> logger, JiraOptions jiraOptions)
+        : this(logger, jiraOptions, Environment.GetEnvironmentVariable)
     {
+    }
+
+    /// <summary>
+    /// Creates a provider that reads environment variables through <paramref name="getEnv"/>, so tests can supply their own.
+    /// </summary>
+    /// <param name="logger">Logger for configuration diagnostics.</param>
+    /// <param name="jiraOptions">Jira settings already resolved from CLI flags, environment and appsettings.json.</param>
+    /// <param name="getEnv">Environment variable lookup.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="logger"/>, <paramref name="jiraOptions"/> or <paramref name="getEnv"/> is <see langword="null"/>.</exception>
+    internal AppConfigurationProvider(ILogger<AppConfigurationProvider> logger, JiraOptions jiraOptions, Func<string, string?> getEnv)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(jiraOptions);
+        ArgumentNullException.ThrowIfNull(getEnv);
+
         this._logger = logger;
         this._jiraOptions = jiraOptions;
+        this._getEnv = getEnv;
     }
 
     public ICliConfig LoadConfiguration()
@@ -69,103 +124,123 @@ public class AppConfigurationProvider : IConfigurationProvider
     {
         this._logger.LogDebug("Loading configuration from environment variables");
 
-        var jiraUrl = Environment.GetEnvironmentVariable("JIRA_URL") ?? Environment.GetEnvironmentVariable("JIRA_BASE_URL");
+        var jiraUrl = this._getEnv("JIRA_URL") ?? this._getEnv("JIRA_BASE_URL");
         if (!string.IsNullOrEmpty(jiraUrl))
         {
             config.JiraBaseUrl = jiraUrl;
             this._logger.LogDebug("JIRA_URL/JIRA_BASE_URL set from environment");
         }
 
-        var jiraToken = Environment.GetEnvironmentVariable("JIRA_TOKEN") ?? Environment.GetEnvironmentVariable("JIRA_API_TOKEN");
+        // The token is never logged or put into an exception message: only the variable name is mentioned.
+        var jiraToken = this._getEnv("JIRA_TOKEN") ?? this._getEnv("JIRA_API_TOKEN");
         if (!string.IsNullOrEmpty(jiraToken))
         {
             config.JiraApiToken = jiraToken;
             this._logger.LogDebug("JIRA_TOKEN/JIRA_API_TOKEN set from environment");
         }
 
-        var defaultProject = Environment.GetEnvironmentVariable("JIRA_PROJECT") ?? Environment.GetEnvironmentVariable("JIRA_DEFAULT_PROJECT");
+        var defaultProject = this._getEnv("JIRA_PROJECT") ?? this._getEnv("JIRA_DEFAULT_PROJECT");
         if (!string.IsNullOrEmpty(defaultProject))
         {
             config.DefaultProject = defaultProject;
             this._logger.LogDebug("JIRA_PROJECT/JIRA_DEFAULT_PROJECT set from environment");
         }
 
-        var cacheMinutes = Environment.GetEnvironmentVariable("CACHE_EXPIRATION_MINUTES");
-        if (int.TryParse(cacheMinutes, out var minutes))
+        if (this.ReadEnvironmentInt("CACHE_EXPIRATION_MINUTES", 0, MaxCacheExpirationMinutes) is { } minutes)
         {
             config.CacheExpirationMinutes = minutes;
             this._logger.LogDebug("CACHE_EXPIRATION_MINUTES set to {Minutes}", minutes);
         }
 
-        var logging = Environment.GetEnvironmentVariable("DETAILED_LOGGING");
+        var logging = this._getEnv("DETAILED_LOGGING");
         if (bool.TryParse(logging, out var enabled))
         {
             config.EnableDetailedLogging = enabled;
             this._logger.LogDebug("DETAILED_LOGGING set to {Enabled}", enabled);
         }
 
-        var sprintCount = Environment.GetEnvironmentVariable("DEFAULT_SPRINT_COUNT");
-        if (int.TryParse(sprintCount, out var count))
+        if (this.ReadEnvironmentInt("DEFAULT_SPRINT_COUNT", 1, MaxDefaultSprintCount) is { } count)
         {
             config.DefaultSprintCount = count;
             this._logger.LogDebug("DEFAULT_SPRINT_COUNT set to {Count}", count);
         }
 
-        var format = Environment.GetEnvironmentVariable("EXPORT_FORMAT");
+        var format = this._getEnv("EXPORT_FORMAT");
         if (!string.IsNullOrEmpty(format))
         {
             config.ExportFormat = format;
             this._logger.LogDebug("EXPORT_FORMAT set to {Format}", format);
         }
 
-        var maxRetryAttempts = Environment.GetEnvironmentVariable("JIRA_API_MAX_RETRY_ATTEMPTS");
-        if (int.TryParse(maxRetryAttempts, out var retryAttempts))
+        if (this.ReadEnvironmentInt("JIRA_API_MAX_RETRY_ATTEMPTS", 1, MaxRetryAttempts) is { } retryAttempts)
         {
             config.JiraApiMaxRetryAttempts = retryAttempts;
             this._logger.LogDebug("JIRA_API_MAX_RETRY_ATTEMPTS set to {Attempts}", retryAttempts);
         }
 
-        var circuitBreakerThreshold = Environment.GetEnvironmentVariable("JIRA_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD");
-        if (int.TryParse(circuitBreakerThreshold, out var threshold))
+        if (this.ReadEnvironmentInt("JIRA_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD", 1, MaxCircuitBreakerFailureThreshold) is { } threshold)
         {
             config.JiraApiCircuitBreakerFailureThreshold = threshold;
             this._logger.LogDebug("JIRA_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD set to {Threshold}", threshold);
         }
 
-        var circuitBreakerDuration = Environment.GetEnvironmentVariable("JIRA_API_CIRCUIT_BREAKER_DURATION_SECONDS");
-        if (int.TryParse(circuitBreakerDuration, out var duration))
+        if (this.ReadEnvironmentInt("JIRA_API_CIRCUIT_BREAKER_DURATION_SECONDS", 1, MaxCircuitBreakerDurationSeconds) is { } duration)
         {
             config.JiraApiCircuitBreakerDurationSeconds = duration;
             this._logger.LogDebug("JIRA_API_CIRCUIT_BREAKER_DURATION_SECONDS set to {Duration}", duration);
         }
 
-        var timeoutSeconds = Environment.GetEnvironmentVariable("JIRA_API_TIMEOUT_SECONDS");
-        if (int.TryParse(timeoutSeconds, out var timeout))
+        if (this.ReadEnvironmentInt("JIRA_API_TIMEOUT_SECONDS", JiraOptionsValidator.MinTimeoutSeconds, JiraOptionsValidator.MaxTimeoutSeconds) is { } timeout)
         {
             config.JiraApiTimeoutSeconds = timeout;
             this._logger.LogDebug("JIRA_API_TIMEOUT_SECONDS set to {Timeout}", timeout);
         }
 
-        var maxResultsPerRequest = Environment.GetEnvironmentVariable("JIRA_API_MAX_RESULTS_PER_REQUEST");
-        if (int.TryParse(maxResultsPerRequest, out var maxResults))
+        if (this.ReadEnvironmentInt("JIRA_API_MAX_RESULTS_PER_REQUEST", 1, MaxResultsPerRequestLimit) is { } maxResults)
         {
             config.JiraApiMaxResultsPerRequest = maxResults;
             this._logger.LogDebug("JIRA_API_MAX_RESULTS_PER_REQUEST set to {MaxResults}", maxResults);
         }
 
-        var maxPages = Environment.GetEnvironmentVariable("JIRA_API_MAX_PAGES");
-        if (int.TryParse(maxPages, out var pages))
+        if (this.ReadEnvironmentInt("JIRA_API_MAX_PAGES", 1, MaxPagesLimit) is { } pages)
         {
             config.JiraApiMaxPages = pages;
             this._logger.LogDebug("JIRA_API_MAX_PAGES set to {Pages}", pages);
         }
 
-        var maxPageSize = Environment.GetEnvironmentVariable("JIRA_API_MAX_PAGE_SIZE");
-        if (int.TryParse(maxPageSize, out var pageSize))
+        if (this.ReadEnvironmentInt("JIRA_API_MAX_PAGE_SIZE", 1, MaxPageSizeLimit) is { } pageSize)
         {
             config.JiraApiMaxPageSize = pageSize;
             this._logger.LogDebug("JIRA_API_MAX_PAGE_SIZE set to {PageSize}", pageSize);
         }
+    }
+
+    /// <summary>
+    /// Reads an integer environment variable. An unset or empty variable returns <see langword="null"/>;
+    /// anything else must be a whole number within [<paramref name="min"/>, <paramref name="max"/>].
+    /// </summary>
+    /// <param name="name">Environment variable name.</param>
+    /// <param name="min">Smallest allowed value, inclusive.</param>
+    /// <param name="max">Largest allowed value, inclusive.</param>
+    /// <returns>The parsed value, or <see langword="null"/> when the variable is unset or empty.</returns>
+    /// <exception cref="ConfigurationException">The value is not a whole number or is outside the allowed range.</exception>
+    private int? ReadEnvironmentInt(string name, int min, int max)
+    {
+        var raw = this._getEnv(name);
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        // The raw value is not echoed: it could be a credential pasted into the wrong variable.
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) || value < min || value > max)
+        {
+            throw new ConfigurationException(
+                $"{name} must be a whole number from {min} to {max}. Fix the environment variable and run the command again.",
+                name);
+        }
+
+        return value;
     }
 
     private void LoadFromJsonFile(CliConfig config)
@@ -249,6 +324,11 @@ public class AppConfigurationProvider : IConfigurationProvider
             }
 
             this._logger.LogDebug("Configuration successfully loaded from JSON file");
+        }
+        catch (JsonException ex)
+        {
+            // JsonException messages quote the offending character, which may belong to a token, so only the position is logged.
+            this._logger.LogWarning("Invalid JSON in {ConfigFile} at line {Line}, byte {Position}. Using defaults", ConfigFileName, ex.LineNumber, ex.BytePositionInLine);
         }
         catch (Exception ex)
         {
