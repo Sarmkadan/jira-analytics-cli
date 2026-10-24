@@ -50,7 +50,7 @@ dotnet_naming_symbols.private_symbols.required_modifiers =
 # Code style rules
 csharp_prefer_braces = true:warning
 csharp_prefer_simple_using_statement = true:suggestion
-csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_namespace_declarations = file_scoped:warning
 csharp_style_expression_bodied_methods = true:suggestion
 csharp_style_expression_bodied_properties = true:suggestion
 csharp_style_expression_bodied_indexers = true:suggestion
@@ -124,13 +124,13 @@ dotnet_style_prefer_foreach_explicit_cast_in_source = true:silent
 dotnet_style_allow_multiple_blank_lines_experimental = false:silent
 dotnet_style_allow_statement_immediately_after_block_experimental = true:silent
 
-# JSON files
-[*.json]
-indent_size = 2
+# Usings: System directives first, and flag unnecessary usings
+dotnet_sort_system_directives_first = true
+dotnet_diagnostic.IDE0005.severity = warning
 
-# YAML files
-[*.{yml,yaml}]
-indent_size = 2
+# File header (kept at suggestion so headers never fail a build)
+file_header_template = Copyright (c) 2026 Vladyslav Zaiets. Licensed under the MIT License.
+dotnet_diagnostic.IDE0073.severity = suggestion
 
 # Markdown files
 [*.md]
@@ -147,6 +147,10 @@ end_of_line = lf
 [*.{bat,cmd}]
 end_of_line = crlf
 
-# Project files
-[*.{csproj,xml}]
+# Project files: C# projects use 4 spaces, MSBuild XML uses 2
+[*.csproj]
+indent_size = 4
+
+# JSON, YAML and MSBuild/XML files
+[*.{json,yml,yaml,xml,props,targets}]
 indent_size = 2
