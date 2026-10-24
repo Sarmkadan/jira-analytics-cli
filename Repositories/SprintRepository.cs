@@ -19,19 +19,19 @@ public class SprintRepository : ISprintRepository
 
     public SprintRepository(ILogger<SprintRepository> logger)
     {
-        _logger = logger;
+        this._logger = logger;
     }
 
     public async Task<Sprint?> GetByIdAsync(int sprintId)
     {
         try
         {
-            _logger.LogDebug("Retrieving sprint {SprintId}", sprintId);
-            return _sprints.TryGetValue(sprintId, out var sprint) ? sprint : null;
+            this._logger.LogDebug("Retrieving sprint {SprintId}", sprintId);
+            return this._sprints.TryGetValue(sprintId, out var sprint) ? sprint : null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving sprint {SprintId}", sprintId);
+            this._logger.LogError(ex, "Error retrieving sprint {SprintId}", sprintId);
             return null;
         }
         finally
@@ -44,15 +44,15 @@ public class SprintRepository : ISprintRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving sprints for project {ProjectKey}", projectKey);
-            return _sprints.Values
+            this._logger.LogDebug("Retrieving sprints for project {ProjectKey}", projectKey);
+            return this._sprints.Values
                 .Where(s => s.ProjectKey == projectKey)
                 .OrderByDescending(s => s.EndDate)
                 .ToList();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving sprints for project {ProjectKey}", projectKey);
+            this._logger.LogError(ex, "Error retrieving sprints for project {ProjectKey}", projectKey);
             return new List<Sprint>();
         }
         finally
@@ -65,14 +65,14 @@ public class SprintRepository : ISprintRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving active sprints");
-            return _sprints.Values
+            this._logger.LogDebug("Retrieving active sprints");
+            return this._sprints.Values
                 .Where(s => s.IsActive())
                 .ToList();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving active sprints");
+            this._logger.LogError(ex, "Error retrieving active sprints");
             return new List<Sprint>();
         }
         finally
@@ -85,8 +85,8 @@ public class SprintRepository : ISprintRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving {Count} recent closed sprints", count);
-            return _sprints.Values
+            this._logger.LogDebug("Retrieving {Count} recent closed sprints", count);
+            return this._sprints.Values
                 .Where(s => s.IsClosed())
                 .OrderByDescending(s => s.CompleteDate)
                 .Take(count)
@@ -94,7 +94,7 @@ public class SprintRepository : ISprintRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving closed sprints");
+            this._logger.LogError(ex, "Error retrieving closed sprints");
             return new List<Sprint>();
         }
         finally
@@ -108,15 +108,17 @@ public class SprintRepository : ISprintRepository
         try
         {
             if (sprint == null)
+            {
                 throw new ArgumentNullException(nameof(sprint));
+            }
 
             sprint.Validate();
-            _sprints.AddOrUpdate(sprint.Id, sprint, (id, existing) => sprint);
-            _logger.LogDebug("Saved sprint {SprintId}: {SprintName}", sprint.Id, sprint.Name);
+            this._sprints.AddOrUpdate(sprint.Id, sprint, (id, existing) => sprint);
+            this._logger.LogDebug("Saved sprint {SprintId}: {SprintName}", sprint.Id, sprint.Name);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving sprint");
+            this._logger.LogError(ex, "Error saving sprint");
             throw;
         }
         finally
@@ -130,19 +132,21 @@ public class SprintRepository : ISprintRepository
         try
         {
             if (sprints == null || !sprints.Any())
+            {
                 throw new ArgumentException("Sprints collection cannot be null or empty");
+            }
 
             foreach (var sprint in sprints)
             {
                 sprint.Validate();
-                _sprints.AddOrUpdate(sprint.Id, sprint, (id, existing) => sprint);
+                this._sprints.AddOrUpdate(sprint.Id, sprint, (id, existing) => sprint);
             }
 
-            _logger.LogInformation("Saved {SprintCount} sprints to repository", sprints.Count);
+            this._logger.LogInformation("Saved {SprintCount} sprints to repository", sprints.Count);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving sprints");
+            this._logger.LogError(ex, "Error saving sprints");
             throw;
         }
         finally
@@ -153,12 +157,12 @@ public class SprintRepository : ISprintRepository
 
     public int GetCount()
     {
-        return _sprints.Count;
+        return this._sprints.Count;
     }
 
     public void Clear()
     {
-        _sprints.Clear();
-        _logger.LogInformation("Sprint repository cleared");
+        this._sprints.Clear();
+        this._logger.LogInformation("Sprint repository cleared");
     }
 }

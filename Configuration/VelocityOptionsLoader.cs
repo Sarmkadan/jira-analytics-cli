@@ -22,7 +22,7 @@ public sealed record VelocityOptionsOverrides(
 public sealed record VelocityOptionsLoadResult(VelocityOptions? Options, IReadOnlyList<string> Problems)
 {
     /// <summary>True when no problems were found and <see cref="Options"/> is set.</summary>
-    public bool IsValid => Problems.Count == 0;
+    public bool IsValid => this.Problems.Count == 0;
 }
 
 /// <summary>
@@ -67,23 +67,33 @@ public static class VelocityOptionsLoader
         if (windowText is not null)
         {
             if (!int.TryParse(windowText, NumberStyles.Integer, CultureInfo.InvariantCulture, out windowSize))
+            {
                 problems.Add(WindowSizeLocation.Problem($"must be a whole number from {VelocityOptionsValidator.MinWindowSize} to {VelocityOptionsValidator.MaxWindowSize}", windowText));
+            }
             else if (!VelocityOptionsValidator.IsValidWindowSize(windowSize))
+            {
                 problems.Add(WindowSizeLocation.Problem($"must be between {VelocityOptionsValidator.MinWindowSize} and {VelocityOptionsValidator.MaxWindowSize}", windowText));
+            }
         }
 
         bool excludeZero = new VelocityOptions().ExcludeZeroPointSprints;
         var excludeText = Resolve(overrides.ExcludeZeroPointSprints, ExcludeZeroPointSprintsLocation, getEnv, json);
         if (excludeText is not null && !bool.TryParse(excludeText, out excludeZero))
+        {
             problems.Add(ExcludeZeroPointSprintsLocation.Problem("must be true or false", excludeText));
+        }
 
         var storyPointsField = Resolve(overrides.StoryPointsField, StoryPointsFieldLocation, getEnv, json)
             ?? VelocityOptions.DefaultStoryPointsField;
         if (!VelocityOptionsValidator.IsValidStoryPointsField(storyPointsField))
+        {
             problems.Add(StoryPointsFieldLocation.Problem("must match customfield_<digits>, for example customfield_10016", storyPointsField));
+        }
 
         if (problems.Count > 0)
+        {
             return new VelocityOptionsLoadResult(null, problems);
+        }
 
         return new VelocityOptionsLoadResult(
             new VelocityOptions(windowSize, excludeZero, storyPointsField),
@@ -106,20 +116,26 @@ public static class VelocityOptionsLoader
     private static string? Resolve(string? cliValue, JiraSettingLocation location, Func<string, string?> getEnv, JsonElement? json)
     {
         if (cliValue is not null)
+        {
             return cliValue;
+        }
 
         foreach (var name in location.EnvVars)
         {
             var envValue = getEnv(name);
             if (!string.IsNullOrWhiteSpace(envValue))
+            {
                 return envValue;
+            }
         }
 
         if (json is { } root && root.TryGetProperty(location.JsonKey, out var element) && element.ValueKind != JsonValueKind.Null)
         {
             var jsonValue = element.ValueKind == JsonValueKind.String ? element.GetString() : element.GetRawText();
             if (!string.IsNullOrWhiteSpace(jsonValue))
+            {
                 return jsonValue;
+            }
         }
 
         return null;
@@ -128,7 +144,9 @@ public static class VelocityOptionsLoader
     private static JsonElement? ParseAppSettings(string? text, List<string> problems)
     {
         if (string.IsNullOrWhiteSpace(text))
+        {
             return null;
+        }
 
         try
         {

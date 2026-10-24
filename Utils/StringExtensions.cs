@@ -46,10 +46,14 @@ public static partial class StringExtensions
         ArgumentOutOfRangeException.ThrowIfLessThan(maxLength, 1);
 
         if (string.IsNullOrEmpty(value))
+        {
             return value;
+        }
 
         if (value.Length <= maxLength)
+        {
             return value;
+        }
 
         // string.Concat(ReadOnlySpan, string) avoids the intermediate Substring allocation.
         return string.Concat(value.AsSpan(0, Math.Max(0, maxLength - 1)), "…");
@@ -64,7 +68,9 @@ public static partial class StringExtensions
     public static string RemoveWhitespace(this string value)
     {
         if (string.IsNullOrEmpty(value))
+        {
             return value;
+        }
 
         var span = value.AsSpan();
 
@@ -78,7 +84,10 @@ public static partial class StringExtensions
                 break;
             }
         }
-        if (!hasWhitespace) return value;
+        if (!hasWhitespace)
+        {
+            return value;
+        }
 
         // Rent a suitably-sized buffer from the shared pool to avoid a per-call heap allocation.
         var buffer = ArrayPool<char>.Shared.Rent(value.Length);
@@ -88,7 +97,9 @@ public static partial class StringExtensions
             foreach (var ch in span)
             {
                 if (!char.IsWhiteSpace(ch))
+                {
                     buffer[writeIdx++] = ch;
+                }
             }
             return new string(buffer, 0, writeIdx);
         }
@@ -107,7 +118,9 @@ public static partial class StringExtensions
     public static string ToSlug(this string value)
     {
         if (string.IsNullOrEmpty(value))
+        {
             return string.Empty;
+        }
 
         var slug = value.ToLowerInvariant();
         slug = SlugInvalidCharsRegex().Replace(slug, string.Empty);
@@ -129,7 +142,9 @@ public static partial class StringExtensions
         result = false;
 
         if (string.IsNullOrEmpty(value))
+        {
             return false;
+        }
 
         var lower = value.ToLowerInvariant().Trim();
 
@@ -163,7 +178,9 @@ public static partial class StringExtensions
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (count == 0 || string.IsNullOrEmpty(value))
+        {
             return string.Empty;
+        }
 
         var builder = new StringBuilder(value.Length * count);
 
@@ -215,7 +232,9 @@ public static partial class StringExtensions
     public static string GetCommonPrefix(this string str1, string str2)
     {
         if (str1 is null || str2 is null)
+        {
             return string.Empty;
+        }
 
         var span1 = str1.AsSpan();
         var span2 = str2.AsSpan();
@@ -225,7 +244,9 @@ public static partial class StringExtensions
         for (i = 0; i < minLength; i++)
         {
             if (span1[i] != span2[i])
+            {
                 break;
+            }
         }
 
         // One Substring call at the end rather than one on every early-exit branch.
@@ -241,7 +262,9 @@ public static partial class StringExtensions
     public static string EscapeForSql(this string value)
     {
         if (string.IsNullOrEmpty(value))
+        {
             return value;
+        }
 
         return value.Replace("'", "''");
     }

@@ -21,8 +21,8 @@ public class HtmlReportService : IHtmlReportService
     /// <summary>Initialises a new instance of <see cref="HtmlReportService"/>.</summary>
     public HtmlReportService(IAnalyticsService analyticsService, ILogger<HtmlReportService> logger)
     {
-        _analyticsService = analyticsService ?? throw new ArgumentNullException(nameof(analyticsService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._analyticsService = analyticsService ?? throw new ArgumentNullException(nameof(analyticsService));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <inheritdoc/>
@@ -32,32 +32,36 @@ public class HtmlReportService : IHtmlReportService
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath, nameof(outputPath));
 
         if (sprintCount <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(sprintCount), "Sprint count must be positive.");
+        }
 
-        _logger.LogInformation(
+        this._logger.LogInformation(
             "Generating HTML report for project {ProjectKey} ({SprintCount} sprints) → {OutputPath}",
             projectKey, sprintCount, outputPath);
 
         try
         {
-            var sprintTask = _analyticsService.AnalyzeSprints(projectKey, sprintCount);
-            var teamTask   = _analyticsService.AnalyzeTeam(projectKey);
+            var sprintTask = this._analyticsService.AnalyzeSprints(projectKey, sprintCount);
+            var teamTask   = this._analyticsService.AnalyzeTeam(projectKey);
 
             await Task.WhenAll(sprintTask, teamTask);
 
-            var html = BuildHtml(projectKey, sprintTask.Result, teamTask.Result);
+            var html = this.BuildHtml(projectKey, sprintTask.Result, teamTask.Result);
 
             var dir = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(dir))
+            {
                 Directory.CreateDirectory(dir);
+            }
 
             await File.WriteAllTextAsync(outputPath, html, Encoding.UTF8);
 
-            _logger.LogInformation("HTML report written to {OutputPath}", outputPath);
+            this._logger.LogInformation("HTML report written to {OutputPath}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating HTML report for project {ProjectKey}", projectKey);
+            this._logger.LogError(ex, "Error generating HTML report for project {ProjectKey}", projectKey);
             throw;
         }
     }
@@ -114,7 +118,10 @@ public class HtmlReportService : IHtmlReportService
         {
             sb.Append(TeamWorkloadHeader);
             var maxLoad = teamAnalysis.WorkloadDistribution.Values.DefaultIfEmpty(1).Max();
-            if (maxLoad == 0) maxLoad = 1;
+            if (maxLoad == 0)
+            {
+                maxLoad = 1;
+            }
 
             foreach (var (dev, count) in teamAnalysis.WorkloadDistribution.OrderByDescending(kv => kv.Value))
             {

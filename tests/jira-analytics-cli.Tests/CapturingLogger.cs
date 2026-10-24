@@ -28,5 +28,5 @@ internal sealed class CapturingLogger<T> : ILogger<T>
 
     /// <inheritdoc />
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-        Messages.Add(new CapturedLogLine(logLevel, formatter(state, exception)));
+        this.Messages.Add(new CapturedLogLine(logLevel, formatter(state, exception)));
 }

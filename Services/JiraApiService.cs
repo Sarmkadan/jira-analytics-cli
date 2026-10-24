@@ -5,12 +5,11 @@
 
 using System.Globalization;
 using System.Net;
-using System.Text.Json;
 using System.Runtime.CompilerServices;
-using JiraAnalyticsCli.Models;
+using System.Text.Json;
 using JiraAnalyticsCli.Configuration;
+using JiraAnalyticsCli.Models;
 using Microsoft.Extensions.Logging;
-using JiraAnalyticsCli.Services;
 
 namespace JiraAnalyticsCli.Services;
 
@@ -56,16 +55,16 @@ public class JiraApiService : IJiraApiService
         ArgumentNullException.ThrowIfNull(config, nameof(config));
         ArgumentNullException.ThrowIfNull(logger, nameof(logger));
 
-        _httpClient = httpClientFactory.CreateClient("jira");
-        _config = config;
-        _logger = logger;
+        this._httpClient = httpClientFactory.CreateClient("jira");
+        this._config = config;
+        this._logger = logger;
     }
 
     public async Task<JiraProject?> GetProjectAsync(string projectKey)
     {
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
-        return await GetAndParseAsync(
+        return await this.GetAndParseAsync(
             $"{ApiV3Base}{ProjectsRoute}/{projectKey}",
             root =>
             {
@@ -83,13 +82,13 @@ public class JiraApiService : IJiraApiService
                     Url = GetStringOrNull(root, "url")
                 };
 
-                _logger.LogInformation("Successfully fetched project {ProjectKey}: {ProjectName}", projectKey, project.Name);
+                this._logger.LogInformation("Successfully fetched project {ProjectKey}: {ProjectName}", projectKey, project.Name);
                 return project;
             },
             $"project {projectKey}",
-            () => _logger.LogInformation("Fetching project {ProjectKey}", projectKey),
-            statusCode => _logger.LogWarning("Failed to fetch project {ProjectKey}: {StatusCode}", projectKey, statusCode),
-            ex => _logger.LogError(ex, "Error fetching project {ProjectKey}", projectKey));
+            () => this._logger.LogInformation("Fetching project {ProjectKey}", projectKey),
+            statusCode => this._logger.LogWarning("Failed to fetch project {ProjectKey}: {StatusCode}", projectKey, statusCode),
+            ex => this._logger.LogError(ex, "Error fetching project {ProjectKey}", projectKey));
     }
 
     public async Task<List<Sprint>> GetProjectSprintsAsync(string projectKey)
@@ -97,7 +96,7 @@ public class JiraApiService : IJiraApiService
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         var sprints = new List<Sprint>();
-        return await GetAndParseAsync(
+        return await this.GetAndParseAsync(
             $"{ApiV3Base}{ProjectsRoute}/{projectKey}{SprintsRoute}",
             root =>
             {
@@ -122,20 +121,20 @@ public class JiraApiService : IJiraApiService
                     }
                 }
 
-                _logger.LogInformation("Fetched {SprintCount} sprints for project {ProjectKey}", sprints.Count, projectKey);
+                this._logger.LogInformation("Fetched {SprintCount} sprints for project {ProjectKey}", sprints.Count, projectKey);
                 return sprints;
             },
             $"sprints for project {projectKey}",
-            () => _logger.LogInformation("Fetching sprints for project {ProjectKey}", projectKey),
-            statusCode => _logger.LogWarning("Failed to fetch sprints: {StatusCode}", statusCode),
-            ex => _logger.LogError(ex, "Error fetching sprints for project {ProjectKey}", projectKey)) ?? sprints;
+            () => this._logger.LogInformation("Fetching sprints for project {ProjectKey}", projectKey),
+            statusCode => this._logger.LogWarning("Failed to fetch sprints: {StatusCode}", statusCode),
+            ex => this._logger.LogError(ex, "Error fetching sprints for project {ProjectKey}", projectKey)) ?? sprints;
     }
 
     public async Task<Sprint?> GetSprintAsync(int sprintId)
     {
         // Fix: Add input validation for sprintId
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
-        return await GetAndParseAsync(
+        return await this.GetAndParseAsync(
             $"{ApiV3Base}{SprintsRoute}/{sprintId}",
             sprintData => new Sprint
             {
@@ -145,9 +144,9 @@ public class JiraApiService : IJiraApiService
                 State = GetString(sprintData, StateField, OpenDefault)
             },
             $"sprint {sprintId}",
-            () => _logger.LogInformation("Fetching sprint {SprintId}", sprintId),
-            statusCode => _logger.LogWarning("Failed to fetch sprint {SprintId}: {StatusCode}", sprintId, statusCode),
-            ex => _logger.LogError(ex, "Error fetching sprint {SprintId}", sprintId));
+            () => this._logger.LogInformation("Fetching sprint {SprintId}", sprintId),
+            statusCode => this._logger.LogWarning("Failed to fetch sprint {SprintId}: {StatusCode}", sprintId, statusCode),
+            ex => this._logger.LogError(ex, "Error fetching sprint {SprintId}", sprintId));
     }
 
     public async Task<List<JiraIssue>> GetSprintIssuesAsync(int sprintId)
@@ -156,7 +155,7 @@ public class JiraApiService : IJiraApiService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
         var jql = $"sprint = {sprintId} {OrderByCreatedDescending}";
         var issues = new List<JiraIssue>();
-        return await GetAndParseAsync(
+        return await this.GetAndParseAsync(
             $"{ApiV3Base}{SearchRoute}?{JqlParam}={Uri.EscapeDataString(jql)}&{MaxResultsParam}={DefaultMaxResults}",
             root =>
             {
@@ -164,18 +163,21 @@ public class JiraApiService : IJiraApiService
                 {
                     foreach (var issueData in issueArray.EnumerateArray())
                     {
-                        var issue = ParseIssueData(issueData, sprintId);
-                        if (issue != null) issues.Add(issue);
+                        var issue = this.ParseIssueData(issueData, sprintId);
+                        if (issue != null)
+                        {
+                            issues.Add(issue);
+                        }
                     }
                 }
 
-                _logger.LogInformation("Fetched {IssueCount} issues for sprint {SprintId}", issues.Count, sprintId);
+                this._logger.LogInformation("Fetched {IssueCount} issues for sprint {SprintId}", issues.Count, sprintId);
                 return issues;
             },
             $"issues for sprint {sprintId}",
-            () => _logger.LogInformation("Fetching issues for sprint {SprintId}", sprintId),
-            statusCode => _logger.LogWarning("Failed to fetch sprint issues: {StatusCode}", statusCode),
-            ex => _logger.LogError(ex, "Error fetching sprint issues")) ?? issues;
+            () => this._logger.LogInformation("Fetching issues for sprint {SprintId}", sprintId),
+            statusCode => this._logger.LogWarning("Failed to fetch sprint issues: {StatusCode}", statusCode),
+            ex => this._logger.LogError(ex, "Error fetching sprint issues")) ?? issues;
     }
 
     public async Task<List<JiraIssue>> GetProjectIssuesAsync(string projectKey)
@@ -184,7 +186,7 @@ public class JiraApiService : IJiraApiService
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         var jql = $"project = {projectKey} {OrderByCreatedDescending}";
         var issues = new List<JiraIssue>();
-        return await GetAndParseAsync(
+        return await this.GetAndParseAsync(
             $"{ApiV3Base}{SearchRoute}?{JqlParam}={Uri.EscapeDataString(jql)}&{MaxResultsParam}={DefaultMaxResults}",
             root =>
             {
@@ -192,18 +194,21 @@ public class JiraApiService : IJiraApiService
                 {
                     foreach (var issueData in issueArray.EnumerateArray())
                     {
-                        var issue = ParseIssueData(issueData, 0);
-                        if (issue != null) issues.Add(issue);
+                        var issue = this.ParseIssueData(issueData, 0);
+                        if (issue != null)
+                        {
+                            issues.Add(issue);
+                        }
                     }
                 }
 
-                _logger.LogInformation("Fetched {IssueCount} issues for project {ProjectKey}", issues.Count, projectKey);
+                this._logger.LogInformation("Fetched {IssueCount} issues for project {ProjectKey}", issues.Count, projectKey);
                 return issues;
             },
             $"issues for project {projectKey}",
-            () => _logger.LogInformation("Fetching issues for project {ProjectKey}", projectKey),
+            () => this._logger.LogInformation("Fetching issues for project {ProjectKey}", projectKey),
             logFailure: null,
-            ex => _logger.LogError(ex, "Error fetching project issues")) ?? issues;
+            ex => this._logger.LogError(ex, "Error fetching project issues")) ?? issues;
     }
 
     public async Task<List<Developer>> GetProjectTeamAsync(string projectKey)
@@ -214,18 +219,20 @@ public class JiraApiService : IJiraApiService
 
         try
         {
-            _logger.LogInformation("Fetching team for project {ProjectKey}", projectKey);
+            this._logger.LogInformation("Fetching team for project {ProjectKey}", projectKey);
 
             // Jira has no dedicated "team roster" endpoint; the team is derived by
             // aggregating the distinct assignees across the project's issues.
-            var issues = await GetProjectIssuesAsync(projectKey);
+            var issues = await this.GetProjectIssuesAsync(projectKey);
 
             var developersByAssignee = new Dictionary<string, Developer>(StringComparer.Ordinal);
 
             foreach (var issue in issues)
             {
                 if (string.IsNullOrWhiteSpace(issue.Assignee))
+                {
                     continue;
+                }
 
                 if (!developersByAssignee.TryGetValue(issue.Assignee, out var developer))
                 {
@@ -243,11 +250,11 @@ public class JiraApiService : IJiraApiService
 
             team.AddRange(developersByAssignee.Values.OrderBy(d => d.DisplayName, StringComparer.Ordinal));
 
-            _logger.LogInformation("Fetched team data for project {ProjectKey}: {DeveloperCount} developers", projectKey, team.Count);
+            this._logger.LogInformation("Fetched team data for project {ProjectKey}: {DeveloperCount} developers", projectKey, team.Count);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching project team");
+            this._logger.LogError(ex, "Error fetching project team");
         }
 
         return team;
@@ -257,13 +264,13 @@ public class JiraApiService : IJiraApiService
     {
         // Fix: Add input validation for issueKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(issueKey, nameof(issueKey));
-        return await GetAndParseAsync(
+        return await this.GetAndParseAsync(
             $"{ApiV3Base}{IssuesRoute}/{issueKey}",
-            root => ParseIssueData(root, 0),
+            root => this.ParseIssueData(root, 0),
             $"issue {issueKey}",
             logStart: null,
             logFailure: null,
-            ex => _logger.LogError(ex, "Error fetching issue {IssueKey}", issueKey));
+            ex => this._logger.LogError(ex, "Error fetching issue {IssueKey}", issueKey));
     }
 
     public async Task<List<BurndownSnapshot>> GetBurndownDataAsync(int sprintId)
@@ -274,11 +281,11 @@ public class JiraApiService : IJiraApiService
 
         try
         {
-            _logger.LogInformation("Fetching burndown data for sprint {SprintId}", sprintId);
+            this._logger.LogInformation("Fetching burndown data for sprint {SprintId}", sprintId);
 
             // Jira's REST API has no burndown endpoint; the standard approach is to
             // derive a snapshot from the sprint's current issue state.
-            var issues = await GetSprintIssuesAsync(sprintId);
+            var issues = await this.GetSprintIssuesAsync(sprintId);
 
             var completedIssues = issues.Where(i => i.Status is "Done" or "Closed").ToList();
             var remainingIssues = issues.Except(completedIssues).ToList();
@@ -301,11 +308,11 @@ public class JiraApiService : IJiraApiService
 
             snapshots.Add(snapshot);
 
-            _logger.LogInformation("Fetched burndown data for sprint {SprintId}: {Completed}/{Total} pts", sprintId, completedPoints, totalPoints);
+            this._logger.LogInformation("Fetched burndown data for sprint {SprintId}: {Completed}/{Total} pts", sprintId, completedPoints, totalPoints);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching burndown data");
+            this._logger.LogError(ex, "Error fetching burndown data");
         }
 
         return snapshots;
@@ -319,7 +326,7 @@ public class JiraApiService : IJiraApiService
 
         var fallback = new JiraSearchResult { StartAt = startAt };
         var url = $"{ApiV3Base}{SearchRoute}?{JqlParam}={Uri.EscapeDataString(jql)}&{MaxResultsParam}={maxResults}&{StartAtParam}={startAt}";
-        return await GetAndParseAsync(
+        return await this.GetAndParseAsync(
             url,
             root =>
             {
@@ -329,39 +336,42 @@ public class JiraApiService : IJiraApiService
                 {
                     foreach (var issueData in issueArray.EnumerateArray())
                     {
-                        var issue = ParseIssueData(issueData, 0);
-                        if (issue != null) fallback.Issues.Add(issue);
+                        var issue = this.ParseIssueData(issueData, 0);
+                        if (issue != null)
+                        {
+                            fallback.Issues.Add(issue);
+                        }
                     }
                 }
 
-                _logger.LogInformation("JQL search returned {Count} of {Total} issues", fallback.Issues.Count, fallback.Total);
+                this._logger.LogInformation("JQL search returned {Count} of {Total} issues", fallback.Issues.Count, fallback.Total);
                 return fallback;
             },
             "JQL search",
-            () => _logger.LogInformation("Executing JQL search (startAt={Start}, maxResults={Max}): {Jql}", startAt, maxResults, jql),
-            statusCode => _logger.LogWarning("JQL search returned {StatusCode}", statusCode),
-            ex => _logger.LogError(ex, "Error executing JQL search")) ?? fallback;
+            () => this._logger.LogInformation("Executing JQL search (startAt={Start}, maxResults={Max}): {Jql}", startAt, maxResults, jql),
+            statusCode => this._logger.LogWarning("JQL search returned {StatusCode}", statusCode),
+            ex => this._logger.LogError(ex, "Error executing JQL search")) ?? fallback;
     }
 
     public async Task<bool> VerifyConnectionAsync()
     {
         try
         {
-            _logger.LogInformation("Verifying Jira API connection");
-            var response = await _httpClient.GetAsync($"{ApiV3Base}{MyselfRoute}");
+            this._logger.LogInformation("Verifying Jira API connection");
+            var response = await this._httpClient.GetAsync($"{ApiV3Base}{MyselfRoute}");
 
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Jira API connection verified successfully");
+                this._logger.LogInformation("Jira API connection verified successfully");
                 return true;
             }
 
-            _logger.LogWarning("Failed to verify Jira connection: {StatusCode}", response.StatusCode);
+            this._logger.LogWarning("Failed to verify Jira connection: {StatusCode}", response.StatusCode);
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error verifying Jira connection");
+            this._logger.LogError(ex, "Error verifying Jira connection");
             return false;
         }
     }
@@ -379,7 +389,7 @@ public class JiraApiService : IJiraApiService
         try
         {
             logStart?.Invoke();
-            var response = await _httpClient.GetAsync(requestUri);
+            var response = await this._httpClient.GetAsync(requestUri);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -400,7 +410,10 @@ public class JiraApiService : IJiraApiService
 
     private JiraIssue? ParseIssueData(JsonElement issueData, int sprintId)
     {
-        if (issueData.ValueKind != JsonValueKind.Object) return null;
+        if (issueData.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
 
         try
         {
@@ -431,18 +444,22 @@ public class JiraApiService : IJiraApiService
             var dueStr = GetNestedStringOrNull(issueData, FieldsField, "duedate");
             var dueDate = ParseDateTimeInvariant(dueStr);
             if (dueDate.HasValue)
+            {
                 issue.DueDate = dueDate;
+            }
 
             var resStr = GetNestedStringOrNull(issueData, FieldsField, "resolutiondate");
             var resDate = ParseDateTimeInvariant(resStr);
             if (resDate.HasValue)
+            {
                 issue.ResolutionDate = resDate;
+            }
 
             return issue;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error parsing issue data");
+            this._logger.LogError(ex, "Error parsing issue data");
             return null;
         }
     }
@@ -458,9 +475,21 @@ public class JiraApiService : IJiraApiService
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int GetInt(JsonElement element, string property, int defaultValue = 0)
     {
-        if (!element.TryGetProperty(property, out var p)) return defaultValue;
-        if (p.ValueKind == JsonValueKind.Number) return p.GetInt32();
-        if (int.TryParse(p.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var v)) return v;
+        if (!element.TryGetProperty(property, out var p))
+        {
+            return defaultValue;
+        }
+
+        if (p.ValueKind == JsonValueKind.Number)
+        {
+            return p.GetInt32();
+        }
+
+        if (int.TryParse(p.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+        {
+            return v;
+        }
+
         return defaultValue;
     }
 
@@ -468,7 +497,10 @@ public class JiraApiService : IJiraApiService
     private static string GetNestedString(JsonElement element, string prop1, string prop2, string defaultValue = EmptyDefault)
     {
         if (element.TryGetProperty(prop1, out var p1) && p1.TryGetProperty(prop2, out var p2))
+        {
             return p2.GetString() ?? defaultValue;
+        }
+
         return defaultValue;
     }
 
@@ -476,7 +508,10 @@ public class JiraApiService : IJiraApiService
     private static string? GetNestedStringOrNull(JsonElement element, string prop1, string prop2)
     {
         if (element.TryGetProperty(prop1, out var p1) && p1.TryGetProperty(prop2, out var p2))
+        {
             return p2.GetString();
+        }
+
         return null;
     }
 
@@ -487,7 +522,9 @@ public class JiraApiService : IJiraApiService
         foreach (var key in path)
         {
             if (!current.TryGetProperty(key, out current))
+            {
                 return null;
+            }
         }
         return current.GetString();
     }
@@ -521,7 +558,7 @@ public class JiraApiService : IJiraApiService
         ArgumentNullException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize, nameof(pageSize));
 
-        _logger.LogInformation("Streaming issues by JQL (pageSize={PageSize}): {Jql}", pageSize, jql);
+        this._logger.LogInformation("Streaming issues by JQL (pageSize={PageSize}): {Jql}", pageSize, jql);
 
         int startAt = 0;
         bool hasMoreResults = true;
@@ -532,12 +569,12 @@ public class JiraApiService : IJiraApiService
             
             try
             {
-                var result = await SearchByJqlAsync(jql, pageSize, startAt);
+                var result = await this.SearchByJqlAsync(jql, pageSize, startAt);
                 pageIssues = result.Issues;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching page of issues for JQL: {Jql}", jql);
+                this._logger.LogError(ex, "Error fetching page of issues for JQL: {Jql}", jql);
                 yield break;
             }
 
@@ -561,7 +598,7 @@ public class JiraApiService : IJiraApiService
             }
         }
 
-        _logger.LogInformation("Completed streaming {IssueCount} issues for JQL query", startAt);
+        this._logger.LogInformation("Completed streaming {IssueCount} issues for JQL query", startAt);
     }
 
     public async IAsyncEnumerable<JiraIssue> StreamProjectIssuesAsync(string projectKey, int pageSize = 100)
@@ -569,7 +606,7 @@ public class JiraApiService : IJiraApiService
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize, nameof(pageSize));
 
-        _logger.LogInformation("Streaming issues for project {ProjectKey} (pageSize={PageSize})", projectKey, pageSize);
+        this._logger.LogInformation("Streaming issues for project {ProjectKey} (pageSize={PageSize})", projectKey, pageSize);
 
         int startAt = 0;
         bool hasMoreResults = true;
@@ -580,12 +617,12 @@ public class JiraApiService : IJiraApiService
 
             try
             {
-                var result = await SearchByJqlAsync($"project = {projectKey} {OrderByCreatedDescending}", pageSize, startAt);
+                var result = await this.SearchByJqlAsync($"project = {projectKey} {OrderByCreatedDescending}", pageSize, startAt);
                 pageIssues = result.Issues;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching page of issues for project {ProjectKey}", projectKey);
+                this._logger.LogError(ex, "Error fetching page of issues for project {ProjectKey}", projectKey);
                 yield break;
             }
 
@@ -609,7 +646,7 @@ public class JiraApiService : IJiraApiService
             }
         }
 
-        _logger.LogInformation("Completed streaming issues for project {ProjectKey}", projectKey);
+        this._logger.LogInformation("Completed streaming issues for project {ProjectKey}", projectKey);
     }
 
     public async IAsyncEnumerable<JiraIssue> StreamSprintIssuesAsync(int sprintId, int pageSize = 100)
@@ -617,7 +654,7 @@ public class JiraApiService : IJiraApiService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize, nameof(pageSize));
 
-        _logger.LogInformation("Streaming issues for sprint {SprintId} (pageSize={PageSize})", sprintId, pageSize);
+        this._logger.LogInformation("Streaming issues for sprint {SprintId} (pageSize={PageSize})", sprintId, pageSize);
 
         int startAt = 0;
         bool hasMoreResults = true;
@@ -628,12 +665,12 @@ public class JiraApiService : IJiraApiService
 
             try
             {
-                var result = await SearchByJqlAsync($"sprint = {sprintId} {OrderByCreatedDescending}", pageSize, startAt);
+                var result = await this.SearchByJqlAsync($"sprint = {sprintId} {OrderByCreatedDescending}", pageSize, startAt);
                 pageIssues = result.Issues;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching page of issues for sprint {SprintId}", sprintId);
+                this._logger.LogError(ex, "Error fetching page of issues for sprint {SprintId}", sprintId);
                 yield break;
             }
 
@@ -657,6 +694,6 @@ public class JiraApiService : IJiraApiService
             }
         }
 
-        _logger.LogInformation("Completed streaming issues for sprint {SprintId}", sprintId);
+        this._logger.LogInformation("Completed streaming issues for sprint {SprintId}", sprintId);
     }
 }

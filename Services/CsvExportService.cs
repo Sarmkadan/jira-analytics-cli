@@ -4,7 +4,6 @@
 // =====================================================================
 
 using System.Globalization;
-using System.IO;
 using System.Text;
 using JiraAnalyticsCli.Models;
 using Microsoft.Extensions.Logging;
@@ -22,7 +21,7 @@ public class CsvExportService : ICsvExportService
     {
         ArgumentNullException.ThrowIfNull(logger);
 
-        _logger = logger;
+        this._logger = logger;
     }
 
     /// <summary>
@@ -40,23 +39,23 @@ public class CsvExportService : ICsvExportService
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        var outputPath = GetCanonicalizedPath(path);
-        if (!IsPathUnderOutputRoot(outputPath))
+        var outputPath = this.GetCanonicalizedPath(path);
+        if (!this.IsPathUnderOutputRoot(outputPath))
         {
             throw new IOException("Output path is outside the intended output root");
         }
 
-        _logger.LogInformation("Exporting sprint metrics to CSV at {Path}", outputPath);
+        this._logger.LogInformation("Exporting sprint metrics to CSV at {Path}", outputPath);
 
         try
         {
             await using var writer = new StreamWriter(outputPath, append: false, encoding: Encoding.UTF8, bufferSize: bufferSize);
-            await ExportSprintMetricsAsync(metrics, writer);
-            _logger.LogInformation("Successfully exported sprint metrics to {Path}", outputPath);
+            await this.ExportSprintMetricsAsync(metrics, writer);
+            this._logger.LogInformation("Successfully exported sprint metrics to {Path}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exporting sprint metrics to CSV");
+            this._logger.LogError(ex, "Error exporting sprint metrics to CSV");
             throw;
         }
     }
@@ -76,7 +75,7 @@ public class CsvExportService : ICsvExportService
         if (!enumerator.MoveNext())
         {
             // Empty dataset produces header only
-            _logger.LogWarning("No metrics provided for export");
+            this._logger.LogWarning("No metrics provided for export");
             return;
         }
 
@@ -89,67 +88,67 @@ public class CsvExportService : ICsvExportService
             sb.Clear();
 
             // Append each column, escaping / sanitising as required
-            AppendEscaped(sb, metric.SprintId.ToString());
+            this.AppendEscaped(sb, metric.SprintId.ToString());
             sb.Append(',');
 
-            AppendEscaped(sb, SanitizeCsvValue(metric.SprintName));
+            this.AppendEscaped(sb, this.SanitizeCsvValue(metric.SprintName));
             sb.Append(',');
 
-            AppendEscaped(sb, metric.StartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            this.AppendEscaped(sb, metric.StartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
             sb.Append(',');
 
-            AppendEscaped(sb, metric.EndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            this.AppendEscaped(sb, metric.EndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.PlannedStoryPoints));
+            this.AppendEscaped(sb, FormatCsvCell(metric.PlannedStoryPoints));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.CompletedStoryPoints));
+            this.AppendEscaped(sb, FormatCsvCell(metric.CompletedStoryPoints));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.CommittedStoryPoints));
+            this.AppendEscaped(sb, FormatCsvCell(metric.CommittedStoryPoints));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.CompletedIssueCount));
+            this.AppendEscaped(sb, FormatCsvCell(metric.CompletedIssueCount));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.TotalIssueCount));
+            this.AppendEscaped(sb, FormatCsvCell(metric.TotalIssueCount));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.DefectsCount));
+            this.AppendEscaped(sb, FormatCsvCell(metric.DefectsCount));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.AverageCycleTime));
+            this.AppendEscaped(sb, FormatCsvCell(metric.AverageCycleTime));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.OverdueIssueCount));
+            this.AppendEscaped(sb, FormatCsvCell(metric.OverdueIssueCount));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.TeamSize));
+            this.AppendEscaped(sb, FormatCsvCell(metric.TeamSize));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.ScopeChangeCount));
+            this.AppendEscaped(sb, FormatCsvCell(metric.ScopeChangeCount));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.GetVelocity()));
+            this.AppendEscaped(sb, FormatCsvCell(metric.GetVelocity()));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.GetCompletionRate()));
+            this.AppendEscaped(sb, FormatCsvCell(metric.GetCompletionRate()));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.GetCommitmentAccuracy()));
+            this.AppendEscaped(sb, FormatCsvCell(metric.GetCommitmentAccuracy()));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.GetQualityScore()));
+            this.AppendEscaped(sb, FormatCsvCell(metric.GetQualityScore()));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.GetProductivityPerTeamMember()));
+            this.AppendEscaped(sb, FormatCsvCell(metric.GetProductivityPerTeamMember()));
             sb.Append(',');
 
-            AppendEscaped(sb, FormatCsvCell(metric.GetDailyBurndownRate()));
+            this.AppendEscaped(sb, FormatCsvCell(metric.GetDailyBurndownRate()));
             sb.Append(',');
 
-            AppendEscaped(sb, SanitizeCsvValue(metric.GetHealthStatus()));
+            this.AppendEscaped(sb, this.SanitizeCsvValue(metric.GetHealthStatus()));
 
             await writer.WriteLineAsync(sb.ToString());
         }
@@ -171,23 +170,23 @@ public class CsvExportService : ICsvExportService
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        var outputPath = GetCanonicalizedPath(path);
-        if (!IsPathUnderOutputRoot(outputPath))
+        var outputPath = this.GetCanonicalizedPath(path);
+        if (!this.IsPathUnderOutputRoot(outputPath))
         {
             throw new IOException("Output path is outside the intended output root");
         }
 
-        _logger.LogInformation("Exporting team metrics to CSV at {Path}", outputPath);
+        this._logger.LogInformation("Exporting team metrics to CSV at {Path}", outputPath);
 
         try
         {
             await using var writer = new StreamWriter(outputPath, append: false, encoding: Encoding.UTF8, bufferSize: bufferSize);
-            await ExportTeamMetricsAsync(metrics, writer);
-            _logger.LogInformation("Successfully exported team metrics to {Path}", outputPath);
+            await this.ExportTeamMetricsAsync(metrics, writer);
+            this._logger.LogInformation("Successfully exported team metrics to {Path}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exporting team metrics to CSV");
+            this._logger.LogError(ex, "Error exporting team metrics to CSV");
             throw;
         }
     }
@@ -207,7 +206,7 @@ public class CsvExportService : ICsvExportService
         if (!enumerator.MoveNext())
         {
             // Empty dataset produces header only
-            _logger.LogWarning("No team metrics provided for export");
+            this._logger.LogWarning("No team metrics provided for export");
             return;
         }
 
@@ -218,9 +217,9 @@ public class CsvExportService : ICsvExportService
             var kvp = enumerator.Current;
             sb.Clear();
 
-            AppendEscaped(sb, SanitizeCsvValue(kvp.Key));
+            this.AppendEscaped(sb, this.SanitizeCsvValue(kvp.Key));
             sb.Append(',');
-            AppendEscaped(sb, kvp.Value.ToString());
+            this.AppendEscaped(sb, kvp.Value.ToString());
 
             await writer.WriteLineAsync(sb.ToString());
         }
@@ -250,7 +249,9 @@ public class CsvExportService : ICsvExportService
     private string EscapeCsvValue(string? value)
     {
         if (string.IsNullOrEmpty(value))
+        {
             return string.Empty;
+        }
 
         if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
         {
@@ -268,7 +269,9 @@ public class CsvExportService : ICsvExportService
     private string SanitizeCsvValue(string? value)
     {
         if (string.IsNullOrEmpty(value))
+        {
             return string.Empty;
+        }
 
         if (value.StartsWith("=") || value.StartsWith("+") || value.StartsWith("-") || value.StartsWith("@") || value.StartsWith("\t") || value.StartsWith("\r"))
         {
@@ -284,7 +287,7 @@ public class CsvExportService : ICsvExportService
     /// </summary>
     private void AppendEscaped(StringBuilder sb, string? raw)
     {
-        sb.Append(EscapeCsvValue(raw));
+        sb.Append(this.EscapeCsvValue(raw));
     }
 
     /// <summary>

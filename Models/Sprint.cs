@@ -49,22 +49,24 @@ public class Sprint
 
     public bool IsActive()
     {
-        return State == "Active" || (StartDate.HasValue && StartDate <= DateTime.UtcNow &&
-               (!EndDate.HasValue || EndDate >= DateTime.UtcNow));
+        return this.State == "Active" || (this.StartDate.HasValue && this.StartDate <= DateTime.UtcNow &&
+               (!this.EndDate.HasValue || this.EndDate >= DateTime.UtcNow));
     }
 
     public bool IsClosed()
     {
-        return State == "Closed" || CompleteDate.HasValue;
+        return this.State == "Closed" || this.CompleteDate.HasValue;
     }
 
     public int GetDuration()
     {
         // Duration in days from start to end
-        if (!StartDate.HasValue || !EndDate.HasValue)
+        if (!this.StartDate.HasValue || !this.EndDate.HasValue)
+        {
             return 0;
+        }
 
-        return (int)(EndDate.Value - StartDate.Value).TotalDays;
+        return (int)(this.EndDate.Value - this.StartDate.Value).TotalDays;
     }
 
     /// <summary>
@@ -84,14 +86,14 @@ public class Sprint
     public int GetPlannedStoryPoints()
     {
         // Sum of story points for non-sub-task issues only to avoid double-counting
-        return Issues.Where(i => IsCountableIssueType(i.IssueType))
+        return this.Issues.Where(i => IsCountableIssueType(i.IssueType))
                      .Sum(i => i.StoryPoints ?? 0);
     }
 
     public int GetCompletedStoryPoints()
     {
         // Sum of story points for completed non-sub-task issues
-        return Issues.Where(i => i.Status is "Done" or "Closed")
+        return this.Issues.Where(i => i.Status is "Done" or "Closed")
                      .Where(i => IsCountableIssueType(i.IssueType))
                      .Sum(i => i.StoryPoints ?? 0);
     }
@@ -99,62 +101,73 @@ public class Sprint
     public double GetVelocity()
     {
         // Velocity as percentage of planned points completed
-        var planned = GetPlannedStoryPoints();
-        if (planned == 0) return 0;
+        var planned = this.GetPlannedStoryPoints();
+        if (planned == 0)
+        {
+            return 0;
+        }
 
-        return (GetCompletedStoryPoints() / (double)planned) * 100;
+        return (this.GetCompletedStoryPoints() / (double)planned) * 100;
     }
 
     public int GetCompletedIssueCount()
     {
-        return Issues.Count(i => i.Status is "Done" or "Closed");
+        return this.Issues.Count(i => i.Status is "Done" or "Closed");
     }
 
     public int GetTotalIssueCount()
     {
-        return Issues.Count;
+        return this.Issues.Count;
     }
 
     public List<JiraIssue> GetOverdueIssues()
     {
-        return Issues.Where(i => i.IsOverdue()).ToList();
+        return this.Issues.Where(i => i.IsOverdue()).ToList();
     }
 
     public List<JiraIssue> GetInProgressIssues()
     {
-        return Issues.Where(i => i.IsInProgress()).ToList();
+        return this.Issues.Where(i => i.IsInProgress()).ToList();
     }
 
     public List<JiraIssue> GetBlockedIssues()
     {
-        return Issues.Where(i => i.Status == "Blocked").ToList();
+        return this.Issues.Where(i => i.Status == "Blocked").ToList();
     }
 
     public void AddIssue(JiraIssue issue)
     {
         if (issue == null)
+        {
             throw new ArgumentNullException(nameof(issue));
+        }
 
         issue.Validate();
-        Issues.Add(issue);
+        this.Issues.Add(issue);
     }
 
     public void Validate()
     {
-        if (Id <= 0)
+        if (this.Id <= 0)
+        {
             throw new ArgumentException("Sprint ID must be positive");
+        }
 
-        if (string.IsNullOrWhiteSpace(Name))
+        if (string.IsNullOrWhiteSpace(this.Name))
+        {
             throw new ArgumentException("Sprint name cannot be empty");
+        }
 
-        if (StartDate.HasValue && EndDate.HasValue && EndDate <= StartDate)
+        if (this.StartDate.HasValue && this.EndDate.HasValue && this.EndDate <= this.StartDate)
+        {
             throw new ArgumentException("End date must be after start date");
+        }
     }
 
     public override string ToString()
     {
-        return $"[{Key}] {Name} ({State}) - {GetCompletedStoryPoints()}/{GetPlannedStoryPoints()} pts, " +
-               $"{StartDate?.ToString("yyyy-MM-dd") ?? "n/a"} to {EndDate?.ToString("yyyy-MM-dd") ?? "n/a"}, " +
-               $"{GetCompletedIssueCount()}/{GetTotalIssueCount()} issues completed";
+        return $"[{this.Key}] {this.Name} ({this.State}) - {this.GetCompletedStoryPoints()}/{this.GetPlannedStoryPoints()} pts, " +
+               $"{this.StartDate?.ToString("yyyy-MM-dd") ?? "n/a"} to {this.EndDate?.ToString("yyyy-MM-dd") ?? "n/a"}, " +
+               $"{this.GetCompletedIssueCount()}/{this.GetTotalIssueCount()} issues completed";
     }
 }

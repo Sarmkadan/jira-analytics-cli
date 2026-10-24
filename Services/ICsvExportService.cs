@@ -21,7 +21,7 @@ public interface ICsvExportService
     /// <returns>Task representing the async operation</returns>
     /// <exception cref="ArgumentNullException">Thrown when metrics or path is null</exception>
     /// <exception cref="ArgumentException">Thrown when path is empty or whitespace</exception>
-    Task ExportSprintMetrics(IEnumerable<SprintMetric> metrics, string path, int bufferSize = 4096);
+    public Task ExportSprintMetrics(IEnumerable<SprintMetric> metrics, string path, int bufferSize = 4096);
 
     /// <summary>
     /// Exports team metrics to a CSV file
@@ -32,5 +32,5 @@ public interface ICsvExportService
     /// <returns>Task representing the async operation</returns>
     /// <exception cref="ArgumentNullException">Thrown when metrics or path is null</exception>
     /// <exception cref="ArgumentException">Thrown when path is empty or whitespace</exception>
-    Task ExportTeamMetrics(IEnumerable<KeyValuePair<string, int>> metrics, string path, int bufferSize = 4096);
+    public Task ExportTeamMetrics(IEnumerable<KeyValuePair<string, int>> metrics, string path, int bufferSize = 4096);
 }

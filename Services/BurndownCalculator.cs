@@ -23,8 +23,8 @@ public class BurndownCalculator
     /// <param name="logger">Logger for diagnostic output.</param>
     public BurndownCalculator(ISnapshotStore snapshotStore, ILogger<BurndownCalculator> logger)
     {
-        _snapshotStore = snapshotStore ?? throw new ArgumentNullException(nameof(snapshotStore));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._snapshotStore = snapshotStore ?? throw new ArgumentNullException(nameof(snapshotStore));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -38,7 +38,9 @@ public class BurndownCalculator
     public List<TimeSeriesPoint> ComputeIdealBurndown(int totalPoints, DateTimeOffset sprintStart, DateTimeOffset sprintEnd, int intervalCount = 10)
     {
         if (intervalCount <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(intervalCount), "Interval count must be positive.");
+        }
 
         var result = new List<TimeSeriesPoint>(intervalCount + 1);
         var totalDuration = sprintEnd - sprintStart;
@@ -51,7 +53,7 @@ public class BurndownCalculator
             result.Add(new TimeSeriesPoint(timestamp.UtcDateTime, remaining));
         }
 
-        _logger.LogDebug("Computed ideal burndown with {Count} points for {Points} SP", result.Count, totalPoints);
+        this._logger.LogDebug("Computed ideal burndown with {Count} points for {Points} SP", result.Count, totalPoints);
         return result;
     }
 
@@ -62,11 +64,11 @@ public class BurndownCalculator
     /// <returns>Ordered time series of remaining story points.</returns>
     public async Task<List<TimeSeriesPoint>> GetActualBurndownAsync(int sprintId)
     {
-        var snapshots = await _snapshotStore.LoadAsync(sprintId);
+        var snapshots = await this._snapshotStore.LoadAsync(sprintId);
 
         if (snapshots.Count == 0)
         {
-            _logger.LogWarning("No snapshots found for sprint {SprintId}", sprintId);
+            this._logger.LogWarning("No snapshots found for sprint {SprintId}", sprintId);
             return [];
         }
 
@@ -84,19 +86,23 @@ public class BurndownCalculator
     public double CalculateBurnRate(IReadOnlyList<BurndownSnapshot> snapshots)
     {
         if (snapshots.Count < 2)
+        {
             return 0.0;
+        }
 
         var first = snapshots[0];
         var last = snapshots[^1];
         double elapsedDays = (last.Timestamp - first.Timestamp).TotalDays;
 
         if (elapsedDays <= 0)
+        {
             return 0.0;
+        }
 
         double pointsBurned = first.RemainingStoryPoints - last.RemainingStoryPoints;
         double rate = pointsBurned / elapsedDays;
 
-        _logger.LogDebug("Burn rate: {Rate:F2} SP/day over {Days:F1} days", rate, elapsedDays);
+        this._logger.LogDebug("Burn rate: {Rate:F2} SP/day over {Days:F1} days", rate, elapsedDays);
         return rate;
     }
 
@@ -107,10 +113,10 @@ public class BurndownCalculator
     /// <returns>Projected completion date, or null if the team is not making progress.</returns>
     public DateTimeOffset? ProjectCompletionDate(IReadOnlyList<BurndownSnapshot> snapshots)
     {
-        double burnRate = CalculateBurnRate(snapshots);
+        double burnRate = this.CalculateBurnRate(snapshots);
         if (burnRate <= 0)
         {
-            _logger.LogWarning("Non-positive burn rate ({Rate:F2}); cannot project completion", burnRate);
+            this._logger.LogWarning("Non-positive burn rate ({Rate:F2}); cannot project completion", burnRate);
             return null;
         }
 

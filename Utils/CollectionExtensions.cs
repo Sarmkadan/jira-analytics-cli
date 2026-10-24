@@ -25,7 +25,9 @@ public static class CollectionExtensions
         ArgumentNullException.ThrowIfNull(source);
 
         if (batchSize <= 0)
+        {
             throw new ArgumentException("Batch size must be positive", nameof(batchSize));
+        }
 
         var batch = new List<T>(batchSize);
 
@@ -41,7 +43,9 @@ public static class CollectionExtensions
         }
 
         if (batch.Count > 0)
+        {
             yield return batch;
+        }
     }
 
     /// <summary>
@@ -85,7 +89,9 @@ public static class CollectionExtensions
         foreach (var item in source)
         {
             if (seen.Add(keySelector(item)))
+            {
                 yield return item;
+            }
         }
     }
 
@@ -136,7 +142,9 @@ public static class CollectionExtensions
         using var enumerator = source.GetEnumerator();
 
         if (!enumerator.MoveNext())
+        {
             return false;
+        }
 
         return !enumerator.MoveNext();
     }

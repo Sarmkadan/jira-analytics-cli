@@ -40,8 +40,8 @@ public class SnapshotStore : ISnapshotStore
     {
         ArgumentNullException.ThrowIfNull(logger);
 
-        _logger = logger;
-        _dataDirectory = ResolveDataDirectory(dataDirectory);
+        this._logger = logger;
+        this._dataDirectory = ResolveDataDirectory(dataDirectory);
     }
 
     /// <inheritdoc />
@@ -52,13 +52,13 @@ public class SnapshotStore : ISnapshotStore
         ArgumentNullException.ThrowIfNull(snapshot);
         snapshot.Validate();
 
-        Directory.CreateDirectory(_dataDirectory);
+        Directory.CreateDirectory(this._dataDirectory);
         var line = JsonSerializer.Serialize(snapshot) + Environment.NewLine;
 
         await WriteLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await File.AppendAllTextAsync(GetFilePath(snapshot.SprintId), line, cancellationToken)
+            await File.AppendAllTextAsync(this.GetFilePath(snapshot.SprintId), line, cancellationToken)
                 .ConfigureAwait(false);
         }
         finally
@@ -73,9 +73,11 @@ public class SnapshotStore : ISnapshotStore
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(sprintId, 0);
 
-        var filePath = GetFilePath(sprintId);
+        var filePath = this.GetFilePath(sprintId);
         if (!File.Exists(filePath))
+        {
             return Array.Empty<BurndownSnapshot>();
+        }
 
         var lines = await File.ReadAllLinesAsync(filePath, cancellationToken).ConfigureAwait(false);
         var snapshots = new List<BurndownSnapshot>(lines.Length);
@@ -84,7 +86,9 @@ public class SnapshotStore : ISnapshotStore
         {
             var line = lines[i];
             if (string.IsNullOrWhiteSpace(line))
+            {
                 continue;
+            }
 
             BurndownSnapshot? snapshot;
             try
@@ -93,13 +97,13 @@ public class SnapshotStore : ISnapshotStore
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex, "Skipping corrupt snapshot line {LineNumber} in {FilePath}", i + 1, filePath);
+                this._logger.LogWarning(ex, "Skipping corrupt snapshot line {LineNumber} in {FilePath}", i + 1, filePath);
                 continue;
             }
 
             if (snapshot is null)
             {
-                _logger.LogWarning("Skipping empty snapshot line {LineNumber} in {FilePath}", i + 1, filePath);
+                this._logger.LogWarning("Skipping empty snapshot line {LineNumber} in {FilePath}", i + 1, filePath);
                 continue;
             }
 
@@ -109,7 +113,7 @@ public class SnapshotStore : ISnapshotStore
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning(ex, "Skipping invalid snapshot line {LineNumber} in {FilePath}", i + 1, filePath);
+                this._logger.LogWarning(ex, "Skipping invalid snapshot line {LineNumber} in {FilePath}", i + 1, filePath);
                 continue;
             }
 
@@ -119,12 +123,14 @@ public class SnapshotStore : ISnapshotStore
         return snapshots.OrderBy(s => s.Timestamp).ToList();
     }
 
-    private string GetFilePath(int sprintId) => Path.Combine(_dataDirectory, $"sprint-{sprintId}.jsonl");
+    private string GetFilePath(int sprintId) => Path.Combine(this._dataDirectory, $"sprint-{sprintId}.jsonl");
 
     private static string ResolveDataDirectory(string? dataDirectory)
     {
         if (!string.IsNullOrWhiteSpace(dataDirectory))
+        {
             return dataDirectory;
+        }
 
         var fromEnvironment = Environment.GetEnvironmentVariable(SnapshotDirectoryEnvironmentVariable);
         return !string.IsNullOrWhiteSpace(fromEnvironment)

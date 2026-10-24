@@ -13,8 +13,8 @@ namespace JiraAnalyticsCli.Models;
 public interface ITimeSeriesPoint
 {
     /// <summary>Gets the point in time the observation was recorded at.</summary>
-    DateTime Timestamp { get; }
+    public DateTime Timestamp { get; }
 
     /// <summary>Gets the numeric value observed at <see cref="Timestamp"/>.</summary>
-    double Value { get; }
+    public double Value { get; }
 }

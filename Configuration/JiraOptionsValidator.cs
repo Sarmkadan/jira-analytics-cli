@@ -30,19 +30,27 @@ public static class JiraOptionsValidator
         var problems = new List<string>();
 
         if (!IsAbsoluteHttpsUri(options.BaseUrl))
+        {
             problems.Add(JiraSettingLocations.BaseUrl.Problem("must be an absolute https URI, e.g. https://your-company.atlassian.net", options.BaseUrl));
+        }
 
         // The token is a secret, so the offending value is deliberately not echoed.
         if (string.IsNullOrWhiteSpace(options.ApiToken))
+        {
             problems.Add(JiraSettingLocations.ApiToken.Problem("must not be empty"));
+        }
 
         if (options.BoardId is { } boardId && boardId <= 0)
+        {
             problems.Add(JiraSettingLocations.BoardId.Problem("must be a positive integer", boardId.ToString(CultureInfo.InvariantCulture)));
+        }
 
         if (options.TimeoutSeconds < MinTimeoutSeconds || options.TimeoutSeconds > MaxTimeoutSeconds)
+        {
             problems.Add(JiraSettingLocations.TimeoutSeconds.Problem(
                 $"must be between {MinTimeoutSeconds} and {MaxTimeoutSeconds} seconds",
                 options.TimeoutSeconds.ToString(CultureInfo.InvariantCulture)));
+        }
 
         return problems;
     }

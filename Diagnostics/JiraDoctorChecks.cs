@@ -31,20 +31,26 @@ public static partial class JiraDoctor
         var code = StatusText(response);
 
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        {
             return DoctorCheckResult.Fail(AuthenticationCheck,
                 $"{code}: the API token was rejected",
                 "Create a new API token in your Atlassian account settings, then set it with JIRA_API_TOKEN, --jira-token or \"jiraApiToken\" in appsettings.json.");
+        }
 
         if (!response.IsSuccessStatusCode)
+        {
             return DoctorCheckResult.Fail(AuthenticationCheck,
                 $"{code} from {JiraConfigChecker.MyselfPath}",
                 "Jira answered with an unexpected status. Check that BaseUrl is the Jira site itself.");
+        }
 
         var root = await ReadObjectAsync(response, ct);
         if (root is null)
+        {
             return DoctorCheckResult.Fail(AuthenticationCheck,
                 "the response from /myself was not a JSON object",
                 "BaseUrl may point at a login or proxy page instead of Jira. Check the URL in a browser.");
+        }
 
         var name = StringProperty(root.Value, "displayName") ?? "unknown account";
         return DoctorCheckResult.Pass(AuthenticationCheck, $"authenticated as {name}");
@@ -56,27 +62,35 @@ public static partial class JiraDoctor
     internal static async Task<DoctorCheckResult> CheckBoardAsync(HttpClient http, Uri baseUri, int? boardId, CancellationToken ct)
     {
         if (boardId is not { } id)
+        {
             return DoctorCheckResult.Fail(BoardCheck,
                 "no board is configured",
                 "Set the board ID with --board-id, JIRA_BOARD_ID or \"jiraBoardId\" in appsettings.json. It is the number at the end of the board URL (.../boards/42).");
+        }
 
         using var response = await http.GetAsync(new Uri(baseUri, string.Format(CultureInfo.InvariantCulture, BoardPathFormat, id)), ct);
         var code = StatusText(response);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
+        {
             return DoctorCheckResult.Fail(BoardCheck,
                 $"board {id} does not exist or is not visible to this account",
                 "Check --board-id against the board URL in Jira.");
+        }
 
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        {
             return DoctorCheckResult.Fail(BoardCheck,
                 $"no access to board {id} ({code})",
                 "The account needs the View permission on this board. Ask a Jira admin, or use a board this account can see.");
+        }
 
         if (!response.IsSuccessStatusCode)
+        {
             return DoctorCheckResult.Fail(BoardCheck,
                 $"{code} from board {id}",
                 "Check that the instance has Jira Software (Agile) enabled and that BaseUrl is correct.");
+        }
 
         var root = await ReadObjectAsync(response, ct);
         var name = root is { } board ? StringProperty(board, "name") : null;
@@ -93,26 +107,34 @@ public static partial class JiraDoctor
 
         // Jira answers 400 for boards that have no sprints, which means a Kanban board.
         if (response.StatusCode == HttpStatusCode.BadRequest)
+        {
             return DoctorCheckResult.Fail(ClosedSprintCheck,
                 $"board {boardId} does not support sprints",
                 "Sprints exist only on Scrum boards. The board is probably Kanban, so point --board-id at a Scrum board.");
+        }
 
         if (!response.IsSuccessStatusCode)
+        {
             return DoctorCheckResult.Fail(ClosedSprintCheck,
                 $"{StatusText(response)} from the sprint list of board {boardId}",
                 "Check that this account can view the board's sprints.");
+        }
 
         var root = await ReadObjectAsync(response, ct);
         if (root is not { } body || !body.TryGetProperty("values", out var values) || values.ValueKind != JsonValueKind.Array)
+        {
             return DoctorCheckResult.Fail(ClosedSprintCheck,
                 "the sprint list was not in the expected format",
                 "Check that BaseUrl is the Jira site and that the instance has Jira Software (Agile) enabled.");
+        }
 
         var count = values.GetArrayLength();
         if (count == 0)
+        {
             return DoctorCheckResult.Fail(ClosedSprintCheck,
                 $"board {boardId} has no closed sprints",
                 "Velocity and analytics need at least one completed sprint. Complete a sprint on this board, or use a Scrum board that has one.");
+        }
 
         var countText = count == ClosedSprintsToRequest ? $"{count}+" : count.ToString(CultureInfo.InvariantCulture);
         var example = StringProperty(values.EnumerateArray().First(), "name");
@@ -128,15 +150,19 @@ public static partial class JiraDoctor
     {
         using var response = await http.GetAsync(new Uri(baseUri, FieldsPath), ct);
         if (!response.IsSuccessStatusCode)
+        {
             return DoctorCheckResult.Fail(StoryPointsCheck,
                 $"{StatusText(response)} from the field list",
                 "Check that the account can read Jira fields and that BaseUrl is correct.");
+        }
 
         var fields = await ReadArrayAsync(response, ct);
         if (fields is null)
+        {
             return DoctorCheckResult.Fail(StoryPointsCheck,
                 "the field list was not in the expected format",
                 "Check that BaseUrl is the Jira site.");
+        }
 
         var configured = fields.FirstOrDefault(field => StringProperty(field, "id") == configuredField);
         if (configured.ValueKind == JsonValueKind.Object)
@@ -144,7 +170,9 @@ public static partial class JiraDoctor
             var name = StringProperty(configured, "name") ?? "unnamed";
             var type = SchemaType(configured);
             if (type is null or NumberFieldType)
+            {
                 return DoctorCheckResult.Pass(StoryPointsCheck, $"{configuredField} \"{name}\"");
+            }
 
             return DoctorCheckResult.Fail(StoryPointsCheck,
                 $"{configuredField} \"{name}\" is a {type} field, not a number",

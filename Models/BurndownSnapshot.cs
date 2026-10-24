@@ -27,8 +27,8 @@ public class BurndownSnapshot
     [JsonPropertyName("timestamp")]
     public DateTimeOffset Timestamp
     {
-        get => _timestamp;
-        set => _timestamp = value.ToUniversalTime();
+        get => this._timestamp;
+        set => this._timestamp = value.ToUniversalTime();
     }
 
     [Required]
@@ -62,12 +62,14 @@ public class BurndownSnapshot
     /// <returns>Percentage of work completed (0-100).</returns>
     public double GetBurndownPercentage()
     {
-        if (TotalStoryPoints == 0)
+        if (this.TotalStoryPoints == 0)
+        {
             return 0;
+        }
 
-        return (CompletedStoryPoints == 0 || TotalStoryPoints == 0)
+        return (this.CompletedStoryPoints == 0 || this.TotalStoryPoints == 0)
             ? 0
-            : (CompletedStoryPoints / (double)TotalStoryPoints) * 100;
+            : (this.CompletedStoryPoints / (double)this.TotalStoryPoints) * 100;
     }
 
     /// <summary>
@@ -77,16 +79,20 @@ public class BurndownSnapshot
     /// <returns>Projected completion percentage.</returns>
     public double GetProjectedCompletionPercentage(DateTimeOffset sprintEnd)
     {
-        var daysRemaining = (sprintEnd - Timestamp).TotalDays;
+        var daysRemaining = (sprintEnd - this.Timestamp).TotalDays;
 
         if (daysRemaining <= 0)
-            return GetBurndownPercentage();
+        {
+            return this.GetBurndownPercentage();
+        }
 
-        var currentPercentage = GetBurndownPercentage();
+        var currentPercentage = this.GetBurndownPercentage();
         var remainingPercentage = 100 - currentPercentage;
 
         if (remainingPercentage <= 0)
+        {
             return 100;
+        }
 
         const int sprintLengthDays = 14;
         var burnRateFactor = daysRemaining / (double)sprintLengthDays;
@@ -101,18 +107,22 @@ public class BurndownSnapshot
     /// <returns>True if the sprint is on track.</returns>
     public bool IsOnTrack(DateTimeOffset sprintEnd)
     {
-        var daysTotal = (sprintEnd - (Timestamp.AddDays(-7))).TotalDays;
+        var daysTotal = (sprintEnd - (this.Timestamp.AddDays(-7))).TotalDays;
         var daysElapsed = 7;
         var daysRemaining = daysTotal - daysElapsed;
 
         if (daysRemaining <= 0)
-            return GetBurndownPercentage() >= 90;
+        {
+            return this.GetBurndownPercentage() >= 90;
+        }
 
         if (daysTotal <= 0)
-            return GetBurndownPercentage() >= 90;
+        {
+            return this.GetBurndownPercentage() >= 90;
+        }
 
         var expectedBurndown = (daysElapsed / daysTotal) * 100;
-        var actualBurndown = GetBurndownPercentage();
+        var actualBurndown = this.GetBurndownPercentage();
 
         return actualBurndown >= (expectedBurndown * 0.9);
     }
@@ -125,9 +135,11 @@ public class BurndownSnapshot
     public int GetHoursUntilCompletion(int issuesPerHour)
     {
         if (issuesPerHour <= 0)
+        {
             return 0;
+        }
 
-        return RemainingIssueCount / issuesPerHour;
+        return this.RemainingIssueCount / issuesPerHour;
     }
 
     /// <summary>
@@ -136,55 +148,85 @@ public class BurndownSnapshot
     /// <exception cref="ArgumentException">Thrown when the snapshot contains validation errors.</exception>
     public void Validate()
     {
-        if (SprintId <= 0)
+        if (this.SprintId <= 0)
+        {
             throw new ArgumentException("Sprint ID must be positive");
+        }
 
-        if (Timestamp == default)
+        if (this.Timestamp == default)
+        {
             throw new ArgumentException("Timestamp must be set");
+        }
 
-        if (RemainingStoryPoints < 0)
+        if (this.RemainingStoryPoints < 0)
+        {
             throw new ArgumentException("Remaining story points cannot be negative");
+        }
 
-        if (CompletedStoryPoints < 0)
+        if (this.CompletedStoryPoints < 0)
+        {
             throw new ArgumentException("Completed story points cannot be negative");
+        }
 
-        if (TotalStoryPoints <= 0)
+        if (this.TotalStoryPoints <= 0)
+        {
             throw new ArgumentException("Total story points must be positive");
+        }
 
-        if (CompletedStoryPoints > TotalStoryPoints)
+        if (this.CompletedStoryPoints > this.TotalStoryPoints)
+        {
             throw new ArgumentException("Completed story points cannot exceed total story points");
+        }
 
-        if (RemainingStoryPoints > TotalStoryPoints)
+        if (this.RemainingStoryPoints > this.TotalStoryPoints)
+        {
             throw new ArgumentException("Remaining story points cannot exceed total story points");
+        }
 
-        if (CompletedStoryPoints + RemainingStoryPoints != TotalStoryPoints)
+        if (this.CompletedStoryPoints + this.RemainingStoryPoints != this.TotalStoryPoints)
+        {
             throw new ArgumentException("Completed + Remaining story points must equal total story points");
+        }
 
-        if (RemainingIssueCount < 0)
+        if (this.RemainingIssueCount < 0)
+        {
             throw new ArgumentException("Remaining issue count cannot be negative");
+        }
 
-        if (CompletedIssueCount < 0)
+        if (this.CompletedIssueCount < 0)
+        {
             throw new ArgumentException("Completed issue count cannot be negative");
+        }
 
-        if (TotalIssueCount <= 0)
+        if (this.TotalIssueCount <= 0)
+        {
             throw new ArgumentException("Total issue count must be positive");
+        }
 
-        if (CompletedIssueCount > TotalIssueCount)
+        if (this.CompletedIssueCount > this.TotalIssueCount)
+        {
             throw new ArgumentException("Completed issue count cannot exceed total issue count");
+        }
 
-        if (RemainingIssueCount > TotalIssueCount)
+        if (this.RemainingIssueCount > this.TotalIssueCount)
+        {
             throw new ArgumentException("Remaining issue count cannot exceed total issue count");
+        }
 
-        if (CompletedIssueCount + RemainingIssueCount != TotalIssueCount)
+        if (this.CompletedIssueCount + this.RemainingIssueCount != this.TotalIssueCount)
+        {
             throw new ArgumentException("Completed + Remaining issue count must equal total issue count");
+        }
 
-        if (ScopeChanges < -1000 || ScopeChanges > 1000)
+        if (this.ScopeChanges < -1000 || this.ScopeChanges > 1000)
+        {
             throw new ArgumentException("Scope changes must be between -1000 and 1000");
+        }
     }
 
     public override string ToString()
     {
-        return $"[sprint {SprintId}] {Timestamp:yyyy-MM-dd HH:mm} UTC - {CompletedStoryPoints}/{TotalStoryPoints} pts done " +
-               $"({GetBurndownPercentage():F1}%), {RemainingStoryPoints} remaining";
+        return $"[sprint {this.SprintId}] {this.Timestamp:yyyy-MM-dd HH:mm} UTC - {this.CompletedStoryPoints}/{this.TotalStoryPoints} pts done " +
+               $"({this.GetBurndownPercentage():F1}%), {this.RemainingStoryPoints} remaining";
     }
 }

@@ -4,7 +4,6 @@
 // =============================================================================
 
 using System.Text;
-using JiraAnalyticsCli.Models;
 using Microsoft.Extensions.Logging;
 
 namespace JiraAnalyticsCli.Services;
@@ -23,17 +22,19 @@ public class JqlQueryService : IJqlQueryService
     /// </summary>
     public JqlQueryService(IJiraApiService jiraApiService, ILogger<JqlQueryService> logger)
     {
-        _jiraApiService = jiraApiService ?? throw new ArgumentNullException(nameof(jiraApiService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._jiraApiService = jiraApiService ?? throw new ArgumentNullException(nameof(jiraApiService));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <inheritdoc/>
     public Task<JqlQueryResult> ExecuteQueryAsync(string jql, int maxResults = 50)
     {
         if (string.IsNullOrWhiteSpace(jql))
+        {
             throw new ArgumentException("JQL query cannot be empty.", nameof(jql));
+        }
 
-        return ExecuteQueryAsync(new JqlQueryRequest { Jql = jql, MaxResults = maxResults });
+        return this.ExecuteQueryAsync(new JqlQueryRequest { Jql = jql, MaxResults = maxResults });
     }
 
     /// <inheritdoc/>
@@ -42,15 +43,17 @@ public class JqlQueryService : IJqlQueryService
         ArgumentNullException.ThrowIfNull(request);
 
         if (string.IsNullOrWhiteSpace(request.Jql))
+        {
             throw new ArgumentException("JQL query cannot be empty.", nameof(request));
+        }
 
-        _logger.LogInformation(
+        this._logger.LogInformation(
             "Executing JQL query (maxResults={Max}, startAt={Start}): {Jql}",
             request.MaxResults, request.StartAt, request.Jql);
 
         try
         {
-            var searchResult = await _jiraApiService.SearchByJqlAsync(
+            var searchResult = await this._jiraApiService.SearchByJqlAsync(
                 request.Jql,
                 request.MaxResults,
                 request.StartAt);
@@ -65,7 +68,7 @@ public class JqlQueryService : IJqlQueryService
                 IsSuccess  = true
             };
 
-            _logger.LogInformation(
+            this._logger.LogInformation(
                 "JQL query returned {Count} of {Total} matching issues",
                 result.Issues.Count, result.Total);
 
@@ -73,7 +76,7 @@ public class JqlQueryService : IJqlQueryService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "JQL query execution failed: {Jql}", request.Jql);
+            this._logger.LogError(ex, "JQL query execution failed: {Jql}", request.Jql);
             return new JqlQueryResult
             {
                 Jql          = request.Jql,
@@ -99,8 +102,16 @@ public class JqlQueryService : IJqlQueryService
     public static string BuildDateRangeJql(string field, DateTime? from, DateTime? to)
     {
         var sb = new StringBuilder();
-        if (from.HasValue) sb.Append($"{field} >= \"{from.Value:yyyy-MM-dd}\" ");
-        if (to.HasValue) sb.Append($"{field} <= \"{to.Value:yyyy-MM-dd}\" ");
+        if (from.HasValue)
+        {
+            sb.Append($"{field} >= \"{from.Value:yyyy-MM-dd}\" ");
+        }
+
+        if (to.HasValue)
+        {
+            sb.Append($"{field} <= \"{to.Value:yyyy-MM-dd}\" ");
+        }
+
         return sb.ToString().Trim();
     }
 
@@ -112,7 +123,9 @@ public class JqlQueryService : IJqlQueryService
     public static string FormatAsText(JqlQueryResult result)
     {
         if (!result.IsSuccess)
+        {
             return $"Query failed: {result.ErrorMessage}";
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine($"JQL  : {result.Jql}");

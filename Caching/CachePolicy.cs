@@ -19,7 +19,7 @@ public class CachePolicy
 
     public CachePolicy(string key)
     {
-        Key = key;
+        this.Key = key;
     }
 
     /// <summary>
@@ -59,7 +59,7 @@ public class CachePolicy
     /// </summary>
     public CachePolicy WithCondition(Func<bool> condition)
     {
-        Condition = condition;
+        this.Condition = condition;
         return this;
     }
 
@@ -68,7 +68,7 @@ public class CachePolicy
     /// </summary>
     public CachePolicy WithMaxSize(int maxSizeBytes)
     {
-        MaxSize = maxSizeBytes;
+        this.MaxSize = maxSizeBytes;
         return this;
     }
 
@@ -81,24 +81,30 @@ public class CachePolicy
         var now = DateTime.UtcNow;
 
         // Check absolute expiration
-        if (AbsoluteExpiration.HasValue)
+        if (this.AbsoluteExpiration.HasValue)
         {
-            var absoluteExpireTime = createdAt.Add(AbsoluteExpiration.Value);
+            var absoluteExpireTime = createdAt.Add(this.AbsoluteExpiration.Value);
             if (now > absoluteExpireTime)
+            {
                 return true;
+            }
         }
 
         // Check sliding expiration
-        if (SlidingExpiration.HasValue)
+        if (this.SlidingExpiration.HasValue)
         {
-            var slidingExpireTime = lastAccessedAt.Add(SlidingExpiration.Value);
+            var slidingExpireTime = lastAccessedAt.Add(this.SlidingExpiration.Value);
             if (now > slidingExpireTime)
+            {
                 return true;
+            }
         }
 
         // Check condition
-        if (Condition != null && !Condition())
+        if (this.Condition != null && !this.Condition())
+        {
             return true;
+        }
 
         return false;
     }

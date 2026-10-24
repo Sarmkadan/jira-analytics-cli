@@ -21,8 +21,8 @@ public class TeamComparisonService : ITeamComparisonService
     /// <summary>Initialises a new instance of <see cref="TeamComparisonService"/>.</summary>
     public TeamComparisonService(IAnalyticsService analyticsService, ILogger<TeamComparisonService> logger)
     {
-        _analyticsService = analyticsService ?? throw new ArgumentNullException(nameof(analyticsService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._analyticsService = analyticsService ?? throw new ArgumentNullException(nameof(analyticsService));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <inheritdoc/>
@@ -37,17 +37,21 @@ public class TeamComparisonService : ITeamComparisonService
             .ToList();
 
         if (keys.Count == 0)
+        {
             throw new ArgumentException("At least one project key must be provided.", nameof(projectKeys));
+        }
 
         if (sprintCount <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(sprintCount), "Sprint count must be positive.");
+        }
 
-        _logger.LogInformation(
+        this._logger.LogInformation(
             "Comparing {TeamCount} team(s) across {SprintCount} sprint(s): {Keys}",
             keys.Count, sprintCount, string.Join(", ", keys));
 
         // Fetch analytics for all projects in parallel
-        var analysisTasks = keys.Select(k => FetchSnapshotAsync(k, sprintCount)).ToList();
+        var analysisTasks = keys.Select(k => this.FetchSnapshotAsync(k, sprintCount)).ToList();
         var snapshots = await Task.WhenAll(analysisTasks);
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -64,7 +68,7 @@ public class TeamComparisonService : ITeamComparisonService
             MostConsistentTeam = teams.MaxBy(t => t.AvgCompletionRate)?.ProjectKey
         };
 
-        _logger.LogInformation(
+        this._logger.LogInformation(
             "Team comparison complete. Fastest: {Fastest}, Highest quality: {Quality}, Most consistent: {Consistent}",
             report.FastestTeam, report.HighestQualityTeam, report.MostConsistentTeam);
 
@@ -169,13 +173,13 @@ public class TeamComparisonService : ITeamComparisonService
     {
         try
         {
-            _logger.LogDebug("Fetching sprint analytics for project {ProjectKey}", projectKey);
+            this._logger.LogDebug("Fetching sprint analytics for project {ProjectKey}", projectKey);
 
-            var analysis = await _analyticsService.AnalyzeSprints(projectKey, sprintCount);
+            var analysis = await this._analyticsService.AnalyzeSprints(projectKey, sprintCount);
 
             if (!analysis.Metrics.Any())
             {
-                _logger.LogWarning("No sprint data found for project {ProjectKey}", projectKey);
+                this._logger.LogWarning("No sprint data found for project {ProjectKey}", projectKey);
                 return new TeamProjectSnapshot
                 {
                     ProjectKey    = projectKey,
@@ -208,7 +212,7 @@ public class TeamComparisonService : ITeamComparisonService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching snapshot for project {ProjectKey}", projectKey);
+            this._logger.LogError(ex, "Error fetching snapshot for project {ProjectKey}", projectKey);
             return null;
         }
     }
@@ -216,9 +220,21 @@ public class TeamComparisonService : ITeamComparisonService
     private static string BuildAwardIcons(TeamProjectSnapshot team, TeamComparisonReport report)
     {
         var icons = new List<string>();
-        if (team.ProjectKey == report.FastestTeam)        icons.Add("⚡");
-        if (team.ProjectKey == report.HighestQualityTeam) icons.Add("✅");
-        if (team.ProjectKey == report.MostConsistentTeam) icons.Add("🎯");
+        if (team.ProjectKey == report.FastestTeam)
+        {
+            icons.Add("⚡");
+        }
+
+        if (team.ProjectKey == report.HighestQualityTeam)
+        {
+            icons.Add("✅");
+        }
+
+        if (team.ProjectKey == report.MostConsistentTeam)
+        {
+            icons.Add("🎯");
+        }
+
         return icons.Count > 0 ? "  " + string.Join(" ", icons) : string.Empty;
     }
 }

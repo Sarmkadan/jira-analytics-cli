@@ -3,8 +3,6 @@
 // CTO & Software Architect
 // =====================================================================
 
-using JiraAnalyticsCli.Models;
-
 namespace JiraAnalyticsCli.Services;
 
 /// <summary>
@@ -18,7 +16,7 @@ public interface IMarkdownReportService
     /// <param name="projectKey">The Jira project key to analyse.</param>
     /// <param name="sprintCount">Number of recent closed sprints to include.</param>
     /// <param name="outputPath">File path where the Markdown report will be written.</param>
-    Task GenerateReportAsync(string projectKey, int sprintCount, string outputPath);
+    public Task GenerateReportAsync(string projectKey, int sprintCount, string outputPath);
 
     /// <summary>
     /// Builds a Markdown report string from pre-computed analytics results.
@@ -27,7 +25,7 @@ public interface IMarkdownReportService
     /// <param name="sprintAnalysis">Sprint velocity and health metrics.</param>
     /// <param name="teamAnalysis">Team workload and performance data.</param>
     /// <returns>A complete Markdown document string.</returns>
-    string BuildMarkdown(string projectKey, SprintAnalysisResult sprintAnalysis, TeamAnalysisResult teamAnalysis);
+    public string BuildMarkdown(string projectKey, SprintAnalysisResult sprintAnalysis, TeamAnalysisResult teamAnalysis);
 
     /// <summary>
     /// Generates a Markdown report for cycle time metrics.
@@ -35,5 +33,5 @@ public interface IMarkdownReportService
     /// <param name="projectKey">The Jira project key.</param>
     /// <param name="cycleTimeResult">Cycle time analysis results.</param>
     /// <param name="outputPath">File path where the Markdown report will be written.</param>
-    Task GenerateCycleTimeReportAsync(string projectKey, CycleTimeResult cycleTimeResult, string outputPath);
+    public Task GenerateCycleTimeReportAsync(string projectKey, CycleTimeResult cycleTimeResult, string outputPath);
 }

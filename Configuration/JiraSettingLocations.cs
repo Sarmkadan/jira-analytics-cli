@@ -16,7 +16,7 @@ public sealed record JiraSettingLocation(string Setting, string Flag, string[] E
 {
     /// <summary>Lists every place this setting can be set.</summary>
     public string Describe() =>
-        $"CLI flag {Flag}, env {string.Join(" or ", EnvVars)}, or \"{JsonKey}\" in appsettings.json";
+        $"CLI flag {this.Flag}, env {string.Join(" or ", this.EnvVars)}, or \"{this.JsonKey}\" in appsettings.json";
 
     /// <summary>
     /// Builds a problem message that names the setting, the offending value (when it is not a secret)
@@ -25,7 +25,7 @@ public sealed record JiraSettingLocation(string Setting, string Flag, string[] E
     public string Problem(string message, string? offendingValue = null)
     {
         var got = offendingValue is null ? string.Empty : $" (got '{offendingValue}')";
-        return $"{Setting} {message}{got}. Set it via {Describe()}.";
+        return $"{this.Setting} {message}{got}. Set it via {this.Describe()}.";
     }
 }
 

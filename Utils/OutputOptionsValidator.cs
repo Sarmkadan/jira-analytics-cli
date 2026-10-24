@@ -39,7 +39,9 @@ public static class OutputOptionsValidator
         ArgumentNullException.ThrowIfNull(supported);
 
         if (supported.Any(name => string.Equals(name, format, StringComparison.OrdinalIgnoreCase)))
+        {
             return null;
+        }
 
         var list = string.Join(", ", supported);
         return string.IsNullOrWhiteSpace(format)
@@ -56,7 +58,9 @@ public static class OutputOptionsValidator
     public static string? CheckSprintCount(int count, string optionName = "--sprints")
     {
         if (count >= MinSprints && count <= MaxSprints)
+        {
             return null;
+        }
 
         return $"{optionName} must be between {MinSprints} and {MaxSprints} (got {count.ToString(CultureInfo.InvariantCulture)}).";
     }
@@ -73,7 +77,10 @@ public static class OutputOptionsValidator
         if (!string.IsNullOrEmpty(from))
         {
             if (!TryParseDate(from, out var parsed))
+            {
                 return $"--from must be a date in {DateFormat} format (got '{from}').";
+            }
+
             start = parsed;
         }
 
@@ -81,12 +88,17 @@ public static class OutputOptionsValidator
         if (!string.IsNullOrEmpty(to))
         {
             if (!TryParseDate(to, out var parsed))
+            {
                 return $"--to must be a date in {DateFormat} format (got '{to}').";
+            }
+
             end = parsed;
         }
 
         if (start is { } startDate && end is { } endDate && startDate > endDate)
+        {
             return $"--from ({from}) must not be after --to ({to}).";
+        }
 
         return null;
     }
@@ -101,16 +113,24 @@ public static class OutputOptionsValidator
     public static string? CheckOutputFile(string? path, string optionName = "--output")
     {
         if (string.IsNullOrEmpty(path))
+        {
             return null;
+        }
 
         if (!TryGetFullPath(path, optionName, out var fullPath, out var problem))
+        {
             return problem;
+        }
 
         if (Directory.Exists(fullPath))
+        {
             return $"{optionName} '{path}' is a directory. Give a file path.";
+        }
 
         if (string.IsNullOrEmpty(Path.GetFileName(fullPath)))
+        {
             return $"{optionName} '{path}' does not name a file.";
+        }
 
         var directory = Path.GetDirectoryName(fullPath);
         return directory is null ? null : CheckDirectoryExistsOrCreatable(directory, path, optionName);
@@ -125,10 +145,14 @@ public static class OutputOptionsValidator
     public static string? CheckOutputDirectory(string? path, string optionName = "--output-dir")
     {
         if (string.IsNullOrEmpty(path))
+        {
             return null;
+        }
 
         if (!TryGetFullPath(path, optionName, out var fullPath, out var problem))
+        {
             return problem;
+        }
 
         return CheckDirectoryExistsOrCreatable(fullPath, path, optionName);
     }
@@ -143,14 +167,20 @@ public static class OutputOptionsValidator
         while (true)
         {
             if (Directory.Exists(current))
+            {
                 return null;
+            }
 
             if (File.Exists(current))
+            {
                 return $"{optionName} '{given}' cannot be used because '{current}' is a file, not a directory.";
+            }
 
             var parent = Path.GetDirectoryName(current);
             if (string.IsNullOrEmpty(parent) || parent == current)
+            {
                 return $"{optionName} '{given}' does not exist and cannot be created.";
+            }
 
             current = parent;
         }

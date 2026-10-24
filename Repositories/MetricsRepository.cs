@@ -20,16 +20,16 @@ public class MetricsRepository : IMetricsRepository
 
     public MetricsRepository(ILogger<MetricsRepository> logger)
     {
-        _logger = logger;
+        this._logger = logger;
     }
 
     public async Task<List<SprintMetric>> GetByProjectAsync(string projectKey)
     {
         try
         {
-            _logger.LogDebug("Retrieving metrics for project {ProjectKey}", projectKey);
+            this._logger.LogDebug("Retrieving metrics for project {ProjectKey}", projectKey);
 
-            if (_metrics.TryGetValue(projectKey, out var projectMetrics))
+            if (this._metrics.TryGetValue(projectKey, out var projectMetrics))
             {
                 return projectMetrics.OrderByDescending(m => m.EndDate).ToList();
             }
@@ -38,7 +38,7 @@ public class MetricsRepository : IMetricsRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving metrics for project {ProjectKey}", projectKey);
+            this._logger.LogError(ex, "Error retrieving metrics for project {ProjectKey}", projectKey);
             return new List<SprintMetric>();
         }
         finally
@@ -51,14 +51,14 @@ public class MetricsRepository : IMetricsRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving metrics for sprint {SprintId}", sprintId);
+            this._logger.LogDebug("Retrieving metrics for sprint {SprintId}", sprintId);
 
-            var allMetrics = _metrics.Values.SelectMany(m => m).ToList();
+            var allMetrics = this._metrics.Values.SelectMany(m => m).ToList();
             return allMetrics.Where(m => m.SprintId == sprintId).ToList();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving metrics for sprint {SprintId}", sprintId);
+            this._logger.LogError(ex, "Error retrieving metrics for sprint {SprintId}", sprintId);
             return new List<SprintMetric>();
         }
         finally
@@ -71,9 +71,9 @@ public class MetricsRepository : IMetricsRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving burndown data for sprint {SprintId}", sprintId);
+            this._logger.LogDebug("Retrieving burndown data for sprint {SprintId}", sprintId);
 
-            if (_burndownData.TryGetValue(sprintId, out var burndownSnapshots))
+            if (this._burndownData.TryGetValue(sprintId, out var burndownSnapshots))
             {
                 return burndownSnapshots.OrderBy(b => b.Timestamp).ToList();
             }
@@ -82,7 +82,7 @@ public class MetricsRepository : IMetricsRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving burndown data for sprint {SprintId}", sprintId);
+            this._logger.LogError(ex, "Error retrieving burndown data for sprint {SprintId}", sprintId);
             return new List<BurndownSnapshot>();
         }
         finally
@@ -95,9 +95,9 @@ public class MetricsRepository : IMetricsRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving latest metrics for project {ProjectKey}", projectKey);
+            this._logger.LogDebug("Retrieving latest metrics for project {ProjectKey}", projectKey);
 
-            if (_metrics.TryGetValue(projectKey, out var projectMetrics))
+            if (this._metrics.TryGetValue(projectKey, out var projectMetrics))
             {
                 return projectMetrics.OrderByDescending(m => m.EndDate).FirstOrDefault();
             }
@@ -106,7 +106,7 @@ public class MetricsRepository : IMetricsRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving latest metrics for project {ProjectKey}", projectKey);
+            this._logger.LogError(ex, "Error retrieving latest metrics for project {ProjectKey}", projectKey);
             return null;
         }
         finally
@@ -120,11 +120,13 @@ public class MetricsRepository : IMetricsRepository
         try
         {
             if (metric == null)
+            {
                 throw new ArgumentNullException(nameof(metric));
+            }
 
             metric.Validate();
 
-            _metrics.AddOrUpdate(
+            this._metrics.AddOrUpdate(
                 metric.SprintName,
                 new List<SprintMetric> { metric },
                 (key, existing) =>
@@ -133,11 +135,11 @@ public class MetricsRepository : IMetricsRepository
                     return existing;
                 });
 
-            _logger.LogDebug("Saved metric for sprint {SprintId}: {SprintName}", metric.SprintId, metric.SprintName);
+            this._logger.LogDebug("Saved metric for sprint {SprintId}: {SprintName}", metric.SprintId, metric.SprintName);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving metric");
+            this._logger.LogError(ex, "Error saving metric");
             throw;
         }
         finally
@@ -151,11 +153,13 @@ public class MetricsRepository : IMetricsRepository
         try
         {
             if (snapshot == null)
+            {
                 throw new ArgumentNullException(nameof(snapshot));
+            }
 
             snapshot.Validate();
 
-            _burndownData.AddOrUpdate(
+            this._burndownData.AddOrUpdate(
                 snapshot.SprintId,
                 new List<BurndownSnapshot> { snapshot },
                 (id, existing) =>
@@ -164,11 +168,11 @@ public class MetricsRepository : IMetricsRepository
                     return existing;
                 });
 
-            _logger.LogDebug("Saved burndown snapshot for sprint {SprintId}", snapshot.SprintId);
+            this._logger.LogDebug("Saved burndown snapshot for sprint {SprintId}", snapshot.SprintId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving burndown snapshot");
+            this._logger.LogError(ex, "Error saving burndown snapshot");
             throw;
         }
         finally
@@ -182,7 +186,9 @@ public class MetricsRepository : IMetricsRepository
         try
         {
             if (snapshots == null || !snapshots.Any())
+            {
                 throw new ArgumentException("Snapshots collection cannot be null or empty");
+            }
 
             var groupedBySprintId = snapshots.GroupBy(s => s.SprintId);
 
@@ -193,7 +199,7 @@ public class MetricsRepository : IMetricsRepository
                     snapshot.Validate();
                 }
 
-                _burndownData.AddOrUpdate(
+                this._burndownData.AddOrUpdate(
                     group.Key,
                     group.ToList(),
                     (id, existing) =>
@@ -203,11 +209,11 @@ public class MetricsRepository : IMetricsRepository
                     });
             }
 
-            _logger.LogInformation("Saved {SnapshotCount} burndown snapshots to repository", snapshots.Count);
+            this._logger.LogInformation("Saved {SnapshotCount} burndown snapshots to repository", snapshots.Count);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving burndown snapshots");
+            this._logger.LogError(ex, "Error saving burndown snapshots");
             throw;
         }
         finally
@@ -218,18 +224,18 @@ public class MetricsRepository : IMetricsRepository
 
     public int GetMetricCount()
     {
-        return _metrics.Values.Sum(m => m.Count);
+        return this._metrics.Values.Sum(m => m.Count);
     }
 
     public int GetBurndownCount()
     {
-        return _burndownData.Values.Sum(b => b.Count);
+        return this._burndownData.Values.Sum(b => b.Count);
     }
 
     public void Clear()
     {
-        _metrics.Clear();
-        _burndownData.Clear();
-        _logger.LogInformation("Metrics repository cleared");
+        this._metrics.Clear();
+        this._burndownData.Clear();
+        this._logger.LogInformation("Metrics repository cleared");
     }
 }

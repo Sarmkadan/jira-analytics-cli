@@ -5,8 +5,6 @@
 // Extension methods for CachePolicy providing fluent API for common caching scenarios
 // =============================================================================
 
-using System;
-
 namespace JiraAnalyticsCli.Caching;
 
 /// <summary>

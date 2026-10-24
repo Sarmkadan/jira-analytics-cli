@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace JiraAnalyticsCli.Models;
 
 public static class DeveloperExtensions
@@ -113,7 +109,7 @@ public static class DeveloperExtensions
 
         foreach (var issue in issues)
         {
-            Developer assigneeDeveloper = null;
+            Developer? assigneeDeveloper = null;
 
             if (!string.IsNullOrEmpty(issue.Assignee))
             {

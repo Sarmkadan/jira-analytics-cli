@@ -21,7 +21,7 @@ public interface ISnapshotStore
     /// <returns>A task that completes once the snapshot has been written.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="snapshot"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="snapshot"/> fails validation.</exception>
-    Task AppendAsync(BurndownSnapshot snapshot, CancellationToken cancellationToken = default);
+    public Task AppendAsync(BurndownSnapshot snapshot, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Loads the persisted snapshot series for a sprint, ordered chronologically (oldest first).
@@ -32,5 +32,5 @@ public interface ISnapshotStore
     /// <param name="cancellationToken">A token to observe for cancellation.</param>
     /// <returns>The persisted snapshots for the sprint, oldest first. Empty when none exist yet.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="sprintId"/> is not positive.</exception>
-    Task<IReadOnlyList<BurndownSnapshot>> LoadAsync(int sprintId, CancellationToken cancellationToken = default);
+    public Task<IReadOnlyList<BurndownSnapshot>> LoadAsync(int sprintId, CancellationToken cancellationToken = default);
 }

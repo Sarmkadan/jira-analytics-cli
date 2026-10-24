@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace JiraAnalyticsCli.Models;
 
 public static class SprintMetricExtensions

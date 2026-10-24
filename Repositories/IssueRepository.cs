@@ -22,20 +22,20 @@ public class IssueRepository : IIssueRepository
 
     public IssueRepository(ILogger<IssueRepository> logger)
     {
-        _logger = logger;
+        this._logger = logger;
     }
 
     public ValueTask<JiraIssue?> GetByKeyAsync(string issueKey)
     {
         try
         {
-            _logger.LogDebug("Retrieving issue {IssueKey}", issueKey);
-            _issues.TryGetValue(issueKey, out var issue);
+            this._logger.LogDebug("Retrieving issue {IssueKey}", issueKey);
+            this._issues.TryGetValue(issueKey, out var issue);
             return ValueTask.FromResult<JiraIssue?>(issue);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving issue {IssueKey}", issueKey);
+            this._logger.LogError(ex, "Error retrieving issue {IssueKey}", issueKey);
             return ValueTask.FromResult<JiraIssue?>(null);
         }
     }
@@ -44,15 +44,15 @@ public class IssueRepository : IIssueRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving issues for project {ProjectKey}", projectKey);
-            var result = _issues.Values
+            this._logger.LogDebug("Retrieving issues for project {ProjectKey}", projectKey);
+            var result = this._issues.Values
                 .Where(i => i.ProjectKey == projectKey)
                 .ToList();
             return ValueTask.FromResult(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving issues for project {ProjectKey}", projectKey);
+            this._logger.LogError(ex, "Error retrieving issues for project {ProjectKey}", projectKey);
             return ValueTask.FromResult(new List<JiraIssue>());
         }
     }
@@ -61,15 +61,15 @@ public class IssueRepository : IIssueRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving issues for sprint {SprintId}", sprintId);
-            var result = _issues.Values
+            this._logger.LogDebug("Retrieving issues for sprint {SprintId}", sprintId);
+            var result = this._issues.Values
                 .Where(i => i.SprintId == sprintId)
                 .ToList();
             return ValueTask.FromResult(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving issues for sprint {SprintId}", sprintId);
+            this._logger.LogError(ex, "Error retrieving issues for sprint {SprintId}", sprintId);
             return ValueTask.FromResult(new List<JiraIssue>());
         }
     }
@@ -78,8 +78,8 @@ public class IssueRepository : IIssueRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving overdue issues for project {ProjectKey}", projectKey);
-            var result = _issues.Values
+            this._logger.LogDebug("Retrieving overdue issues for project {ProjectKey}", projectKey);
+            var result = this._issues.Values
                 .Where(i => i.ProjectKey == projectKey && i.IsOverdue())
                 .OrderByDescending(i => i.DueDate)
                 .ToList();
@@ -87,7 +87,7 @@ public class IssueRepository : IIssueRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving overdue issues");
+            this._logger.LogError(ex, "Error retrieving overdue issues");
             return ValueTask.FromResult(new List<JiraIssue>());
         }
     }
@@ -96,8 +96,8 @@ public class IssueRepository : IIssueRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving high priority issues for project {ProjectKey}", projectKey);
-            var result = _issues.Values
+            this._logger.LogDebug("Retrieving high priority issues for project {ProjectKey}", projectKey);
+            var result = this._issues.Values
                 .Where(i => i.ProjectKey == projectKey && i.IsHighPriority())
                 .OrderByDescending(i => i.Priority)
                 .ToList();
@@ -105,7 +105,7 @@ public class IssueRepository : IIssueRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving high priority issues");
+            this._logger.LogError(ex, "Error retrieving high priority issues");
             return ValueTask.FromResult(new List<JiraIssue>());
         }
     }
@@ -115,16 +115,18 @@ public class IssueRepository : IIssueRepository
         try
         {
             if (issue == null)
+            {
                 throw new ArgumentNullException(nameof(issue));
+            }
 
             issue.Validate();
-            _issues.AddOrUpdate(issue.Key, issue, (_, _) => issue);
-            _logger.LogDebug("Saved issue {IssueKey}", issue.Key);
+            this._issues.AddOrUpdate(issue.Key, issue, (_, _) => issue);
+            this._logger.LogDebug("Saved issue {IssueKey}", issue.Key);
             return ValueTask.CompletedTask;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving issue");
+            this._logger.LogError(ex, "Error saving issue");
             throw;
         }
     }
@@ -134,29 +136,31 @@ public class IssueRepository : IIssueRepository
         try
         {
             if (issues == null || !issues.Any())
+            {
                 throw new ArgumentException("Issues collection cannot be null or empty");
+            }
 
             foreach (var issue in issues)
             {
                 issue.Validate();
-                _issues.AddOrUpdate(issue.Key, issue, (_, _) => issue);
+                this._issues.AddOrUpdate(issue.Key, issue, (_, _) => issue);
             }
 
-            _logger.LogInformation("Saved {IssueCount} issues to repository", issues.Count);
+            this._logger.LogInformation("Saved {IssueCount} issues to repository", issues.Count);
             return ValueTask.CompletedTask;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving issues");
+            this._logger.LogError(ex, "Error saving issues");
             throw;
         }
     }
 
-    public int GetCount() => _issues.Count;
+    public int GetCount() => this._issues.Count;
 
     public void Clear()
     {
-        _issues.Clear();
-        _logger.LogInformation("Issue repository cleared");
+        this._issues.Clear();
+        this._logger.LogInformation("Issue repository cleared");
     }
 }

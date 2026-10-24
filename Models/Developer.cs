@@ -39,51 +39,60 @@ public class Developer
 
     public int GetTotalAssignedIssues()
     {
-        return AssignedIssues.Count;
+        return this.AssignedIssues.Count;
     }
 
     public int GetCompletedIssues()
     {
-        return AssignedIssues.Count(i => i.Status is "Done" or "Closed");
+        return this.AssignedIssues.Count(i => i.Status is "Done" or "Closed");
     }
 
     public int GetInProgressIssues()
     {
-        return AssignedIssues.Count(i => i.IsInProgress());
+        return this.AssignedIssues.Count(i => i.IsInProgress());
     }
 
     public int GetTotalStoryPoints()
     {
-        return AssignedIssues.Sum(i => i.StoryPoints ?? 0);
+        return this.AssignedIssues.Sum(i => i.StoryPoints ?? 0);
     }
 
     public int GetCompletedStoryPoints()
     {
-        return AssignedIssues.Where(i => i.Status is "Done" or "Closed")
+        return this.AssignedIssues.Where(i => i.Status is "Done" or "Closed")
                              .Sum(i => i.StoryPoints ?? 0);
     }
 
     public int GetOverdueIssueCount()
     {
-        return AssignedIssues.Count(i => i.IsOverdue());
+        return this.AssignedIssues.Count(i => i.IsOverdue());
     }
 
     public double GetCompletionRate()
     {
-        var total = GetTotalAssignedIssues();
-        if (total == 0) return 0;
+        var total = this.GetTotalAssignedIssues();
+        if (total == 0)
+        {
+            return 0;
+        }
 
-        return (GetCompletedIssues() / (double)total) * 100;
+        return (this.GetCompletedIssues() / (double)total) * 100;
     }
 
     public double GetAverageIssuesPerDay()
     {
-        if (!JoinDate.HasValue) return 0;
+        if (!this.JoinDate.HasValue)
+        {
+            return 0;
+        }
 
-        var daysActive = (DateTime.UtcNow - JoinDate.Value).TotalDays;
-        if (daysActive <= 0) return 0;
+        var daysActive = (DateTime.UtcNow - this.JoinDate.Value).TotalDays;
+        if (daysActive <= 0)
+        {
+            return 0;
+        }
 
-        return GetCompletedIssues() / daysActive;
+        return this.GetCompletedIssues() / daysActive;
     }
 
     /// <summary>
@@ -92,10 +101,15 @@ public class Developer
     /// </summary>
     public double GetAvailableHours(DateTime start, DateTime end, int workingHoursPerDay = 8, bool excludeWeekends = false)
     {
-        if (end <= start) return 0;
+        if (end <= start)
+        {
+            return 0;
+        }
 
         if (!excludeWeekends)
+        {
             return (end - start).TotalDays * workingHoursPerDay;
+        }
 
         double workingDays = 0;
         var current = start.Date;
@@ -103,7 +117,10 @@ public class Developer
         while (current <= endDate)
         {
             if (current.DayOfWeek != DayOfWeek.Saturday && current.DayOfWeek != DayOfWeek.Sunday)
+            {
                 workingDays++;
+            }
+
             current = current.AddDays(1);
         }
 
@@ -115,63 +132,86 @@ public class Developer
     /// </summary>
     public double GetLoadFactor(DateTime start, DateTime end, int workingHoursPerDay = 8, bool excludeWeekends = false)
     {
-        var availableHours = GetAvailableHours(start, end, workingHoursPerDay, excludeWeekends);
-        if (availableHours <= 0) return 0;
+        var availableHours = this.GetAvailableHours(start, end, workingHoursPerDay, excludeWeekends);
+        if (availableHours <= 0)
+        {
+            return 0;
+        }
 
-        return GetCompletedStoryPoints() / availableHours;
+        return this.GetCompletedStoryPoints() / availableHours;
     }
 
     public double GetAverageStoryPointsPerIssue()
     {
-        var completed = GetCompletedIssues();
-        if (completed == 0) return 0;
+        var completed = this.GetCompletedIssues();
+        if (completed == 0)
+        {
+            return 0;
+        }
 
-        return GetCompletedStoryPoints() / (double)completed;
+        return this.GetCompletedStoryPoints() / (double)completed;
     }
 
     public double GetProductivity()
     {
         // Productivity score: story points completed / days active
-        if (!JoinDate.HasValue) return 0;
+        if (!this.JoinDate.HasValue)
+        {
+            return 0;
+        }
 
-        var daysActive = (DateTime.UtcNow - JoinDate.Value).TotalDays;
-        if (daysActive <= 0) return 0;
+        var daysActive = (DateTime.UtcNow - this.JoinDate.Value).TotalDays;
+        if (daysActive <= 0)
+        {
+            return 0;
+        }
 
-        return GetCompletedStoryPoints() / daysActive;
+        return this.GetCompletedStoryPoints() / daysActive;
     }
 
     public List<JiraIssue> GetHighPriorityIssues()
     {
-        return AssignedIssues.Where(i => i.IsHighPriority()).ToList();
+        return this.AssignedIssues.Where(i => i.IsHighPriority()).ToList();
     }
 
     public double GetAverageCycleTime()
     {
-        if (!AssignedIssues.Any()) return 0;
+        if (!this.AssignedIssues.Any())
+        {
+            return 0;
+        }
 
-        return AssignedIssues.Average(i => i.GetCycleTime());
+        return this.AssignedIssues.Average(i => i.GetCycleTime());
     }
 
     public void AssignIssue(JiraIssue issue)
     {
         if (issue == null)
+        {
             throw new ArgumentNullException(nameof(issue));
+        }
 
-        if (!AssignedIssues.Any(i => i.Key == issue.Key))
-            AssignedIssues.Add(issue);
+        if (!this.AssignedIssues.Any(i => i.Key == issue.Key))
+        {
+            this.AssignedIssues.Add(issue);
+        }
     }
 
     public void Validate()
     {
-        if (string.IsNullOrWhiteSpace(Key))
+        if (string.IsNullOrWhiteSpace(this.Key))
+        {
             throw new ArgumentException("Developer key cannot be empty");
+        }
 
-        if (string.IsNullOrWhiteSpace(Name))
+        if (string.IsNullOrWhiteSpace(this.Name))
+        {
             throw new ArgumentException("Developer name cannot be empty");
+        }
     }
 
     public override string ToString()
     {
-        return $"{DisplayName ?? Name} - {GetCompletedIssues()} completed, {GetInProgressIssues()} in progress";
+        return $"{this.DisplayName ?? this.Name} - {this.GetCompletedIssues()} completed, {this.GetInProgressIssues()} in progress";
     }
 }

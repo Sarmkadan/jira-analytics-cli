@@ -5,29 +5,32 @@
 
 using System.CommandLine;
 using System.CommandLine.Parsing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using JiraAnalyticsCli.Configuration;
 using JiraAnalyticsCli.Diagnostics;
-using JiraAnalyticsCli.Services;
-using JiraAnalyticsCli.Repositories;
 using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Services;
 using JiraAnalyticsCli.Utils;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 namespace JiraAnalyticsCli;
 
-class Program
+internal class Program
 {
-    static async Task<int> Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
         try
         {
             // --check-config reports every problem itself, so it runs before the fail-fast check below.
             if (!IsHelpOrVersionRequest(args) && args.Contains(CheckConfigFlag))
+            {
                 return await RunConfigCheckAsync(args);
+            }
 
             // doctor also reports every problem itself (missing settings become check results), so it runs before the fail-fast check.
             if (!IsHelpOrVersionRequest(args) && IsDoctorRequest(args))
+            {
                 return await RunDoctorAsync(args);
+            }
 
             // Resolve and validate Jira settings before any command runs, so a bad setting fails before any HTTP call.
             // Help and version requests skip validation so they work without a configured token.
@@ -75,20 +78,20 @@ class Program
         }
     }
 
-    
+
     /// <summary>Root flag that runs the configuration checks and exits.</summary>
-    const string CheckConfigFlag = "--check-config";
+    private const string CheckConfigFlag = "--check-config";
 
     /// <summary>Global flag that logs each Jira request and the summarized analysis inputs at Debug level.</summary>
-    const string VerboseFlag = "--verbose";
+    private const string VerboseFlag = "--verbose";
 
     /// <summary>Subcommand that runs the health checks and exits.</summary>
-    const string DoctorCommandName = "doctor";
+    private const string DoctorCommandName = "doctor";
 
     /// <summary>
     /// Runs every configuration check, prints one OK/FAIL/SKIP line per item, and returns 0 only when nothing failed.
     /// </summary>
-    static async Task<int> RunConfigCheckAsync(string[] args)
+    private static async Task<int> RunConfigCheckAsync(string[] args)
     {
         var loaded = JiraOptionsLoader.Load(ReadJiraFlags(args), Environment.GetEnvironmentVariable, ReadAppSettings());
         var items = await JiraConfigChecker.RunAsync(loaded);
@@ -100,7 +103,7 @@ class Program
     /// <summary>
     /// Runs the <c>doctor</c> checks, prints the status table with remediation hints, and returns 1 when any check failed.
     /// </summary>
-    static async Task<int> RunDoctorAsync(string[] args)
+    private static async Task<int> RunDoctorAsync(string[] args)
     {
         var jira = JiraOptionsLoader.Load(ReadJiraFlags(args), Environment.GetEnvironmentVariable, ReadAppSettings());
         var velocity = VelocityOptionsLoader.Load(ReadVelocityFlags(args), Environment.GetEnvironmentVariable, ReadAppSettings());
@@ -114,7 +117,7 @@ class Program
     /// True when the parser selects the <c>doctor</c> subcommand. Parsing, rather than searching for the word,
     /// keeps a value such as <c>-p doctor</c> from being read as the command.
     /// </summary>
-    static bool IsDoctorRequest(string[] args)
+    private static bool IsDoctorRequest(string[] args)
     {
         var probe = new RootCommand();
         probe.AddCommand(new Command(DoctorCommandName));
@@ -124,28 +127,30 @@ class Program
     /// <summary>
     /// Reports a validation problem on an option, so System.CommandLine rejects the command before its handler runs and before any Jira call.
     /// </summary>
-    static void Reject(OptionResult result, string? problem)
+    private static void Reject(OptionResult result, string? problem)
     {
         if (problem is not null)
+        {
             result.ErrorMessage = problem;
+        }
     }
 
-    static void ValidateFormat(Option<string> format, IReadOnlyCollection<string> supported) =>
+    private static void ValidateFormat(Option<string> format, IReadOnlyCollection<string> supported) =>
         format.AddValidator(result => Reject(result, OutputOptionsValidator.CheckFormat(result.GetValueOrDefault<string>(), supported)));
 
-    static void ValidateSprintCount(Option<int> sprints) =>
+    private static void ValidateSprintCount(Option<int> sprints) =>
         sprints.AddValidator(result => Reject(result, OutputOptionsValidator.CheckSprintCount(result.GetValueOrDefault<int>())));
 
-    static void ValidateOutputFile(Option<string> output) =>
+    private static void ValidateOutputFile(Option<string> output) =>
         output.AddValidator(result => Reject(result, OutputOptionsValidator.CheckOutputFile(result.GetValueOrDefault<string>())));
 
-    static void ValidateOutputDirectory(Option<string> outputDir) =>
+    private static void ValidateOutputDirectory(Option<string> outputDir) =>
         outputDir.AddValidator(result => Reject(result, OutputOptionsValidator.CheckOutputDirectory(result.GetValueOrDefault<string>())));
 
     /// <summary>
     /// Parses only the global Jira flags, so settings can be validated before the command tree is built.
     /// </summary>
-    static JiraOptionsOverrides ReadJiraFlags(string[] args)
+    private static JiraOptionsOverrides ReadJiraFlags(string[] args)
     {
         var probe = new RootCommand();
         var flags = JiraGlobalOptions.AddTo(probe);
@@ -155,22 +160,22 @@ class Program
     /// <summary>
     /// Parses only the global velocity flags, so settings can be validated before the command tree is built.
     /// </summary>
-    static VelocityOptionsOverrides ReadVelocityFlags(string[] args)
+    private static VelocityOptionsOverrides ReadVelocityFlags(string[] args)
     {
         var probe = new RootCommand();
         var flags = VelocityGlobalOptions.AddTo(probe);
         return flags.Read(probe.Parse(args));
     }
 
-    static string? ReadAppSettings() =>
+    private static string? ReadAppSettings() =>
         File.Exists(JiraOptionsLoader.AppSettingsFileName) ? File.ReadAllText(JiraOptionsLoader.AppSettingsFileName) : null;
 
-    static bool IsHelpOrVersionRequest(string[] args) =>
+    private static bool IsHelpOrVersionRequest(string[] args) =>
         args.Any(arg => arg is "-h" or "-?" or "/?" or "--help" or "--version");
 
-    static bool IsVerboseRequest(string[] args) => args.Contains(VerboseFlag);
+    private static bool IsVerboseRequest(string[] args) => args.Contains(VerboseFlag);
 
-    static RootCommand BuildRootCommand(IServiceProvider serviceProvider)
+    private static RootCommand BuildRootCommand(IServiceProvider serviceProvider)
     {
         var rootCommand = new RootCommand("Jira Analytics CLI - Advanced sprint and team metrics analysis");
         JiraGlobalOptions.AddTo(rootCommand);
@@ -390,7 +395,11 @@ rootCommand.AddCommand(teamCsvExportCommand);
                 if (!string.IsNullOrEmpty(output))
                 {
                     var dir = Path.GetDirectoryName(output);
-                    if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                    if (!string.IsNullOrEmpty(dir))
+                    {
+                        Directory.CreateDirectory(dir);
+                    }
+
                     await File.WriteAllTextAsync(output, content, System.Text.Encoding.UTF8);
                     logger.LogInformation("JQL results written to {Output}", output);
                 }
@@ -429,7 +438,9 @@ rootCommand.AddCommand(teamCsvExportCommand);
             {
                 var resolvedOutput = ResolveOutputPath(output, outputDir, $"{project}-report.html");
                 if (string.IsNullOrEmpty(resolvedOutput))
+                {
                     resolvedOutput = $"{project}-report.html";
+                }
 
                 logger.LogInformation("Generating HTML report for {Project} to {Output}", project, resolvedOutput);
                 await htmlService.GenerateReportAsync(project, sprints, resolvedOutput);
@@ -474,7 +485,11 @@ rootCommand.AddCommand(teamCsvExportCommand);
                 if (!string.IsNullOrEmpty(output))
                 {
                     var dir = Path.GetDirectoryName(output);
-                    if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                    if (!string.IsNullOrEmpty(dir))
+                    {
+                        Directory.CreateDirectory(dir);
+                    }
+
                     await File.WriteAllTextAsync(output, content, System.Text.Encoding.UTF8);
                     logger.LogInformation("Team comparison report written to {Output}", output);
                 }
@@ -517,7 +532,9 @@ rootCommand.AddCommand(teamCsvExportCommand);
         {
             var resolvedOutput = ResolveOutputPath(output, outputDir, $"{project}-report.md");
             if (string.IsNullOrEmpty(resolvedOutput))
+            {
                 resolvedOutput = $"{project}-report.md";
+            }
 
             logger.LogInformation("Generating Markdown report for {Project} to {Output}", project, resolvedOutput);
             await markdownService.GenerateReportAsync(project, sprints, resolvedOutput);
@@ -591,10 +608,12 @@ rootCommand.AddCommand(teamCsvExportCommand);
     /// The resolved file path, or <c>null</c> when neither <paramref name="output"/> nor
     /// <paramref name="outputDir"/> was provided (callers should write to stdout in that case).
     /// </returns>
-    static string? ResolveOutputPath(string? output, string? outputDir, string defaultFileName)
+    private static string? ResolveOutputPath(string? output, string? outputDir, string defaultFileName)
     {
         if (string.IsNullOrEmpty(outputDir) && string.IsNullOrEmpty(output))
+        {
             return null;
+        }
 
         var fileName = string.IsNullOrEmpty(output)
             ? defaultFileName
@@ -605,7 +624,10 @@ rootCommand.AddCommand(teamCsvExportCommand);
             // No output-dir: use the path as-is, but ensure parent directory exists
             var dir = Path.GetDirectoryName(output!);
             if (!string.IsNullOrEmpty(dir))
+            {
                 Directory.CreateDirectory(dir);
+            }
+
             return output!;
         }
 

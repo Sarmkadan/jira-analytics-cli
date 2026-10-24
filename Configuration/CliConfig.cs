@@ -27,37 +27,59 @@ public class CliConfig : ICliConfig
 
     public void Validate()
     {
-        if (string.IsNullOrWhiteSpace(JiraBaseUrl))
+        if (string.IsNullOrWhiteSpace(this.JiraBaseUrl))
+        {
             throw new InvalidOperationException("JiraBaseUrl cannot be empty");
+        }
 
-        if (string.IsNullOrWhiteSpace(JiraApiToken))
+        if (string.IsNullOrWhiteSpace(this.JiraApiToken))
+        {
             throw new InvalidOperationException("JiraApiToken must be set. Set JIRA_API_TOKEN environment variable");
+        }
 
-        if (CacheExpirationMinutes < 0)
+        if (this.CacheExpirationMinutes < 0)
+        {
             throw new InvalidOperationException("CacheExpirationMinutes must be non-negative");
+        }
 
-        if (DefaultSprintCount <= 0)
+        if (this.DefaultSprintCount <= 0)
+        {
             throw new InvalidOperationException("DefaultSprintCount must be positive");
+        }
 
-        if (JiraApiMaxRetryAttempts <= 0)
+        if (this.JiraApiMaxRetryAttempts <= 0)
+        {
             throw new InvalidOperationException("JiraApiMaxRetryAttempts must be positive");
+        }
 
-        if (JiraApiCircuitBreakerFailureThreshold <= 0)
+        if (this.JiraApiCircuitBreakerFailureThreshold <= 0)
+        {
             throw new InvalidOperationException("JiraApiCircuitBreakerFailureThreshold must be positive");
+        }
 
-        if (JiraApiCircuitBreakerDurationSeconds <= 0)
+        if (this.JiraApiCircuitBreakerDurationSeconds <= 0)
+        {
             throw new InvalidOperationException("JiraApiCircuitBreakerDurationSeconds must be positive");
+        }
 
-        if (JiraApiTimeoutSeconds <= 0)
+        if (this.JiraApiTimeoutSeconds <= 0)
+        {
             throw new InvalidOperationException("JiraApiTimeoutSeconds must be positive");
+        }
 
-        if (JiraApiMaxResultsPerRequest <= 0)
+        if (this.JiraApiMaxResultsPerRequest <= 0)
+        {
             throw new InvalidOperationException("JiraApiMaxResultsPerRequest must be positive");
+        }
 
-        if (JiraApiMaxPages <= 0)
+        if (this.JiraApiMaxPages <= 0)
+        {
             throw new InvalidOperationException("JiraApiMaxPages must be positive");
+        }
 
-        if (JiraApiMaxPageSize <= 0)
+        if (this.JiraApiMaxPageSize <= 0)
+        {
             throw new InvalidOperationException("JiraApiMaxPageSize must be positive");
+        }
     }
 }

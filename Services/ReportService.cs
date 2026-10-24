@@ -31,15 +31,15 @@ public class ReportService : IReportService
         ArgumentNullException.ThrowIfNull(snapshotStore);
         ArgumentNullException.ThrowIfNull(logger);
 
-        _jiraService = jiraService;
-        _exportService = exportService;
-        _snapshotStore = snapshotStore;
-        _logger = logger;
+        this._jiraService = jiraService;
+        this._exportService = exportService;
+        this._snapshotStore = snapshotStore;
+        this._logger = logger;
     }
 
     public string GenerateReport(SprintAnalysisResult analysis)
     {
-        _logger.LogInformation("Generating text report for {SprintCount} sprints", analysis.Metrics.Count);
+        this._logger.LogInformation("Generating text report for {SprintCount} sprints", analysis.Metrics.Count);
 
         var sb = new StringBuilder();
 
@@ -95,21 +95,23 @@ public class ReportService : IReportService
 
     public async Task GenerateBurndownChart(string projectKey, int sprintId, string outputPath)
     {
-        _logger.LogInformation("Generating burndown chart for sprint {SprintId}", sprintId);
+        this._logger.LogInformation("Generating burndown chart for sprint {SprintId}", sprintId);
 
         try
         {
-            var sprint = await _jiraService.GetSprintAsync(sprintId);
+            var sprint = await this._jiraService.GetSprintAsync(sprintId);
             if (sprint == null)
+            {
                 throw new InvalidOperationException($"Sprint {sprintId} not found");
+            }
 
-            var issues = await _jiraService.GetSprintIssuesAsync(sprintId);
-            var burndownData = await _jiraService.GetBurndownDataAsync(sprintId);
+            var issues = await this._jiraService.GetSprintIssuesAsync(sprintId);
+            var burndownData = await this._jiraService.GetBurndownDataAsync(sprintId);
 
             // If no historical data, create synthetic burndown
             if (!burndownData.Any())
             {
-                burndownData = GenerateSyntheticBurndown(sprint, issues);
+                burndownData = this.GenerateSyntheticBurndown(sprint, issues);
             }
 
             // Persist a snapshot of the current sprint state so historical trend
@@ -118,28 +120,28 @@ public class ReportService : IReportService
             var currentSnapshot = BuildCurrentSnapshot(sprint, issues);
             try
             {
-                await _snapshotStore.AppendAsync(currentSnapshot);
+                await this._snapshotStore.AppendAsync(currentSnapshot);
             }
             catch (IOException ex)
             {
-                _logger.LogWarning(ex, "Failed to persist burndown snapshot for sprint {SprintId}", sprintId);
+                this._logger.LogWarning(ex, "Failed to persist burndown snapshot for sprint {SprintId}", sprintId);
             }
 
             // Generate chart image using SkiaSharp
-            await _exportService.ExportAnalytics(projectKey, "png", outputPath);
+            await this._exportService.ExportAnalytics(projectKey, "png", outputPath);
 
-            _logger.LogInformation("Burndown chart generated successfully at {OutputPath}", outputPath);
+            this._logger.LogInformation("Burndown chart generated successfully at {OutputPath}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating burndown chart");
+            this._logger.LogError(ex, "Error generating burndown chart");
             throw;
         }
     }
 
     public string GenerateHtmlReport(SprintAnalysisResult analysis, TeamAnalysisResult teamAnalysis)
     {
-        _logger.LogInformation("Generating HTML report");
+        this._logger.LogInformation("Generating HTML report");
 
         var sb = new StringBuilder();
 

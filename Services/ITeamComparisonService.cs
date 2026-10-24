@@ -18,7 +18,7 @@ public interface ITeamComparisonService
     /// <param name="projectKeys">The Jira project keys to include in the comparison.</param>
     /// <param name="sprintCount">Number of recent closed sprints to consider per project.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task<TeamComparisonReport> CompareTeamsAsync(
+    public Task<TeamComparisonReport> CompareTeamsAsync(
         IEnumerable<string> projectKeys,
         int sprintCount = 5,
         CancellationToken cancellationToken = default);

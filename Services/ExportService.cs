@@ -6,10 +6,10 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using SkiaSharp;
 using JiraAnalyticsCli.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using SkiaSharp;
 
 namespace JiraAnalyticsCli.Services;
 
@@ -30,61 +30,63 @@ public class ExportService : IExportService
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(serviceProvider);
 
-        _jiraService = jiraService;
-        _analyticsService = analyticsService;
-        _logger = logger;
-        _serviceProvider = serviceProvider;
+        this._jiraService = jiraService;
+        this._analyticsService = analyticsService;
+        this._logger = logger;
+        this._serviceProvider = serviceProvider;
     }
 
     public async Task ExportAnalytics(string projectKey, string format, string outputPath)
     {
-        _logger.LogInformation("Exporting analytics for project {ProjectKey} as {Format}", projectKey, format);
+        this._logger.LogInformation("Exporting analytics for project {ProjectKey} as {Format}", projectKey, format);
 
         try
         {
-            var analysis = await _analyticsService.AnalyzeSprints(projectKey, 5);
+            var analysis = await this._analyticsService.AnalyzeSprints(projectKey, 5);
 
             await (format.ToLower() switch
             {
-                "png" or "jpg" => ExportAsImage(analysis, format, outputPath),
-                "svg" => ExportAsImageSvg(analysis, outputPath),
-                "json" => ExportAsJson(analysis, outputPath),
-                "csv" => ExportAnalyticsAsCsv(analysis, outputPath),
-        "md" => ExportAsMarkdown(analysis, outputPath),
+                "png" or "jpg" => this.ExportAsImage(analysis, format, outputPath),
+                "svg" => this.ExportAsImageSvg(analysis, outputPath),
+                "json" => this.ExportAsJson(analysis, outputPath),
+                "csv" => this.ExportAnalyticsAsCsv(analysis, outputPath),
+        "md" => this.ExportAsMarkdown(analysis, outputPath),
                 _ => throw new NotSupportedException($"Format {format} is not supported")
             });
 
-            _logger.LogInformation("Analytics exported successfully to {OutputPath}", outputPath);
+            this._logger.LogInformation("Analytics exported successfully to {OutputPath}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exporting analytics");
+            this._logger.LogError(ex, "Error exporting analytics");
             throw;
         }
     }
 
     public async Task ExportAsMarkdown(SprintAnalysisResult analysis, string outputPath)
     {
-        _logger.LogInformation("Exporting analytics as Markdown to {OutputPath}", outputPath);
+        this._logger.LogInformation("Exporting analytics as Markdown to {OutputPath}", outputPath);
 
         try
         {
-            var markdownService = _serviceProvider.GetRequiredService<IMarkdownReportService>();
-            var teamAnalysis = await _analyticsService.AnalyzeTeam("unknown");
+            var markdownService = this._serviceProvider.GetRequiredService<IMarkdownReportService>();
+            var teamAnalysis = await this._analyticsService.AnalyzeTeam("unknown");
             
             var markdown = markdownService.BuildMarkdown("unknown", analysis, teamAnalysis);
             
             var dir = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(dir))
+            {
                 Directory.CreateDirectory(dir);
-            
+            }
+
             await File.WriteAllTextAsync(outputPath, markdown, Encoding.UTF8);
-            
-            _logger.LogInformation("Markdown analytics exported successfully to {OutputPath}", outputPath);
+
+            this._logger.LogInformation("Markdown analytics exported successfully to {OutputPath}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exporting analytics as Markdown");
+            this._logger.LogError(ex, "Error exporting analytics as Markdown");
             throw;
         }
     }
@@ -92,69 +94,71 @@ public class ExportService : IExportService
 
     public async Task ExportBurndownChart(int sprintId, string format, string outputPath)
     {
-        _logger.LogInformation("Exporting burndown chart for sprint {SprintId} as {Format}", sprintId, format);
+        this._logger.LogInformation("Exporting burndown chart for sprint {SprintId} as {Format}", sprintId, format);
 
         try
         {
-            var sprint = await _jiraService.GetSprintAsync(sprintId);
+            var sprint = await this._jiraService.GetSprintAsync(sprintId);
             if (sprint == null)
+            {
                 throw new InvalidOperationException($"Sprint {sprintId} not found");
+            }
 
-            var issues = await _jiraService.GetSprintIssuesAsync(sprintId);
+            var issues = await this._jiraService.GetSprintIssuesAsync(sprintId);
             sprint.Issues.AddRange(issues);
 
-            var burndownData = await _jiraService.GetBurndownDataAsync(sprintId);
+            var burndownData = await this._jiraService.GetBurndownDataAsync(sprintId);
 
             var fmt = format.ToLower();
             if (fmt is "png" or "jpg")
             {
-                await DrawBurndownChart(sprint, burndownData, format, outputPath);
+                await this.DrawBurndownChart(sprint, burndownData, format, outputPath);
             }
             else if (fmt == "svg")
             {
-                await DrawBurndownChartSvg(sprint, burndownData, outputPath);
+                await this.DrawBurndownChartSvg(sprint, burndownData, outputPath);
             }
             else if (fmt == "json")
             {
-                await ExportAsJson(burndownData, outputPath);
+                await this.ExportAsJson(burndownData, outputPath);
             }
 
-            _logger.LogInformation("Burndown chart exported to {OutputPath}", outputPath);
+            this._logger.LogInformation("Burndown chart exported to {OutputPath}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exporting burndown chart");
+            this._logger.LogError(ex, "Error exporting burndown chart");
             throw;
         }
     }
 
     public async Task ExportTeamMetrics(string projectKey, string format, string outputPath)
     {
-        _logger.LogInformation("Exporting team metrics for project {ProjectKey}", projectKey);
+        this._logger.LogInformation("Exporting team metrics for project {ProjectKey}", projectKey);
 
         try
         {
-            var teamAnalysis = await _analyticsService.AnalyzeTeam(projectKey);
+            var teamAnalysis = await this._analyticsService.AnalyzeTeam(projectKey);
 
             await (format.ToLower() switch
             {
-                "json" => ExportAsJson(teamAnalysis, outputPath),
-                "csv" => ExportTeamAsCsv(teamAnalysis, outputPath),
+                "json" => this.ExportAsJson(teamAnalysis, outputPath),
+                "csv" => this.ExportTeamAsCsv(teamAnalysis, outputPath),
                 _ => throw new NotSupportedException($"Format {format} is not supported")
             });
 
-            _logger.LogInformation("Team metrics exported to {OutputPath}", outputPath);
+            this._logger.LogInformation("Team metrics exported to {OutputPath}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exporting team metrics");
+            this._logger.LogError(ex, "Error exporting team metrics");
             throw;
         }
     }
 
     public async Task ExportAsJson(object data, string outputPath)
     {
-        _logger.LogInformation("Exporting data as JSON to {OutputPath}", outputPath);
+        this._logger.LogInformation("Exporting data as JSON to {OutputPath}", outputPath);
 
         try
         {
@@ -163,7 +167,7 @@ public class ExportService : IExportService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exporting JSON");
+            this._logger.LogError(ex, "Error exporting JSON");
             throw;
         }
 
@@ -172,7 +176,7 @@ public class ExportService : IExportService
 
     public async Task ExportAsCsv(List<Dictionary<string, object>> data, string outputPath)
     {
-        _logger.LogInformation("Exporting data as CSV to {OutputPath}", outputPath);
+        this._logger.LogInformation("Exporting data as CSV to {OutputPath}", outputPath);
 
         try
         {
@@ -191,7 +195,7 @@ public class ExportService : IExportService
             // Write data rows
             foreach (var row in data)
             {
-                var values = headers.Select(h => row.ContainsKey(h) ? EscapeCsvValue(FormatCsvCell(row[h])) : string.Empty);
+                var values = headers.Select(h => row.ContainsKey(h) ? this.EscapeCsvValue(FormatCsvCell(row[h])) : string.Empty);
                 sb.AppendLine(string.Join(",", values));
             }
 
@@ -199,7 +203,7 @@ public class ExportService : IExportService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exporting CSV");
+            this._logger.LogError(ex, "Error exporting CSV");
             throw;
         }
 
@@ -208,7 +212,7 @@ public class ExportService : IExportService
 
     private async Task ExportAsImage(SprintAnalysisResult analysis, string format, string outputPath)
     {
-        _logger.LogInformation("Generating image chart for analytics");
+        this._logger.LogInformation("Generating image chart for analytics");
 
         try
         {
@@ -268,7 +272,7 @@ public class ExportService : IExportService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating image");
+            this._logger.LogError(ex, "Error generating image");
             throw;
         }
 
@@ -277,7 +281,7 @@ public class ExportService : IExportService
 
     private async Task DrawBurndownChart(Sprint sprint, List<BurndownSnapshot> burndowns, string format, string outputPath)
     {
-        _logger.LogInformation("Drawing burndown chart for sprint {SprintId}", sprint.Id);
+        this._logger.LogInformation("Drawing burndown chart for sprint {SprintId}", sprint.Id);
 
         try
         {
@@ -301,13 +305,13 @@ public class ExportService : IExportService
             canvas.DrawText($"Burndown Chart - {sprint.Name}", padding, 40, titlePaint);
 
             // Draw grid and axes
-            DrawChartAxes(canvas, padding, width, height);
+            this.DrawChartAxes(canvas, padding, width, height);
 
             // Draw ideal line
-            DrawIdealBurndownLine(canvas, sprint, padding, width, height);
+            this.DrawIdealBurndownLine(canvas, sprint, padding, width, height);
 
             // Draw actual burndown
-            DrawActualBurndown(canvas, burndowns, padding, width, height);
+            this.DrawActualBurndown(canvas, burndowns, padding, width, height);
 
             // Save
             var format_enum = format.ToLower() == "png" ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Jpeg;
@@ -322,7 +326,7 @@ public class ExportService : IExportService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error drawing burndown");
+            this._logger.LogError(ex, "Error drawing burndown");
             throw;
         }
 
@@ -363,7 +367,10 @@ public class ExportService : IExportService
 
     private void DrawActualBurndown(SKCanvas canvas, List<BurndownSnapshot> burndowns, int padding, int width, int height)
     {
-        if (!burndowns.Any()) return;
+        if (!burndowns.Any())
+        {
+            return;
+        }
 
         using var burndownPaint = new SKPaint
         {
@@ -402,7 +409,7 @@ public class ExportService : IExportService
 
     private async Task ExportAsImageSvg(SprintAnalysisResult analysis, string outputPath)
     {
-        _logger.LogInformation("Generating SVG velocity chart for analytics");
+        this._logger.LogInformation("Generating SVG velocity chart for analytics");
 
         try
         {
@@ -428,7 +435,10 @@ public class ExportService : IExportService
 
             var barWidth = (width - 100) / (analysis.Metrics.Count + 1);
             var maxVelocity = analysis.Metrics.Any() ? analysis.Metrics.Max(m => m.GetVelocity()) : 1;
-            if (maxVelocity <= 0) maxVelocity = 1;
+            if (maxVelocity <= 0)
+            {
+                maxVelocity = 1;
+            }
 
             for (int i = 0; i < analysis.Metrics.Count; i++)
             {
@@ -450,7 +460,7 @@ public class ExportService : IExportService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating SVG image");
+            this._logger.LogError(ex, "Error generating SVG image");
             throw;
         }
 
@@ -459,7 +469,7 @@ public class ExportService : IExportService
 
     private async Task DrawBurndownChartSvg(Sprint sprint, List<BurndownSnapshot> burndowns, string outputPath)
     {
-        _logger.LogInformation("Drawing SVG burndown chart for sprint {SprintId}", sprint.Id);
+        this._logger.LogInformation("Drawing SVG burndown chart for sprint {SprintId}", sprint.Id);
 
         try
         {
@@ -481,13 +491,13 @@ public class ExportService : IExportService
             };
             canvas.DrawText($"Burndown Chart - {sprint.Name}", padding, 40, titlePaint);
 
-            DrawChartAxes(canvas, padding, width, height);
-            DrawIdealBurndownLine(canvas, sprint, padding, width, height);
-            DrawActualBurndown(canvas, burndowns, padding, width, height);
+            this.DrawChartAxes(canvas, padding, width, height);
+            this.DrawIdealBurndownLine(canvas, sprint, padding, width, height);
+            this.DrawActualBurndown(canvas, burndowns, padding, width, height);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error drawing SVG burndown");
+            this._logger.LogError(ex, "Error drawing SVG burndown");
             throw;
         }
 
@@ -508,7 +518,7 @@ public class ExportService : IExportService
             { "Health Status", m.GetHealthStatus() }
         }).ToList();
 
-        await ExportAsCsv(data, outputPath);
+        await this.ExportAsCsv(data, outputPath);
     }
 
     private async Task ExportTeamAsCsv(TeamAnalysisResult teamAnalysis, string outputPath)
@@ -519,7 +529,7 @@ public class ExportService : IExportService
             { "Assigned Issues", kvp.Value }
         }).ToList();
 
-        await ExportAsCsv(data, outputPath);
+        await this.ExportAsCsv(data, outputPath);
     }
 
     // Formats a CSV cell value using invariant culture so numbers/dates round-trip
@@ -534,7 +544,9 @@ public class ExportService : IExportService
     private string EscapeCsvValue(string? value)
     {
         if (string.IsNullOrEmpty(value))
+        {
             return string.Empty;
+        }
 
         if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
         {
@@ -546,13 +558,13 @@ public class ExportService : IExportService
 
     public async Task ExportSprintMetricsCsv(IEnumerable<SprintMetric> metrics, string path)
     {
-        var csvService = _serviceProvider.GetRequiredService<ICsvExportService>();
+        var csvService = this._serviceProvider.GetRequiredService<ICsvExportService>();
         await csvService.ExportSprintMetrics(metrics, path);
     }
 
     public async Task ExportTeamMetricsCsv(IEnumerable<KeyValuePair<string, int>> metrics, string path)
     {
-        var csvService = _serviceProvider.GetRequiredService<ICsvExportService>();
+        var csvService = this._serviceProvider.GetRequiredService<ICsvExportService>();
         await csvService.ExportTeamMetrics(metrics, path);
     }
 }

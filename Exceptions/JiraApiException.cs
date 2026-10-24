@@ -22,19 +22,23 @@ public class JiraApiException : Exception
     public JiraApiException(string message, int statusCode, string? responseContent = null)
         : base(message)
     {
-        StatusCode = statusCode;
-        ResponseContent = responseContent;
+        this.StatusCode = statusCode;
+        this.ResponseContent = responseContent;
     }
 
     public override string ToString()
     {
         var result = base.ToString();
 
-        if (StatusCode.HasValue)
-            result += $"\nHTTP Status Code: {StatusCode}";
+        if (this.StatusCode.HasValue)
+        {
+            result += $"\nHTTP Status Code: {this.StatusCode}";
+        }
 
-        if (!string.IsNullOrEmpty(ResponseContent))
-            result += $"\nResponse: {ResponseContent}";
+        if (!string.IsNullOrEmpty(this.ResponseContent))
+        {
+            result += $"\nResponse: {this.ResponseContent}";
+        }
 
         return result;
     }

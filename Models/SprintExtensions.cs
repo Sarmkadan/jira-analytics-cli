@@ -4,10 +4,6 @@
 // Extension methods for Sprint to provide additional analytics capabilities
 // =============================================================================
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace JiraAnalyticsCli.Models;
 
 /// <summary>

@@ -24,7 +24,7 @@ public sealed class JiraRequestLoggingHandler : DelegatingHandler
     public JiraRequestLoggingHandler(ILogger<JiraRequestLoggingHandler> logger)
     {
         ArgumentNullException.ThrowIfNull(logger);
-        _logger = logger;
+        this._logger = logger;
     }
 
     /// <inheritdoc />
@@ -38,13 +38,13 @@ public sealed class JiraRequestLoggingHandler : DelegatingHandler
         try
         {
             var response = await base.SendAsync(request, cancellationToken);
-            _logger.LogDebug("Jira request {Method} {Url} returned {StatusCode} in {ElapsedMs} ms",
+            this._logger.LogDebug("Jira request {Method} {Url} returned {StatusCode} in {ElapsedMs} ms",
                 request.Method, url, (int)response.StatusCode, stopwatch.ElapsedMilliseconds);
             return response;
         }
         catch (Exception ex)
         {
-            _logger.LogDebug("Jira request {Method} {Url} failed after {ElapsedMs} ms: {ErrorMessage}",
+            this._logger.LogDebug("Jira request {Method} {Url} failed after {ElapsedMs} ms: {ErrorMessage}",
                 request.Method, url, stopwatch.ElapsedMilliseconds, ex.Message);
             throw;
         }
@@ -58,7 +58,9 @@ public sealed class JiraRequestLoggingHandler : DelegatingHandler
     internal static string RedactUrl(Uri? uri)
     {
         if (uri is null)
+        {
             return "<no url>";
+        }
 
         return uri.IsAbsoluteUri
             ? uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.Path | UriComponents.Query, UriFormat.UriEscaped)
