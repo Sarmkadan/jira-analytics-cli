@@ -1277,3 +1277,7 @@ Console.WriteLine(formatter.Prettify(ugly));
 var values = formatter.SelectValues(xml, "//Velocity");
 Console.WriteLine($"Velocity: {values.FirstOrDefault()}"); // Velocity: 42.5
 ```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
