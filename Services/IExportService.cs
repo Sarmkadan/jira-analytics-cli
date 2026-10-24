@@ -11,11 +11,11 @@ namespace JiraAnalyticsCli.Services;
 /// </summary>
 public interface IExportService
 {
-    Task ExportAnalytics(string projectKey, string format, string outputPath);
-    Task ExportBurndownChart(int sprintId, string format, string outputPath);
-    Task ExportTeamMetrics(string projectKey, string format, string outputPath);
-    Task ExportAsJson(object data, string outputPath);
-    Task ExportAsCsv(List<Dictionary<string, object>> data, string outputPath);
-    Task ExportSprintMetricsCsv(IEnumerable<SprintMetric> metrics, string path);
-    Task ExportTeamMetricsCsv(IEnumerable<KeyValuePair<string, int>> metrics, string path);
+    public Task ExportAnalytics(string projectKey, string format, string outputPath);
+    public Task ExportBurndownChart(int sprintId, string format, string outputPath);
+    public Task ExportTeamMetrics(string projectKey, string format, string outputPath);
+    public Task ExportAsJson(object data, string outputPath);
+    public Task ExportAsCsv(List<Dictionary<string, object>> data, string outputPath);
+    public Task ExportSprintMetricsCsv(IEnumerable<SprintMetric> metrics, string path);
+    public Task ExportTeamMetricsCsv(IEnumerable<KeyValuePair<string, int>> metrics, string path);
 }

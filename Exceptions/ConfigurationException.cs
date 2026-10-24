@@ -18,7 +18,7 @@ public class ConfigurationException : Exception
     public ConfigurationException(string message, string propertyName)
         : base(message)
     {
-        PropertyName = propertyName;
+        this.PropertyName = propertyName;
     }
 
     public ConfigurationException(string message, Exception innerException)

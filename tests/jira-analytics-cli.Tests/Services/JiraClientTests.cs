@@ -1,19 +1,13 @@
-using System.Net;
-using System.Net.Http;
-using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
+using JiraAnalyticsCli.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using WireMock.Server;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
+using WireMock.Server;
 using WireMock.Settings;
-using WireMock.Matchers;
 using Xunit;
-using JiraAnalyticsCli.Services;
 
 namespace JiraAnalyticsCli.Tests.Services;
 
@@ -24,7 +18,7 @@ public class JiraClientTests : IAsyncLifetime
 
     public Task InitializeAsync()
     {
-        _wireMock = WireMockServer.Start(new WireMockServerSettings
+        this._wireMock = WireMockServer.Start(new WireMockServerSettings
         {
             Urls = new[] { BaseUrl },
             StartAdminInterface = false
@@ -34,7 +28,7 @@ public class JiraClientTests : IAsyncLifetime
 
     public Task DisposeAsync()
     {
-        _wireMock.Stop();
+        this._wireMock.Stop();
         return Task.CompletedTask;
     }
 
@@ -63,7 +57,7 @@ public class JiraClientTests : IAsyncLifetime
         var pageSize = 2;
 
         // Page 1
-        _wireMock.Given(Request.Create()
+        this._wireMock.Given(Request.Create()
                 .WithPath($"/rest/api/3/search*")
                 .WithParam("startAt", "0")
                 .WithParam("maxResults", pageSize.ToString())
@@ -82,7 +76,7 @@ public class JiraClientTests : IAsyncLifetime
                 })));
 
         // Page 2
-        _wireMock.Given(Request.Create()
+        this._wireMock.Given(Request.Create()
                 .WithPath($"/rest/api/3/search*")
                 .WithParam("startAt", "2")
                 .WithParam("maxResults", pageSize.ToString())
@@ -101,7 +95,7 @@ public class JiraClientTests : IAsyncLifetime
                 })));
 
         // Page 3 (last page, only one item)
-        _wireMock.Given(Request.Create()
+        this._wireMock.Given(Request.Create()
                 .WithPath($"/rest/api/3/search*")
                 .WithParam("startAt", "4")
                 .WithParam("maxResults", pageSize.ToString())
@@ -118,7 +112,7 @@ public class JiraClientTests : IAsyncLifetime
                     total = 5
                 })));
 
-        var client = CreateClient();
+        var client = this.CreateClient();
 
         // Act
         var results = await client.GetAllPaginatedAsync<JsonElement>(endpoint, "values", pageSize);
@@ -137,7 +131,7 @@ public class JiraClientTests : IAsyncLifetime
         var successResponse = new { id = "1", key = "TEST-1", fields = new { summary = "Test issue" } };
 
         // First attempt returns 429 with Retry-After header
-        _wireMock.Given(Request.Create()
+        this._wireMock.Given(Request.Create()
                 .WithPath(endpoint)
                 .UsingGet())
             .RespondWith(Response.Create()
@@ -146,7 +140,7 @@ public class JiraClientTests : IAsyncLifetime
                 .WithBody("Rate limited"));
 
         // Second attempt returns 429 with Retry-After header
-        _wireMock.Given(Request.Create()
+        this._wireMock.Given(Request.Create()
                 .WithPath(endpoint)
                 .UsingGet())
             .RespondWith(Response.Create()
@@ -155,7 +149,7 @@ public class JiraClientTests : IAsyncLifetime
                 .WithBody("Rate limited"));
 
         // Third attempt succeeds
-        _wireMock.Given(Request.Create()
+        this._wireMock.Given(Request.Create()
                 .WithPath(endpoint)
                 .UsingGet())
             .RespondWith(Response.Create()
@@ -163,7 +157,7 @@ public class JiraClientTests : IAsyncLifetime
                 .WithHeader("Content-Type", "application/json")
                 .WithBody(JsonSerializer.Serialize(successResponse)));
 
-        var client = CreateClient();
+        var client = this.CreateClient();
 
         // Act
         var result = await client.GetAsync<JsonElement>(endpoint);
@@ -179,7 +173,7 @@ public class JiraClientTests : IAsyncLifetime
         // Arrange
         var endpoint = "/rest/api/3/issue/TEST-1";
 
-        _wireMock.Given(Request.Create()
+        this._wireMock.Given(Request.Create()
                 .WithPath(endpoint)
                 .UsingGet())
             .RespondWith(Response.Create()
@@ -191,7 +185,7 @@ public class JiraClientTests : IAsyncLifetime
                     errors = new {}
                 })));
 
-        var client = CreateClient();
+        var client = this.CreateClient();
 
         // Act
         Func<Task> act = async () => await client.GetAsync<JsonElement>(endpoint);
@@ -207,7 +201,7 @@ public class JiraClientTests : IAsyncLifetime
         // Arrange
         var endpoint = "/rest/api/3/issue/TEST-1";
 
-        _wireMock.Given(Request.Create()
+        this._wireMock.Given(Request.Create()
                 .WithPath(endpoint)
                 .UsingGet())
             .RespondWith(Response.Create()
@@ -215,7 +209,7 @@ public class JiraClientTests : IAsyncLifetime
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("{ invalid json : }")); // Intentionally malformed
 
-        var client = CreateClient();
+        var client = this.CreateClient();
 
         // Act
         Func<Task> act = async () => await client.GetAsync<JsonElement>(endpoint);

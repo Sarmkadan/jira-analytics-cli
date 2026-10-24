@@ -4,7 +4,6 @@
 // =====================================================================
 
 using System.Text;
-using JiraAnalyticsCli.Models;
 using Microsoft.Extensions.Logging;
 
 namespace JiraAnalyticsCli.Services;
@@ -21,8 +20,8 @@ public class MarkdownReportService : IMarkdownReportService
     /// <summary>Initialises a new instance of <see cref="MarkdownReportService"/>.</summary>
     public MarkdownReportService(IAnalyticsService analyticsService, ILogger<MarkdownReportService> logger)
     {
-        _analyticsService = analyticsService ?? throw new ArgumentNullException(nameof(analyticsService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._analyticsService = analyticsService ?? throw new ArgumentNullException(nameof(analyticsService));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <inheritdoc/>
@@ -32,32 +31,36 @@ public class MarkdownReportService : IMarkdownReportService
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath, nameof(outputPath));
 
         if (sprintCount <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(sprintCount), "Sprint count must be positive.");
+        }
 
-        _logger.LogInformation(
+        this._logger.LogInformation(
             "Generating Markdown report for project {ProjectKey} ({SprintCount} sprints) → {OutputPath}",
             projectKey, sprintCount, outputPath);
 
         try
         {
-            var sprintTask = _analyticsService.AnalyzeSprints(projectKey, sprintCount);
-            var teamTask = _analyticsService.AnalyzeTeam(projectKey);
+            var sprintTask = this._analyticsService.AnalyzeSprints(projectKey, sprintCount);
+            var teamTask = this._analyticsService.AnalyzeTeam(projectKey);
 
             await Task.WhenAll(sprintTask, teamTask);
 
-            var markdown = BuildMarkdown(projectKey, sprintTask.Result, teamTask.Result);
+            var markdown = this.BuildMarkdown(projectKey, sprintTask.Result, teamTask.Result);
 
             var dir = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(dir))
+            {
                 Directory.CreateDirectory(dir);
+            }
 
             await File.WriteAllTextAsync(outputPath, markdown, Encoding.UTF8);
 
-            _logger.LogInformation("Markdown report written to {OutputPath}", outputPath);
+            this._logger.LogInformation("Markdown report written to {OutputPath}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating Markdown report for project {ProjectKey}", projectKey);
+            this._logger.LogError(ex, "Error generating Markdown report for project {ProjectKey}", projectKey);
             throw;
         }
     }
@@ -117,7 +120,10 @@ public class MarkdownReportService : IMarkdownReportService
             sb.AppendLine("|-----------|----------------|------|");
 
             var maxLoad = teamAnalysis.WorkloadDistribution.Values.DefaultIfEmpty(1).Max();
-            if (maxLoad == 0) maxLoad = 1;
+            if (maxLoad == 0)
+            {
+                maxLoad = 1;
+            }
 
             foreach (var (dev, count) in teamAnalysis.WorkloadDistribution.OrderByDescending(kv => kv.Value))
             {
@@ -157,25 +163,27 @@ public class MarkdownReportService : IMarkdownReportService
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath, nameof(outputPath));
         ArgumentNullException.ThrowIfNull(cycleTimeResult);
 
-        _logger.LogInformation(
+        this._logger.LogInformation(
             "Generating Markdown cycle time report for project {ProjectKey} → {OutputPath}",
             projectKey, outputPath);
 
         try
         {
-            var markdown = BuildCycleTimeMarkdown(projectKey, cycleTimeResult);
+            var markdown = this.BuildCycleTimeMarkdown(projectKey, cycleTimeResult);
 
             var dir = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(dir))
+            {
                 Directory.CreateDirectory(dir);
+            }
 
             await File.WriteAllTextAsync(outputPath, markdown, Encoding.UTF8);
 
-            _logger.LogInformation("Cycle time Markdown report written to {OutputPath}", outputPath);
+            this._logger.LogInformation("Cycle time Markdown report written to {OutputPath}", outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating cycle time Markdown report for project {ProjectKey}", projectKey);
+            this._logger.LogError(ex, "Error generating cycle time Markdown report for project {ProjectKey}", projectKey);
             throw;
         }
     }

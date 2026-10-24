@@ -15,11 +15,11 @@ namespace JiraAnalyticsCli.Repositories;
 /// </summary>
 public interface IIssueRepository
 {
-    ValueTask<JiraIssue?> GetByKeyAsync(string issueKey);
-    ValueTask<List<JiraIssue>> GetByProjectAsync(string projectKey);
-    ValueTask<List<JiraIssue>> GetBySprintAsync(int sprintId);
-    ValueTask<List<JiraIssue>> GetOverdueAsync(string projectKey);
-    ValueTask<List<JiraIssue>> GetHighPriorityAsync(string projectKey);
-    ValueTask SaveAsync(JiraIssue issue);
-    ValueTask SaveRangeAsync(List<JiraIssue> issues);
+    public ValueTask<JiraIssue?> GetByKeyAsync(string issueKey);
+    public ValueTask<List<JiraIssue>> GetByProjectAsync(string projectKey);
+    public ValueTask<List<JiraIssue>> GetBySprintAsync(int sprintId);
+    public ValueTask<List<JiraIssue>> GetOverdueAsync(string projectKey);
+    public ValueTask<List<JiraIssue>> GetHighPriorityAsync(string projectKey);
+    public ValueTask SaveAsync(JiraIssue issue);
+    public ValueTask SaveRangeAsync(List<JiraIssue> issues);
 }

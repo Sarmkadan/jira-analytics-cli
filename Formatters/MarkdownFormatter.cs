@@ -32,7 +32,7 @@ public class MarkdownFormatter
     public MarkdownFormatter(ILogger<MarkdownFormatter> logger)
     {
         ArgumentNullException.ThrowIfNull(logger);
-        _logger = logger;
+        this._logger = logger;
     }
 
     /// <summary>
@@ -43,7 +43,9 @@ public class MarkdownFormatter
     {
         ArgumentException.ThrowIfNullOrEmpty(text);
         if (level < MinHeaderLevel || level > MaxHeaderLevel)
+        {
             level = MinHeaderLevel;
+        }
 
         return new string('#', level) + " " + text;
     }
@@ -55,7 +57,9 @@ public class MarkdownFormatter
     public string Table<T>(IEnumerable<T> data)
     {
         if (data == null || !data.Any())
+        {
             return string.Empty;
+        }
 
         var properties = typeof(T).GetProperties();
         var headers = properties.Select(p => p.Name).ToArray();
@@ -64,12 +68,12 @@ public class MarkdownFormatter
         foreach (var item in data)
         {
             var values = properties
-                .Select(p => EscapeMarkdown(p.GetValue(item)?.ToString() ?? NullValuePlaceholder))
+                .Select(p => this.EscapeMarkdown(p.GetValue(item)?.ToString() ?? NullValuePlaceholder))
                 .ToArray();
             rows.Add(values);
         }
 
-        return BuildMarkdownTable(headers, rows.ToArray());
+        return this.BuildMarkdownTable(headers, rows.ToArray());
     }
 
     /// <summary>
@@ -83,7 +87,7 @@ public class MarkdownFormatter
 
         foreach (var item in items)
         {
-            sb.AppendLine($"{BoldMarker}{EscapeMarkdown(item.Key)}{BoldMarker}: {EscapeMarkdown(item.Value)}");
+            sb.AppendLine($"{BoldMarker}{this.EscapeMarkdown(item.Key)}{BoldMarker}: {this.EscapeMarkdown(item.Value)}");
         }
 
         return sb.ToString();
@@ -99,7 +103,7 @@ public class MarkdownFormatter
 
         foreach (var item in items)
         {
-            sb.AppendLine($"{BulletPrefix}{EscapeMarkdown(item)}");
+            sb.AppendLine($"{BulletPrefix}{this.EscapeMarkdown(item)}");
         }
 
         return sb.ToString();
@@ -116,7 +120,7 @@ public class MarkdownFormatter
 
         foreach (var item in items)
         {
-            sb.AppendLine($"{index}. {EscapeMarkdown(item)}");
+            sb.AppendLine($"{index}. {this.EscapeMarkdown(item)}");
             index++;
         }
 
@@ -180,7 +184,7 @@ public class MarkdownFormatter
     {
         ArgumentException.ThrowIfNullOrEmpty(text);
         ArgumentException.ThrowIfNullOrEmpty(url);
-        return $"[{EscapeMarkdown(text)}]({url})";
+        return $"[{this.EscapeMarkdown(text)}]({url})";
     }
 
     /// <summary>
@@ -199,7 +203,7 @@ public class MarkdownFormatter
 
         foreach (var (sectionTitle, content) in sections)
         {
-            sb.AppendLine(Header(sectionTitle, 2));
+            sb.AppendLine(this.Header(sectionTitle, 2));
             sb.AppendLine();
             sb.AppendLine(content);
             sb.AppendLine();
@@ -240,7 +244,9 @@ public class MarkdownFormatter
     private string EscapeMarkdown(string text)
     {
         if (string.IsNullOrEmpty(text))
+        {
             return string.Empty;
+        }
 
         // Escape special markdown characters
         var escaped = text

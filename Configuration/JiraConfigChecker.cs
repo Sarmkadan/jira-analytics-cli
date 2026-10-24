@@ -67,7 +67,9 @@ public static class JiraConfigChecker
             o => $"{o.TimeoutSeconds.ToString(CultureInfo.InvariantCulture)} s"));
 
         foreach (var problem in unclaimed)
+        {
             items.Add(new ConfigCheckItem("Other settings", ConfigCheckStatus.Failed, problem));
+        }
 
         if (items.Any(item => item.Status == ConfigCheckStatus.Failed))
         {
@@ -109,7 +111,9 @@ public static class JiraConfigChecker
     {
         var matching = unclaimed.Where(problem => problem.StartsWith(name + " ", StringComparison.Ordinal)).ToList();
         foreach (var problem in matching)
+        {
             unclaimed.Remove(problem);
+        }
 
         return matching.Count == 0
             ? new ConfigCheckItem(name, ConfigCheckStatus.Ok, describe(loaded.Options))

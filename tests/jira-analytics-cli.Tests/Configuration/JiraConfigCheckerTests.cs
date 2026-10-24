@@ -197,20 +197,22 @@ public class JiraConfigCheckerTests
 
         public StubHandler(HttpStatusCode status = HttpStatusCode.OK, string body = "{}", Exception? toThrow = null)
         {
-            _status = status;
-            _body = body;
-            _toThrow = toThrow;
+            this._status = status;
+            this._body = body;
+            this._toThrow = toThrow;
         }
 
         public List<HttpRequestMessage> Requests { get; } = new();
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Requests.Add(request);
-            if (_toThrow is not null)
-                return Task.FromException<HttpResponseMessage>(_toThrow);
+            this.Requests.Add(request);
+            if (this._toThrow is not null)
+            {
+                return Task.FromException<HttpResponseMessage>(this._toThrow);
+            }
 
-            return Task.FromResult(new HttpResponseMessage(_status) { Content = new StringContent(_body) });
+            return Task.FromResult(new HttpResponseMessage(this._status) { Content = new StringContent(this._body) });
         }
     }
 }

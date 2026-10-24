@@ -29,9 +29,9 @@ public sealed record VelocityOptions
     {
         VelocityOptionsValidator.ThrowIfInvalid(windowSize, storyPointsField);
 
-        WindowSize = windowSize;
-        ExcludeZeroPointSprints = excludeZeroPointSprints;
-        StoryPointsField = storyPointsField;
+        this.WindowSize = windowSize;
+        this.ExcludeZeroPointSprints = excludeZeroPointSprints;
+        this.StoryPointsField = storyPointsField;
     }
 
     /// <summary>Number of most recent sprints in the moving average. Must be 1 to 20.</summary>

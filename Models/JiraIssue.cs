@@ -75,57 +75,67 @@ public class JiraIssue
     public bool IsOverdue()
     {
         // An issue is overdue if it has a due date that has passed and isn't resolved
-        return DueDate.HasValue &&
-               DueDate.Value < DateTime.UtcNow &&
-               Status != "Done" &&
-               Status != "Closed" &&
-               !ResolutionDate.HasValue;
+        return this.DueDate.HasValue &&
+               this.DueDate.Value < DateTime.UtcNow &&
+               this.Status != "Done" &&
+               this.Status != "Closed" &&
+               !this.ResolutionDate.HasValue;
     }
 
     public bool IsHighPriority()
     {
-        return Priority is "Critical" or "Blocker" or "High";
+        return this.Priority is "Critical" or "Blocker" or "High";
     }
 
     public int GetDaysOpenWithoutProgress()
     {
         // Calculate days open without status change
-        var daysSinceCreation = (int)(DateTime.UtcNow - CreatedDate).TotalDays;
+        var daysSinceCreation = (int)(DateTime.UtcNow - this.CreatedDate).TotalDays;
         return Math.Max(daysSinceCreation, 0);
     }
 
     public double GetCycleTime()
     {
         // Cycle time: from created to resolved (in days)
-        if (!ResolutionDate.HasValue)
-            return (DateTime.UtcNow - CreatedDate).TotalDays;
+        if (!this.ResolutionDate.HasValue)
+        {
+            return (DateTime.UtcNow - this.CreatedDate).TotalDays;
+        }
 
-        return (ResolutionDate.Value - CreatedDate).TotalDays;
+        return (this.ResolutionDate.Value - this.CreatedDate).TotalDays;
     }
 
     public bool IsInProgress()
     {
-        return Status is "In Progress" or "In Review" or "Testing";
+        return this.Status is "In Progress" or "In Review" or "Testing";
     }
 
     public void Validate()
     {
-        if (string.IsNullOrWhiteSpace(Key))
+        if (string.IsNullOrWhiteSpace(this.Key))
+        {
             throw new ArgumentException("Issue key cannot be empty");
+        }
 
-        if (string.IsNullOrWhiteSpace(Summary))
+        if (string.IsNullOrWhiteSpace(this.Summary))
+        {
             throw new ArgumentException("Issue summary cannot be empty");
+        }
 
-        if (CreatedDate == default)
+        if (this.CreatedDate == default)
+        {
             throw new ArgumentException("Created date must be set");
+        }
 
-        if (DueDate.HasValue && DueDate.Value < CreatedDate)
+        if (this.DueDate.HasValue && this.DueDate.Value < this.CreatedDate)
+        {
             throw new ArgumentException("Due date cannot be before creation date");
+        }
     }
 
     public override string ToString()
     {
-        return $"[{Key}] {Status} - {StoryPoints ?? 0} pts, created {CreatedDate:yyyy-MM-dd}, " +
-               $"resolved {ResolutionDate?.ToString("yyyy-MM-dd") ?? "open"}";
+        return $"[{this.Key}] {this.Status} - {this.StoryPoints ?? 0} pts, created {this.CreatedDate:yyyy-MM-dd}, " +
+               $"resolved {this.ResolutionDate?.ToString("yyyy-MM-dd") ?? "open"}";
     }
 }

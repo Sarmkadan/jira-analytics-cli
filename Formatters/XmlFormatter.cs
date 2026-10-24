@@ -1,6 +1,6 @@
 using System.Xml;
-using System.Xml.XPath;
 using System.Xml.Linq;
+using System.Xml.XPath;
 using Microsoft.Extensions.Logging;
 
 namespace JiraAnalyticsCli.Formatters;
@@ -16,8 +16,8 @@ public class XmlFormatter
 
     public XmlFormatter(ILogger<XmlFormatter> logger, bool includeXmlDeclaration = true)
     {
-        _logger = logger;
-        _includeXmlDeclaration = includeXmlDeclaration;
+        this._logger = logger;
+        this._includeXmlDeclaration = includeXmlDeclaration;
     }
 
     /// <summary>
@@ -31,12 +31,12 @@ public class XmlFormatter
 
         try
         {
-            var xdoc = BuildXmlDocument(data, rootElement);
+            var xdoc = this.BuildXmlDocument(data, rootElement);
             var settings = new XmlWriterSettings
             {
                 Indent = true,
                 IndentChars = "  ",
-                OmitXmlDeclaration = !_includeXmlDeclaration,
+                OmitXmlDeclaration = !this._includeXmlDeclaration,
                 Encoding = System.Text.Encoding.UTF8
             };
 
@@ -46,13 +46,13 @@ public class XmlFormatter
             xmlWriter.Flush();
 
             var xml = stringWriter.ToString();
-            _logger.LogDebug("Formatted data to XML: {XmlLength} bytes", xml.Length);
+            this._logger.LogDebug("Formatted data to XML: {XmlLength} bytes", xml.Length);
 
             return xml;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error formatting XML");
+            this._logger.LogError(ex, "Error formatting XML");
             throw new InvalidOperationException("Failed to format XML", ex);
         }
     }
@@ -95,7 +95,7 @@ public class XmlFormatter
             {
                 Indent = true,
                 IndentChars = "  ",
-                OmitXmlDeclaration = !_includeXmlDeclaration
+                OmitXmlDeclaration = !this._includeXmlDeclaration
             };
 
             using var stringWriter = new StringWriter();
@@ -107,7 +107,7 @@ public class XmlFormatter
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error prettifying XML");
+            this._logger.LogError(ex, "Error prettifying XML");
             throw new InvalidOperationException("Failed to prettify XML", ex);
         }
     }
@@ -141,7 +141,7 @@ public class XmlFormatter
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error selecting XML values with XPath: {XPath}", xpathExpression);
+            this._logger.LogError(ex, "Error selecting XML values with XPath: {XPath}", xpathExpression);
             return new List<string>();
         }
     }
@@ -155,7 +155,7 @@ public class XmlFormatter
             foreach (var key in dict.Keys)
             {
                 var value = dict[key];
-                var element = CreateXmlElement(key.ToString() ?? "item", value);
+                var element = this.CreateXmlElement(key.ToString() ?? "item", value);
                 root.Add(element);
             }
         }
@@ -164,7 +164,7 @@ public class XmlFormatter
             var i = 0;
             foreach (var item in enumerable)
             {
-                var element = CreateXmlElement("item", item);
+                var element = this.CreateXmlElement("item", item);
                 element.SetAttributeValue("index", i++);
                 root.Add(element);
             }
@@ -178,18 +178,18 @@ public class XmlFormatter
                 try
                 {
                     var value = prop.GetValue(data);
-                    var element = CreateXmlElement(prop.Name, value);
+                    var element = this.CreateXmlElement(prop.Name, value);
                     root.Add(element);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning("Could not read property {Property}: {Error}", prop.Name, ex.Message);
+                    this._logger.LogWarning("Could not read property {Property}: {Error}", prop.Name, ex.Message);
                 }
             }
         }
 
         return new XDocument(
-            _includeXmlDeclaration
+            this._includeXmlDeclaration
                 ? new XDeclaration("1.0", "UTF-8", "yes")
                 : null,
             root
@@ -198,7 +198,7 @@ public class XmlFormatter
 
     private XElement CreateXmlElement(string name, object? value)
     {
-        var element = new XElement(SanitizeElementName(name));
+        var element = new XElement(this.SanitizeElementName(name));
 
         if (value == null)
         {
@@ -212,7 +212,7 @@ public class XmlFormatter
         {
             foreach (var key in dict.Keys)
             {
-                var child = CreateXmlElement(key.ToString() ?? "item", dict[key]);
+                var child = this.CreateXmlElement(key.ToString() ?? "item", dict[key]);
                 element.Add(child);
             }
         }
@@ -221,7 +221,7 @@ public class XmlFormatter
             var i = 0;
             foreach (var item in enumerable)
             {
-                var child = CreateXmlElement("item", item);
+                var child = this.CreateXmlElement("item", item);
                 child.SetAttributeValue("index", i++);
                 element.Add(child);
             }

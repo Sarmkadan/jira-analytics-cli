@@ -3,10 +3,6 @@
 // CTO & Software Architect
 // =============================================================================
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace JiraAnalyticsCli.Models;
 
 /// <summary>
@@ -33,7 +29,9 @@ public static class TrendAnalysis
 
         var ordered = points.OrderBy(p => p.Timestamp).ToList();
         if (ordered.Count < 2)
+        {
             return 0;
+        }
 
         var origin = ordered[0].Timestamp;
         var xs = ordered.Select(p => (p.Timestamp - origin).TotalDays).ToList();
@@ -57,7 +55,9 @@ public static class TrendAnalysis
 
         var ordered = points.OrderBy(p => p.Timestamp).ToList();
         if (ordered.Count < 4)
+        {
             return 0;
+        }
 
         var mid = ordered.Count / 2;
         var firstHalf = ordered.Take(mid).ToList();
@@ -68,7 +68,9 @@ public static class TrendAnalysis
 
         var daysBetweenMidpoints = (Midpoint(secondHalf) - Midpoint(firstHalf)).TotalDays;
         if (daysBetweenMidpoints <= 0)
+        {
             return 0;
+        }
 
         return (secondSlope - firstSlope) / daysBetweenMidpoints;
     }

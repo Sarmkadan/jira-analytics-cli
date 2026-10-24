@@ -81,7 +81,9 @@ public static class FormattingHelpers
         ArgumentNullException.ThrowIfNull(rows);
 
         if (headers == null || headers.Length == 0 || !rows.Any())
+        {
             return string.Empty;
+        }
 
         // Calculate column widths
         var columnWidths = new int[headers.Length];
@@ -92,7 +94,9 @@ public static class FormattingHelpers
             foreach (var row in rows)
             {
                 if (i < row.Length && row[i].Length > columnWidths[i])
+                {
                     columnWidths[i] = row[i].Length;
+                }
             }
         }
 
@@ -183,7 +187,9 @@ public static class FormattingHelpers
     {
         ArgumentException.ThrowIfNullOrEmpty(text);
         if (text.Length >= width)
+        {
             return text;
+        }
 
         var totalPadding = width - text.Length;
         var leftPadding = totalPadding / 2;

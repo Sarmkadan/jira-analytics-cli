@@ -16,33 +16,33 @@ public interface IAnalyticsService
     /// <param name="projectKey">The project identifier.</param>
     /// <param name="sprintCount">Number of sprints to analyze.</param>
     /// <returns>Sprint analysis results.</returns>
-    Task<SprintAnalysisResult> AnalyzeSprints(string projectKey, int sprintCount);
-    
+    public Task<SprintAnalysisResult> AnalyzeSprints(string projectKey, int sprintCount);
+
     /// <summary>Analyzes team performance.</summary>
     /// <param name="projectKey">The project identifier.</param>
     /// <returns>Team analysis results.</returns>
-    Task<TeamAnalysisResult> AnalyzeTeam(string projectKey);
-    
+    public Task<TeamAnalysisResult> AnalyzeTeam(string projectKey);
+
     /// <summary>Analyzes project quality metrics.</summary>
     /// <param name="projectKey">The project identifier.</param>
     /// <returns>Quality metrics results.</returns>
-    Task<QualityMetricsResult> AnalyzeQuality(string projectKey);
-    
+    public Task<QualityMetricsResult> AnalyzeQuality(string projectKey);
+
     /// <summary>Analyzes velocity trends over time.</summary>
     /// <param name="projectKey">The project identifier.</param>
     /// <param name="sprintCount">Number of sprints to analyze.</param>
     /// <returns>Velocity trend results.</returns>
-    Task<VelocityTrendResult> AnalyzeVelocityTrend(string projectKey, int sprintCount);
-    
+    public Task<VelocityTrendResult> AnalyzeVelocityTrend(string projectKey, int sprintCount);
+
     /// <summary>Analyzes overdue issues in a project.</summary>
     /// <param name="projectKey">The project identifier.</param>
     /// <returns>Overdue issues results.</returns>
-    Task<OverdueIssuesResult> AnalyzeOverdueIssues(string projectKey);
+    public Task<OverdueIssuesResult> AnalyzeOverdueIssues(string projectKey);
 
     /// <summary>Analyzes cycle time metrics for a project.</summary>
     /// <param name="projectKey">The project identifier.</param>
     /// <returns>Cycle time analysis results.</returns>
-    Task<CycleTimeResult> AnalyzeCycleTime(string projectKey);
+    public Task<CycleTimeResult> AnalyzeCycleTime(string projectKey);
 }
 
 public class SprintAnalysisResult

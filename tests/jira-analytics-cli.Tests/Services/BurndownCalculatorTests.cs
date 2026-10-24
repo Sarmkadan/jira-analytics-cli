@@ -8,9 +8,6 @@ using JiraAnalyticsCli.Models;
 using JiraAnalyticsCli.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace JiraAnalyticsCli.Tests.Services;
@@ -26,9 +23,9 @@ public class BurndownCalculatorTests
 
     public BurndownCalculatorTests()
     {
-        _snapshotStoreMock = new Mock<ISnapshotStore>();
-        _loggerMock = new Mock<ILogger<BurndownCalculator>>();
-        _sut = new BurndownCalculator(_snapshotStoreMock.Object, _loggerMock.Object);
+        this._snapshotStoreMock = new Mock<ISnapshotStore>();
+        this._loggerMock = new Mock<ILogger<BurndownCalculator>>();
+        this._sut = new BurndownCalculator(this._snapshotStoreMock.Object, this._loggerMock.Object);
     }
 
     /// <summary>
@@ -44,7 +41,7 @@ public class BurndownCalculatorTests
         int intervalCount = 10; // 11 points (including start and end)
 
         // Act
-        var result = _sut.ComputeIdealBurndown(totalPoints, sprintStart, sprintEnd, intervalCount);
+        var result = this._sut.ComputeIdealBurndown(totalPoints, sprintStart, sprintEnd, intervalCount);
 
         // Assert
         result.Should().HaveCount(intervalCount + 1); // 11 points
@@ -102,12 +99,12 @@ public class BurndownCalculatorTests
             }
         };
 
-        _snapshotStoreMock
+        this._snapshotStoreMock
             .Setup(s => s.LoadAsync(sprintId))
             .ReturnsAsync(snapshots);
 
         // Act
-        var result = await _sut.GetActualBurndownAsync(sprintId);
+        var result = await this._sut.GetActualBurndownAsync(sprintId);
 
         // Assert
         result.Should().HaveCount(3);
@@ -145,7 +142,7 @@ public class BurndownCalculatorTests
         };
 
         // Act
-        var rate = _sut.CalculateBurnRate(snapshots);
+        var rate = this._sut.CalculateBurnRate(snapshots);
 
         // Assert: 50 points burned over 9 days (from Oct 1 23:30 to Oct 10 23:30 is exactly 9 days)
         rate.Should().BeApproximately(50.0 / 9.0, 0.001);
@@ -179,7 +176,7 @@ public class BurndownCalculatorTests
         };
 
         // Act
-        DateTimeOffset? projection = _sut.ProjectCompletionDate(snapshots);
+        DateTimeOffset? projection = this._sut.ProjectCompletionDate(snapshots);
 
         // Assert
         projection.Should().NotBeNull();
@@ -294,13 +291,13 @@ public class BurndownCalculatorTests
             }
         };
 
-        _snapshotStoreMock
+        this._snapshotStoreMock
             .Setup(s => s.LoadAsync(sprintId))
             .ReturnsAsync(snapshots);
 
         // Act
-        var actualBurndown = await _sut.GetActualBurndownAsync(sprintId);
-        var idealBurndown = _sut.ComputeIdealBurndown(
+        var actualBurndown = await this._sut.GetActualBurndownAsync(sprintId);
+        var idealBurndown = this._sut.ComputeIdealBurndown(
             snapshots[0].TotalStoryPoints, // initial total points
             snapshots[0].Timestamp,
             snapshots[^1].Timestamp.AddHours(1).AddMinutes(-30), // end of day 10 (same time as snapshots)
@@ -332,7 +329,7 @@ public class BurndownCalculatorTests
         }
 
         // Verify burn rate calculation
-        double burnRate = _sut.CalculateBurnRate(snapshots);
+        double burnRate = this._sut.CalculateBurnRate(snapshots);
         // Total points burned: 50 (initial) + 10 (scope increase) - 0 (final) = 60? Actually, we burned 60 points but added 10 scope.
         // The net change in remaining points from start to end: 50 -> 0 = 50 points burned.
         // Time elapsed: 9 days (from Oct 1 23:30 to Oct 10 23:30)
@@ -343,7 +340,7 @@ public class BurndownCalculatorTests
         // Actually, the last snapshot has 0 remaining, so burn rate calculation would be (last - first) but we have 0 remaining at the end.
         // Let's test projection with data up to day 9.
         var snapshotsUpToDay9 = snapshots.GetRange(0, 9);
-        DateTimeOffset? projection = _sut.ProjectCompletionDate(snapshotsUpToDay9);
+        DateTimeOffset? projection = this._sut.ProjectCompletionDate(snapshotsUpToDay9);
         projection.Should().NotBeNull();
         // At day 9 (Oct 9 23:30) we have 5 remaining points.
         // Burn rate from day1 to day9: (50-5) / 8 days = 45/8 = 5.625 points/day

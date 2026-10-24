@@ -21,8 +21,8 @@ public class JsonFormatter
     public JsonFormatter(ILogger<JsonFormatter> logger, bool prettyPrint = true)
     {
         ArgumentNullException.ThrowIfNull(logger);
-        _logger = logger;
-        _prettyPrint = prettyPrint;
+        this._logger = logger;
+        this._prettyPrint = prettyPrint;
     }
 
     /// <summary>
@@ -37,18 +37,18 @@ public class JsonFormatter
             var options = new JsonSerializerOptions
             {
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                WriteIndented = _prettyPrint,
+                WriteIndented = this._prettyPrint,
                 ReferenceHandler = ReferenceHandler.IgnoreCycles,
             };
 
             var json = JsonSerializer.Serialize(data, options);
-            _logger.LogDebug("Formatted data to JSON: {JsonLength} bytes", json.Length);
+            this._logger.LogDebug("Formatted data to JSON: {JsonLength} bytes", json.Length);
 
             return json;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error formatting JSON");
+            this._logger.LogError(ex, "Error formatting JSON");
             throw new InvalidOperationException("Failed to format JSON", ex);
         }
     }
@@ -74,7 +74,7 @@ public class JsonFormatter
             data
         };
 
-        return Format(wrapper);
+        return this.Format(wrapper);
     }
 
     /// <summary>
@@ -92,7 +92,7 @@ public class JsonFormatter
             var root = sourceDoc.RootElement;
 
             using var stream = new System.IO.MemoryStream();
-            using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = _prettyPrint });
+            using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = this._prettyPrint });
 
             writer.WriteStartObject();
             foreach (var field in includedFields)
@@ -111,7 +111,7 @@ public class JsonFormatter
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error filtering JSON");
+            this._logger.LogError(ex, "Error filtering JSON");
             throw new InvalidOperationException("Failed to filter JSON", ex);
         }
     }
@@ -130,7 +130,7 @@ public class JsonFormatter
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Invalid JSON provided for prettification");
+            this._logger.LogError(ex, "Invalid JSON provided for prettification");
             throw new InvalidOperationException("Invalid JSON format", ex);
         }
     }
@@ -169,7 +169,9 @@ public class JsonFormatter
         foreach (var part in parts)
         {
             if (!current.TryGetProperty(part, out current))
+            {
                 return null;
+            }
         }
 
         return current;

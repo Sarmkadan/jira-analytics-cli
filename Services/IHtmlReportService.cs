@@ -16,7 +16,7 @@ public interface IHtmlReportService
     /// <param name="projectKey">The Jira project key to analyse.</param>
     /// <param name="sprintCount">Number of recent closed sprints to include.</param>
     /// <param name="outputPath">File path where the HTML report will be written.</param>
-    Task GenerateReportAsync(string projectKey, int sprintCount, string outputPath);
+    public Task GenerateReportAsync(string projectKey, int sprintCount, string outputPath);
 
     /// <summary>
     /// Builds a self-contained HTML report string from pre-computed analytics results.
@@ -25,5 +25,5 @@ public interface IHtmlReportService
     /// <param name="sprintAnalysis">Sprint velocity and health metrics.</param>
     /// <param name="teamAnalysis">Team workload and performance data.</param>
     /// <returns>A complete, standalone HTML document string.</returns>
-    string BuildHtml(string projectKey, SprintAnalysisResult sprintAnalysis, TeamAnalysisResult teamAnalysis);
+    public string BuildHtml(string projectKey, SprintAnalysisResult sprintAnalysis, TeamAnalysisResult teamAnalysis);
 }

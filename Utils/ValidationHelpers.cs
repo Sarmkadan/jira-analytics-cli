@@ -18,7 +18,9 @@ public static class ValidationHelpers
     public static bool IsValidJiraIssueKey(string? issueKey)
     {
         if (string.IsNullOrWhiteSpace(issueKey))
+        {
             return false;
+        }
 
         var pattern = @"^[A-Z][A-Z0-9]+-\d+$";
         return Regex.IsMatch(issueKey, pattern);
@@ -30,7 +32,9 @@ public static class ValidationHelpers
     public static bool IsValidProjectKey(string? projectKey)
     {
         if (string.IsNullOrWhiteSpace(projectKey))
+        {
             return false;
+        }
 
         var pattern = @"^[A-Z][A-Z0-9]*$";
         return Regex.IsMatch(projectKey, pattern) && projectKey.Length <= 10;
@@ -42,7 +46,9 @@ public static class ValidationHelpers
     public static bool IsValidUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url))
+        {
             return false;
+        }
 
         return Uri.TryCreate(url, UriKind.Absolute, out var uriResult)
             && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
@@ -54,7 +60,9 @@ public static class ValidationHelpers
     public static bool IsValidEmail(string? email)
     {
         if (string.IsNullOrWhiteSpace(email))
+        {
             return false;
+        }
 
         try
         {
@@ -105,10 +113,14 @@ public static class ValidationHelpers
     public static string TruncateWithEllipsis(string? value, int maxLength = 50)
     {
         if (string.IsNullOrEmpty(value))
+        {
             return string.Empty;
+        }
 
         if (value.Length <= maxLength)
+        {
             return value;
+        }
 
         return value.Substring(0, maxLength - 3) + "...";
     }
@@ -119,7 +131,9 @@ public static class ValidationHelpers
     public static string SanitizeForCsv(string? value)
     {
         if (string.IsNullOrEmpty(value))
+        {
             return string.Empty;
+        }
 
         // Remove any characters that could break CSV format
         var sanitized = Regex.Replace(value, @"[,\r\n""]", string.Empty);
@@ -132,7 +146,9 @@ public static class ValidationHelpers
     public static string ToProgressBar(double percentage, int length = 20)
     {
         if (!IsValidPercentage(percentage))
+        {
             percentage = 0;
+        }
 
         var filled = (int)((percentage / 100) * length);
         var empty = length - filled;

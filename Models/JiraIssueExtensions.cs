@@ -5,9 +5,6 @@
 // Extension methods for JiraIssue to provide additional analytics and filtering capabilities
 // =============================================================================
 
-using System;
-using System.Linq;
-
 namespace JiraAnalyticsCli.Models;
 
 /// <summary>
@@ -26,7 +23,9 @@ public static class JiraIssueExtensions
         ArgumentNullException.ThrowIfNull(issue);
 
         if (issue.CreatedDate == default)
+        {
             return 0;
+        }
 
         var days = (DateTime.UtcNow - issue.CreatedDate).TotalDays;
         return Math.Max(0, (int)days);
@@ -60,7 +59,9 @@ public static class JiraIssueExtensions
         ArgumentNullException.ThrowIfNull(issue);
 
         if (!issue.DueDate.HasValue)
+        {
             return int.MaxValue; // No due date = effectively infinite time
+        }
 
         var daysRemaining = (issue.DueDate.Value - DateTime.UtcNow).TotalDays;
         return (int)daysRemaining;
@@ -103,7 +104,9 @@ public static class JiraIssueExtensions
         ArgumentNullException.ThrowIfNull(componentName);
 
         if (string.IsNullOrWhiteSpace(componentName) || issue.Components == null || issue.Components.Count == 0)
+        {
             return false;
+        }
 
         return issue.Components.Any(c => c.Equals(componentName, StringComparison.OrdinalIgnoreCase));
     }
@@ -140,7 +143,9 @@ public static class JiraIssueExtensions
         ArgumentNullException.ThrowIfNull(issue);
 
         if (!issue.StoryPoints.HasValue || issue.StoryPoints.Value <= 0)
+        {
             return 0;
+        }
 
         var ageInDays = issue.GetAgeInDays();
 

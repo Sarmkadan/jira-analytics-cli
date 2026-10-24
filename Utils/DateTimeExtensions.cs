@@ -20,17 +20,21 @@ public static class DateTimeExtensions
 	public static int GetBusinessDaysBetween(this DateTime startDate, DateTime endDate)
 	{
 		if (startDate > endDate)
-			throw new ArgumentOutOfRangeException(nameof(startDate), "Start date must be before or equal to end date");
+        {
+            throw new ArgumentOutOfRangeException(nameof(startDate), "Start date must be before or equal to end date");
+        }
 
-		var span = endDate - startDate;
+        var span = endDate - startDate;
 		var businessDays = 0;
 
 		for (int i = 0; i <= span.Days; i++)
 		{
 			var date = startDate.AddDays(i);
 			if (date.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Tuesday or DayOfWeek.Wednesday or DayOfWeek.Thursday or DayOfWeek.Friday)
-				businessDays++;
-		}
+            {
+                businessDays++;
+            }
+        }
 
 		return businessDays;
 	}
@@ -80,15 +84,21 @@ public static class DateTimeExtensions
 	public static string ToHumanReadableDuration(this TimeSpan timeSpan)
 	{
 		if (timeSpan.TotalDays >= 1)
-			return $"{(int)timeSpan.TotalDays} day{((int)timeSpan.TotalDays != 1 ? "s" : "")}";
+        {
+            return $"{(int)timeSpan.TotalDays} day{((int)timeSpan.TotalDays != 1 ? "s" : "")}";
+        }
 
-		if (timeSpan.TotalHours >= 1)
-			return $"{(int)timeSpan.TotalHours} hour{((int)timeSpan.TotalHours != 1 ? "s" : "")}";
+        if (timeSpan.TotalHours >= 1)
+        {
+            return $"{(int)timeSpan.TotalHours} hour{((int)timeSpan.TotalHours != 1 ? "s" : "")}";
+        }
 
-		if (timeSpan.TotalMinutes >= 1)
-			return $"{(int)timeSpan.TotalMinutes} minute{((int)timeSpan.TotalMinutes != 1 ? "s" : "")}";
+        if (timeSpan.TotalMinutes >= 1)
+        {
+            return $"{(int)timeSpan.TotalMinutes} minute{((int)timeSpan.TotalMinutes != 1 ? "s" : "")}";
+        }
 
-		return $"{(int)timeSpan.TotalSeconds} second{((int)timeSpan.TotalSeconds != 1 ? "s" : "")}";
+        return $"{(int)timeSpan.TotalSeconds} second{((int)timeSpan.TotalSeconds != 1 ? "s" : "")}";
 	}
 
 	/// <summary>
@@ -101,9 +111,11 @@ public static class DateTimeExtensions
 		var lastDay = new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
 
 		while (lastDay.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-			lastDay = lastDay.AddDays(-1);
+        {
+            lastDay = lastDay.AddDays(-1);
+        }
 
-		return lastDay;
+        return lastDay;
 	}
 }
 

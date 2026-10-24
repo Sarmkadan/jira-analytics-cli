@@ -35,7 +35,9 @@ public sealed record JiraGlobalOptions(
             TimeoutSeconds: new Option<string>("--timeout-seconds", "Jira request timeout in seconds, 1-300 (overrides JIRA_API_TIMEOUT_SECONDS and appsettings.json)"));
 
         foreach (var option in new Option[] { options.BaseUrl, options.Email, options.ApiToken, options.BoardId, options.TimeoutSeconds })
+        {
             rootCommand.AddGlobalOption(option);
+        }
 
         return options;
     }
@@ -50,10 +52,10 @@ public sealed record JiraGlobalOptions(
         ArgumentNullException.ThrowIfNull(parseResult);
 
         return new JiraOptionsOverrides(
-            BaseUrl: parseResult.GetValueForOption(BaseUrl),
-            Email: parseResult.GetValueForOption(Email),
-            ApiToken: parseResult.GetValueForOption(ApiToken),
-            BoardId: parseResult.GetValueForOption(BoardId),
-            TimeoutSeconds: parseResult.GetValueForOption(TimeoutSeconds));
+            BaseUrl: parseResult.GetValueForOption(this.BaseUrl),
+            Email: parseResult.GetValueForOption(this.Email),
+            ApiToken: parseResult.GetValueForOption(this.ApiToken),
+            BoardId: parseResult.GetValueForOption(this.BoardId),
+            TimeoutSeconds: parseResult.GetValueForOption(this.TimeoutSeconds));
     }
 }

@@ -41,7 +41,9 @@ internal static class JiraDoctorNetwork
         }
 
         if (addresses.Length == 0)
+        {
             return DoctorCheckResult.Fail(name, $"DNS returned no addresses for {host}", DnsHint);
+        }
 
         using var tcp = new TcpClient();
         try
@@ -56,8 +58,10 @@ internal static class JiraDoctorNetwork
         }
 
         if (!baseUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
             return DoctorCheckResult.Pass(name,
                 $"resolved {host}, connected on port {port}; TLS not checked for {baseUri.Scheme}");
+        }
 
         using var stream = new SslStream(tcp.GetStream());
         try

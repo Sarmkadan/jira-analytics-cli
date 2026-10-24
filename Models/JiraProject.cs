@@ -48,22 +48,22 @@ public class JiraProject
 
     public int GetTotalSprintCount()
     {
-        return Sprints.Count;
+        return this.Sprints.Count;
     }
 
     public int GetCompletedSprintCount()
     {
-        return Sprints.Count(s => s.IsClosed());
+        return this.Sprints.Count(s => s.IsClosed());
     }
 
     public Sprint? GetCurrentActiveSprint()
     {
-        return Sprints.FirstOrDefault(s => s.IsActive());
+        return this.Sprints.FirstOrDefault(s => s.IsActive());
     }
 
     public List<Sprint> GetRecentSprints(int count)
     {
-        return Sprints.Where(s => s.IsClosed())
+        return this.Sprints.Where(s => s.IsClosed())
                       .OrderByDescending(s => s.EndDate)
                       .Take(count)
                       .ToList();
@@ -71,21 +71,23 @@ public class JiraProject
 
     public double GetAverageVelocity()
     {
-        var completedSprints = GetRecentSprints(5);
+        var completedSprints = this.GetRecentSprints(5);
         if (!completedSprints.Any())
+        {
             return 0;
+        }
 
         return completedSprints.Average(s => s.GetVelocity());
     }
 
     public int GetTotalTeamSize()
     {
-        return TeamMembers.Count(m => m.Active);
+        return this.TeamMembers.Count(m => m.Active);
     }
 
     public List<Developer> GetTopPerformers(int count = 5)
     {
-        return TeamMembers
+        return this.TeamMembers
             .OrderByDescending(d => d.GetProductivity())
             .Take(count)
             .ToList();
@@ -93,24 +95,28 @@ public class JiraProject
 
     public List<JiraIssue> GetAllOverdueIssues()
     {
-        var allIssues = Sprints.SelectMany(s => s.Issues).ToList();
+        var allIssues = this.Sprints.SelectMany(s => s.Issues).ToList();
         return allIssues.Where(i => i.IsOverdue()).ToList();
     }
 
     public List<JiraIssue> GetAllBlockedIssues()
     {
-        var allIssues = Sprints.SelectMany(s => s.Issues).ToList();
+        var allIssues = this.Sprints.SelectMany(s => s.Issues).ToList();
         return allIssues.Where(i => i.Status == "Blocked").ToList();
     }
 
     public double GetProjectHealthScore()
     {
-        if (!MetricsHistory.Any())
+        if (!this.MetricsHistory.Any())
+        {
             return 0;
+        }
 
-        var recentMetrics = MetricsHistory.OrderByDescending(m => m.EndDate).Take(3);
+        var recentMetrics = this.MetricsHistory.OrderByDescending(m => m.EndDate).Take(3);
         if (!recentMetrics.Any())
+        {
             return 0;
+        }
 
         var avgCompletion = recentMetrics.Average(m => m.GetCompletionRate());
         var avgQuality = recentMetrics.Average(m => m.GetQualityScore());
@@ -123,37 +129,51 @@ public class JiraProject
     public void AddSprint(Sprint sprint)
     {
         if (sprint == null)
+        {
             throw new ArgumentNullException(nameof(sprint));
+        }
 
         sprint.Validate();
-        if (!Sprints.Any(s => s.Id == sprint.Id))
-            Sprints.Add(sprint);
+        if (!this.Sprints.Any(s => s.Id == sprint.Id))
+        {
+            this.Sprints.Add(sprint);
+        }
     }
 
     public void AddTeamMember(Developer developer)
     {
         if (developer == null)
+        {
             throw new ArgumentNullException(nameof(developer));
+        }
 
         developer.Validate();
-        if (!TeamMembers.Any(m => m.Key == developer.Key))
-            TeamMembers.Add(developer);
+        if (!this.TeamMembers.Any(m => m.Key == developer.Key))
+        {
+            this.TeamMembers.Add(developer);
+        }
     }
 
     public void Validate()
     {
-        if (string.IsNullOrWhiteSpace(Key))
+        if (string.IsNullOrWhiteSpace(this.Key))
+        {
             throw new ArgumentException("Project key cannot be empty");
+        }
 
-        if (string.IsNullOrWhiteSpace(Name))
+        if (string.IsNullOrWhiteSpace(this.Name))
+        {
             throw new ArgumentException("Project name cannot be empty");
+        }
 
-        if (CreatedDate == default)
+        if (this.CreatedDate == default)
+        {
             throw new ArgumentException("Created date must be set");
+        }
     }
 
     public override string ToString()
     {
-        return $"Project: {Name} ({Key}) - {GetTotalSprintCount()} sprints, {GetTotalTeamSize()} team members";
+        return $"Project: {this.Name} ({this.Key}) - {this.GetTotalSprintCount()} sprints, {this.GetTotalTeamSize()} team members";
     }
 }

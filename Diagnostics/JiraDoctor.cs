@@ -179,7 +179,9 @@ public static partial class JiraDoctor
         // Waiting on the timer as well as the work guarantees the timeout even when a call does not observe its token.
         var finished = await Task.WhenAny(work, Task.Delay(timeout));
         if (finished == work)
+        {
             return await work;
+        }
 
         cancellation.Cancel();
         return DoctorCheckResult.Fail(name,
@@ -215,10 +217,14 @@ public static partial class JiraDoctor
     {
         var problems = new List<string>(jira.Problems);
         if (velocity.Problems.Count > 0)
+        {
             problems.AddRange(velocity.Problems);
+        }
 
         if (problems.Count == 0)
+        {
             return DoctorCheckResult.Pass(ConfigurationCheck, "Jira and velocity settings are valid");
+        }
 
         return DoctorCheckResult.Fail(ConfigurationCheck,
             string.Join(" ", problems),

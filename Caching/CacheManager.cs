@@ -19,8 +19,8 @@ public class CacheManager
 
     public CacheManager(ILogger<CacheManager> logger, TimeSpan? defaultExpiration = null)
     {
-        _logger = logger;
-        _defaultExpiration = defaultExpiration ?? TimeSpan.FromMinutes(15);
+        this._logger = logger;
+        this._defaultExpiration = defaultExpiration ?? TimeSpan.FromMinutes(15);
     }
 
     /// <summary>
@@ -29,15 +29,15 @@ public class CacheManager
     /// </summary>
     public InMemoryCache GetStore(string storeName = "default")
     {
-        _logger.LogInformation("Getting cache store: {StoreName}", storeName);
-        if (!_stores.ContainsKey(storeName))
+        this._logger.LogInformation("Getting cache store: {StoreName}", storeName);
+        if (!this._stores.ContainsKey(storeName))
         {
-            _stores[storeName] = new InMemoryCache(new Microsoft.Extensions.Logging.Abstractions.NullLogger<InMemoryCache>());
-            _logger.LogDebug("Created cache store: {StoreName}", storeName);
+            this._stores[storeName] = new InMemoryCache(new Microsoft.Extensions.Logging.Abstractions.NullLogger<InMemoryCache>());
+            this._logger.LogDebug("Created cache store: {StoreName}", storeName);
         }
 
-        _logger.LogInformation("Returning cache store: {StoreName}", storeName);
-        return _stores[storeName];
+        this._logger.LogInformation("Returning cache store: {StoreName}", storeName);
+        return this._stores[storeName];
     }
 
     /// <summary>
@@ -45,10 +45,10 @@ public class CacheManager
     /// </summary>
     public void SetDefault<T>(string key, T value)
     {
-        _logger.LogInformation("Setting default cache value for key: {Key}", key);
-        var policy = CachePolicy.WithAbsoluteExpiration(key, _defaultExpiration);
-        GetStore().Set(key, value, policy);
-        _logger.LogInformation("Default cache value set for key: {Key}", key);
+        this._logger.LogInformation("Setting default cache value for key: {Key}", key);
+        var policy = CachePolicy.WithAbsoluteExpiration(key, this._defaultExpiration);
+        this.GetStore().Set(key, value, policy);
+        this._logger.LogInformation("Default cache value set for key: {Key}", key);
     }
 
     /// <summary>
@@ -56,15 +56,15 @@ public class CacheManager
     /// </summary>
     public T? GetDefault<T>(string key, T? defaultValue = default)
     {
-        _logger.LogInformation("Getting default cache value for key: {Key}", key);
-        var value = GetStore().Get(key, defaultValue);
+        this._logger.LogInformation("Getting default cache value for key: {Key}", key);
+        var value = this.GetStore().Get(key, defaultValue);
         if (value is null)
         {
-            _logger.LogWarning("Default cache miss for key: {Key}, returning default value", key);
+            this._logger.LogWarning("Default cache miss for key: {Key}, returning default value", key);
         }
         else
         {
-            _logger.LogInformation("Default cache hit for key: {Key}", key);
+            this._logger.LogInformation("Default cache hit for key: {Key}", key);
         }
         return value;
     }
@@ -74,9 +74,9 @@ public class CacheManager
     /// </summary>
     public void Set<T>(string storeName, string key, T value, CachePolicy policy)
     {
-        _logger.LogInformation("Setting cache value in store: {StoreName}, key: {Key}", storeName, key);
-        GetStore(storeName).Set(key, value, policy);
-        _logger.LogInformation("Cache value set in store: {StoreName}, key: {Key}", storeName, key);
+        this._logger.LogInformation("Setting cache value in store: {StoreName}, key: {Key}", storeName, key);
+        this.GetStore(storeName).Set(key, value, policy);
+        this._logger.LogInformation("Cache value set in store: {StoreName}, key: {Key}", storeName, key);
     }
 
     /// <summary>
@@ -84,15 +84,15 @@ public class CacheManager
     /// </summary>
     public T? Get<T>(string storeName, string key, T? defaultValue = default)
     {
-        _logger.LogInformation("Getting cache value from store: {StoreName}, key: {Key}", storeName, key);
-        var value = GetStore(storeName).Get(key, defaultValue);
+        this._logger.LogInformation("Getting cache value from store: {StoreName}, key: {Key}", storeName, key);
+        var value = this.GetStore(storeName).Get(key, defaultValue);
         if (value is null)
         {
-            _logger.LogWarning("Cache miss for key: {Key} in store: {StoreName}, returning default value", key, storeName);
+            this._logger.LogWarning("Cache miss for key: {Key} in store: {StoreName}, returning default value", key, storeName);
         }
         else
         {
-            _logger.LogInformation("Cache hit for key: {Key} in store: {StoreName}", key, storeName);
+            this._logger.LogInformation("Cache hit for key: {Key} in store: {StoreName}", key, storeName);
         }
         return value;
     }
@@ -102,9 +102,9 @@ public class CacheManager
     /// </summary>
     public bool Contains(string key, string storeName = "default")
     {
-        _logger.LogInformation("Checking if cache contains key: {Key} in store: {StoreName}", key, storeName);
-        var contains = GetStore(storeName).Contains(key);
-        _logger.LogInformation("Cache contains key {Key}: {Contains}", key, contains);
+        this._logger.LogInformation("Checking if cache contains key: {Key} in store: {StoreName}", key, storeName);
+        var contains = this.GetStore(storeName).Contains(key);
+        this._logger.LogInformation("Cache contains key {Key}: {Contains}", key, contains);
         return contains;
     }
 
@@ -113,8 +113,8 @@ public class CacheManager
     /// </summary>
     public void Remove(string key, string storeName = "default")
     {
-        _logger.LogInformation("Removing cache entry: {Key} from store: {StoreName}", key, storeName);
-        GetStore(storeName).Remove(key);
+        this._logger.LogInformation("Removing cache entry: {Key} from store: {StoreName}", key, storeName);
+        this.GetStore(storeName).Remove(key);
     }
 
     /// <summary>
@@ -122,8 +122,8 @@ public class CacheManager
     /// </summary>
     public void ClearStore(string storeName = "default")
     {
-        _logger.LogInformation("Clearing cache store: {StoreName}", storeName);
-        GetStore(storeName).Clear();
+        this._logger.LogInformation("Clearing cache store: {StoreName}", storeName);
+        this.GetStore(storeName).Clear();
     }
 
     /// <summary>
@@ -131,13 +131,13 @@ public class CacheManager
     /// </summary>
     public void ClearAll()
     {
-        _logger.LogInformation("Starting to clear all cache stores");
-        foreach (var store in _stores.Values)
+        this._logger.LogInformation("Starting to clear all cache stores");
+        foreach (var store in this._stores.Values)
         {
             store.Clear();
         }
 
-        _logger.LogInformation("All cache stores cleared");
+        this._logger.LogInformation("All cache stores cleared");
     }
 
     /// <summary>
@@ -145,15 +145,15 @@ public class CacheManager
     /// </summary>
     public Dictionary<string, InMemoryCache.CacheStatistics> GetGlobalStatistics()
     {
-        _logger.LogInformation("Getting global cache statistics");
+        this._logger.LogInformation("Getting global cache statistics");
         var stats = new Dictionary<string, InMemoryCache.CacheStatistics>();
 
-        foreach (var (name, store) in _stores)
+        foreach (var (name, store) in this._stores)
         {
             stats[name] = store.GetStatistics();
         }
 
-        _logger.LogInformation("Retrieved global cache statistics for {Count} stores", stats.Count);
+        this._logger.LogInformation("Retrieved global cache statistics for {Count} stores", stats.Count);
         return stats;
     }
 
@@ -162,15 +162,15 @@ public class CacheManager
     /// </summary>
     public int CleanupAll()
     {
-        _logger.LogInformation("Starting cleanup of all cache stores");
+        this._logger.LogInformation("Starting cleanup of all cache stores");
         var totalRemoved = 0;
 
-        foreach (var store in _stores.Values)
+        foreach (var store in this._stores.Values)
         {
             totalRemoved += store.CleanupExpired();
         }
 
-        _logger.LogInformation("Cleanup finished, total expired entries removed: {TotalRemoved}", totalRemoved);
+        this._logger.LogInformation("Cleanup finished, total expired entries removed: {TotalRemoved}", totalRemoved);
         return totalRemoved;
     }
 }

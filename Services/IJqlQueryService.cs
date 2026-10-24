@@ -18,14 +18,14 @@ public interface IJqlQueryService
     /// </summary>
     /// <param name="jql">The JQL query string to execute.</param>
     /// <param name="maxResults">Maximum number of issues to return. Defaults to 50.</param>
-    Task<JqlQueryResult> ExecuteQueryAsync(string jql, int maxResults = 50);
+    public Task<JqlQueryResult> ExecuteQueryAsync(string jql, int maxResults = 50);
 
     /// <summary>
     /// Executes a structured JQL query defined by a <see cref="JqlQueryRequest"/>, supporting
     /// pagination and field selection.
     /// </summary>
     /// <param name="request">The fully configured query request.</param>
-    Task<JqlQueryResult> ExecuteQueryAsync(JqlQueryRequest request);
+    public Task<JqlQueryResult> ExecuteQueryAsync(JqlQueryRequest request);
 }
 
 /// <summary>
@@ -91,5 +91,5 @@ public class JqlQueryResult
 
     /// <summary>Gets whether additional pages of results are available.</summary>
     [JsonIgnore]
-    public bool HasMore => StartAt + Issues.Count < Total;
+    public bool HasMore => this.StartAt + this.Issues.Count < this.Total;
 }

@@ -23,8 +23,8 @@ public class CycleTimeAnalyzer
     /// <param name="logger">Logger for diagnostic output.</param>
     public CycleTimeAnalyzer(IJiraApiService jiraService, ILogger<CycleTimeAnalyzer> logger)
     {
-        _jiraService = jiraService ?? throw new ArgumentNullException(nameof(jiraService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._jiraService = jiraService ?? throw new ArgumentNullException(nameof(jiraService));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -34,12 +34,12 @@ public class CycleTimeAnalyzer
     /// <returns>A <see cref="CycleTimeResult"/> with percentile breakdowns.</returns>
     public async Task<CycleTimeResult> AnalyzeProjectAsync(string projectKey)
     {
-        var issues = await _jiraService.GetProjectIssuesAsync(projectKey);
+        var issues = await this._jiraService.GetProjectIssuesAsync(projectKey);
         var cycleTimes = ComputeCycleTimes(issues);
 
         if (cycleTimes.Count == 0)
         {
-            _logger.LogWarning("No resolved issues found for project {Project}", projectKey);
+            this._logger.LogWarning("No resolved issues found for project {Project}", projectKey);
             return new CycleTimeResult { ProjectKey = projectKey };
         }
 
@@ -54,7 +54,7 @@ public class CycleTimeAnalyzer
             P75CycleTime = GetPercentile(cycleTimes, 75),
         };
 
-        _logger.LogInformation(
+        this._logger.LogInformation(
             "Project {Project}: avg={Avg:F1}d, median={Med:F1}d, P75={P75:F1}d ({Count} issues)",
             projectKey, result.AverageCycleTime, result.MedianCycleTime, result.P75CycleTime, cycleTimes.Count);
 
@@ -130,11 +130,19 @@ public class CycleTimeAnalyzer
 
     private static double GetPercentile(List<double> sorted, double percentile)
     {
-        if (sorted.Count == 0) return 0;
+        if (sorted.Count == 0)
+        {
+            return 0;
+        }
+
         double index = (percentile / 100.0) * (sorted.Count - 1);
         int lower = (int)Math.Floor(index);
         int upper = (int)Math.Ceiling(index);
-        if (lower == upper) return sorted[lower];
+        if (lower == upper)
+        {
+            return sorted[lower];
+        }
+
         double fraction = index - lower;
         return sorted[lower] + fraction * (sorted[upper] - sorted[lower]);
     }

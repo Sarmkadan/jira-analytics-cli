@@ -41,9 +41,9 @@ public class AnalyticsService : IAnalyticsService
         ArgumentNullException.ThrowIfNull(jiraService);
         ArgumentNullException.ThrowIfNull(metricsRepository);
         ArgumentNullException.ThrowIfNull(logger);
-        _jiraService = jiraService;
-        _metricsRepository = metricsRepository;
-        _logger = logger;
+        this._jiraService = jiraService;
+        this._metricsRepository = metricsRepository;
+        this._logger = logger;
     }
 
     /// <summary>
@@ -59,14 +59,14 @@ public class AnalyticsService : IAnalyticsService
     public async Task<SprintAnalysisResult> AnalyzeSprints(string projectKey, int sprintCount)
     {
         ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
-        _logger.LogInformation("Analyzing {SprintCount} sprints for project {ProjectKey}", sprintCount, projectKey);
+        this._logger.LogInformation("Analyzing {SprintCount} sprints for project {ProjectKey}", sprintCount, projectKey);
 
         var result = new SprintAnalysisResult();
 
         try
         {
             // Fetch sprints
-            var sprints = await _jiraService.GetProjectSprintsAsync(projectKey);
+            var sprints = await this._jiraService.GetProjectSprintsAsync(projectKey);
             var recentSprints = sprints
                 .Where(s => s.IsClosed())
                 .OrderByDescending(s => s.EndDate)
@@ -76,7 +76,7 @@ public class AnalyticsService : IAnalyticsService
             // Analyze each sprint
             foreach (var sprint in recentSprints)
             {
-                var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id);
+                var issues = await this._jiraService.GetSprintIssuesAsync(sprint.Id);
                 sprint.Issues.AddRange(issues);
 
                 var metric = new SprintMetric
@@ -99,9 +99,9 @@ public class AnalyticsService : IAnalyticsService
                 result.Metrics.Add(metric);
             }
 
-            if (_logger.IsEnabled(LogLevel.Debug))
+            if (this._logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug("Analysis inputs for project {ProjectKey}: {SprintCount} sprints, {IssueCount} issues, {PlannedPoints} planned SP, {CompletedPoints} completed SP",
+                this._logger.LogDebug("Analysis inputs for project {ProjectKey}: {SprintCount} sprints, {IssueCount} issues, {PlannedPoints} planned SP, {CompletedPoints} completed SP",
                     projectKey,
                     recentSprints.Count,
                     recentSprints.Sum(s => s.Issues.Count),
@@ -121,7 +121,9 @@ public class AnalyticsService : IAnalyticsService
                     var newVelocity = sortedMetrics[sortedMetrics.Count - 1].GetVelocity();
 
                     if (oldVelocity > 0)
+                    {
                         result.TrendPercentage = ((newVelocity - oldVelocity) / oldVelocity) * 100;
+                    }
                 }
 
                 var healthScores = result.Metrics
@@ -136,12 +138,12 @@ public class AnalyticsService : IAnalyticsService
                 };
             }
 
-            _logger.LogInformation("Sprint analysis completed: {MetricsCount} sprints analyzed, overall health {Health}",
+            this._logger.LogInformation("Sprint analysis completed: {MetricsCount} sprints analyzed, overall health {Health}",
                 result.Metrics.Count, result.OverallHealth);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error analyzing sprints");
+            this._logger.LogError(ex, "Error analyzing sprints");
         }
 
         return result;
@@ -159,14 +161,14 @@ public class AnalyticsService : IAnalyticsService
     public async Task<TeamAnalysisResult> AnalyzeTeam(string projectKey)
     {
         ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
-        _logger.LogInformation("Analyzing team for project {ProjectKey}", projectKey);
+        this._logger.LogInformation("Analyzing team for project {ProjectKey}", projectKey);
 
         var result = new TeamAnalysisResult();
 
         try
         {
-            var team = await _jiraService.GetProjectTeamAsync(projectKey);
-            var issues = await _jiraService.GetProjectIssuesAsync(projectKey);
+            var team = await this._jiraService.GetProjectTeamAsync(projectKey);
+            var issues = await this._jiraService.GetProjectIssuesAsync(projectKey);
 
             // Assign issues to team members
             foreach (var issue in issues)
@@ -175,7 +177,9 @@ public class AnalyticsService : IAnalyticsService
                 {
                     var developer = team.FirstOrDefault(d => d.DisplayName == issue.Assignee);
                     if (developer != null)
+                    {
                         developer.AssignIssue(issue);
+                    }
                 }
             }
 
@@ -191,11 +195,11 @@ public class AnalyticsService : IAnalyticsService
                 result.WorkloadDistribution[developer.Name] = developer.GetTotalAssignedIssues();
             }
 
-            _logger.LogInformation("Team analysis completed: {TeamSize} members analyzed", team.Count);
+            this._logger.LogInformation("Team analysis completed: {TeamSize} members analyzed", team.Count);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error analyzing team");
+            this._logger.LogError(ex, "Error analyzing team");
         }
 
         return result;
@@ -213,18 +217,18 @@ public class AnalyticsService : IAnalyticsService
     public async Task<QualityMetricsResult> AnalyzeQuality(string projectKey)
     {
         ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
-        _logger.LogInformation("Analyzing quality metrics for project {ProjectKey}", projectKey);
+        this._logger.LogInformation("Analyzing quality metrics for project {ProjectKey}", projectKey);
 
         var result = new QualityMetricsResult();
 
         try
         {
-            var sprints = await _jiraService.GetProjectSprintsAsync(projectKey);
+            var sprints = await this._jiraService.GetProjectSprintsAsync(projectKey);
             var allIssues = new List<JiraIssue>();
 
             foreach (var sprint in sprints.Where(s => s.IsClosed()))
             {
-                var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id);
+                var issues = await this._jiraService.GetSprintIssuesAsync(sprint.Id);
                 allIssues.AddRange(issues);
             }
 
@@ -233,7 +237,9 @@ public class AnalyticsService : IAnalyticsService
             result.TotalDefects = defects.Count;
 
             if (allIssues.Any())
+            {
                 result.DefectRate = (result.TotalDefects / (double)allIssues.Count) * 100;
+            }
 
             // Identify high-risk areas
             var componentWithMostBugs = allIssues
@@ -248,12 +254,12 @@ public class AnalyticsService : IAnalyticsService
 
             result.HighRiskAreas = componentWithMostBugs;
 
-            _logger.LogInformation("Quality analysis completed: {DefectCount} defects found, defect rate {DefectRate:F2}%",
+            this._logger.LogInformation("Quality analysis completed: {DefectCount} defects found, defect rate {DefectRate:F2}%",
                 result.TotalDefects, result.DefectRate);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error analyzing quality");
+            this._logger.LogError(ex, "Error analyzing quality");
         }
 
         return result;
@@ -272,13 +278,13 @@ public class AnalyticsService : IAnalyticsService
     public async Task<VelocityTrendResult> AnalyzeVelocityTrend(string projectKey, int sprintCount)
     {
         ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
-        _logger.LogInformation("Analyzing velocity trend for project {ProjectKey}", projectKey);
+        this._logger.LogInformation("Analyzing velocity trend for project {ProjectKey}", projectKey);
 
         var result = new VelocityTrendResult();
 
         try
         {
-            var sprints = await _jiraService.GetProjectSprintsAsync(projectKey);
+            var sprints = await this._jiraService.GetProjectSprintsAsync(projectKey);
             var recentSprints = sprints
                 .Where(s => s.IsClosed())
                 .OrderBy(s => s.EndDate)
@@ -287,7 +293,7 @@ public class AnalyticsService : IAnalyticsService
 
             foreach (var sprint in recentSprints)
             {
-                var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id);
+                var issues = await this._jiraService.GetSprintIssuesAsync(sprint.Id);
                 sprint.Issues.AddRange(issues);
 
                 var velocity = sprint.GetVelocity();
@@ -310,12 +316,12 @@ public class AnalyticsService : IAnalyticsService
                 };
             }
 
-            _logger.LogInformation("Velocity trend analysis completed: trend {Trend}, slope {Slope:F2}%",
+            this._logger.LogInformation("Velocity trend analysis completed: trend {Trend}, slope {Slope:F2}%",
                 result.Trend, result.TrendSlope);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error analyzing velocity trend");
+            this._logger.LogError(ex, "Error analyzing velocity trend");
         }
 
         return result;
@@ -348,13 +354,13 @@ public class AnalyticsService : IAnalyticsService
     public async Task<OverdueIssuesResult> AnalyzeOverdueIssues(string projectKey)
     {
         ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
-        _logger.LogInformation("Analyzing overdue issues for project {ProjectKey}", projectKey);
+        this._logger.LogInformation("Analyzing overdue issues for project {ProjectKey}", projectKey);
 
         var result = new OverdueIssuesResult();
 
         try
         {
-            var issues = await _jiraService.GetProjectIssuesAsync(projectKey);
+            var issues = await this._jiraService.GetProjectIssuesAsync(projectKey);
             var overdueIssues = issues.Where(i => i.IsOverdue()).ToList();
 
             result.Issues = overdueIssues;
@@ -368,12 +374,12 @@ public class AnalyticsService : IAnalyticsService
                     .Average(i => (DateTime.UtcNow - i.DueDate!.Value).TotalDays);
             }
 
-            _logger.LogInformation("Overdue issues analysis completed: {OverdueCount} overdue, {CriticalCount} critical",
+            this._logger.LogInformation("Overdue issues analysis completed: {OverdueCount} overdue, {CriticalCount} critical",
                 result.TotalOverdueCount, result.CriticalCount);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error analyzing overdue issues");
+            this._logger.LogError(ex, "Error analyzing overdue issues");
         }
 
         return result;
@@ -391,7 +397,7 @@ public class AnalyticsService : IAnalyticsService
     public async Task<CycleTimeResult> AnalyzeCycleTime(string projectKey)
     {
         ArgumentException.ThrowIfNullOrEmpty(nameof(projectKey));
-        _logger.LogInformation("Analyzing cycle time for project {ProjectKey}", projectKey);
+        this._logger.LogInformation("Analyzing cycle time for project {ProjectKey}", projectKey);
 
         var result = new CycleTimeResult
         {
@@ -401,7 +407,7 @@ public class AnalyticsService : IAnalyticsService
         try
         {
             // Fetch all issues for the project
-            var issues = await _jiraService.GetProjectIssuesAsync(projectKey);
+            var issues = await this._jiraService.GetProjectIssuesAsync(projectKey);
 
             // Filter to only resolved issues for accurate cycle time calculation
             var resolvedIssues = issues
@@ -440,13 +446,13 @@ public class AnalyticsService : IAnalyticsService
                     .ToList();
             }
 
-            _logger.LogInformation("Cycle time analysis completed: {IssueCount} issues analyzed, avg {Average:F2} days",
+            this._logger.LogInformation("Cycle time analysis completed: {IssueCount} issues analyzed, avg {Average:F2} days",
                 result.IssueCycleTimes.Count,
                 result.AverageCycleTime);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error analyzing cycle time");
+            this._logger.LogError(ex, "Error analyzing cycle time");
         }
 
         return result;
@@ -457,7 +463,10 @@ public class AnalyticsService : IAnalyticsService
     /// </summary>
     private static double CalculateMedian(List<double> values)
     {
-        if (values.Count == 0) return 0;
+        if (values.Count == 0)
+        {
+            return 0;
+        }
 
         var sorted = values.OrderBy(v => v).ToList();
         var count = sorted.Count;
@@ -479,7 +488,10 @@ public class AnalyticsService : IAnalyticsService
     /// </summary>
     private static double CalculatePercentile(List<double> values, double percentile)
     {
-        if (values.Count == 0) return 0;
+        if (values.Count == 0)
+        {
+            return 0;
+        }
 
         var sorted = values.OrderBy(v => v).ToList();
         var n = (int)Math.Ceiling((percentile / 100.0) * sorted.Count);

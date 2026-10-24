@@ -5,7 +5,6 @@
 
 using System.Collections.Concurrent;
 using JiraAnalyticsCli.Models;
-using Microsoft.Extensions.Logging;
 
 namespace JiraAnalyticsCli.Repositories;
 

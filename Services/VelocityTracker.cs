@@ -28,12 +28,12 @@ public class VelocityTracker
     /// <exception cref="ArgumentException">Thrown when the options hold an out-of-range value.</exception>
     public VelocityTracker(IMetricsRepository metricsRepository, ILogger<VelocityTracker> logger, VelocityOptions options)
     {
-        _metricsRepository = metricsRepository ?? throw new ArgumentNullException(nameof(metricsRepository));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
+        this._metricsRepository = metricsRepository ?? throw new ArgumentNullException(nameof(metricsRepository));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._options = options ?? throw new ArgumentNullException(nameof(options));
 
         // Re-check here: the record constructor already validates, but a `with` copy skips it.
-        VelocityOptionsValidator.ThrowIfInvalid(_options.WindowSize, _options.StoryPointsField);
+        VelocityOptionsValidator.ThrowIfInvalid(this._options.WindowSize, this._options.StoryPointsField);
     }
 
     /// <summary>
@@ -47,14 +47,18 @@ public class VelocityTracker
     {
         ArgumentNullException.ThrowIfNull(metrics);
 
-        int size = windowSize ?? _options.WindowSize;
+        int size = windowSize ?? this._options.WindowSize;
         if (!VelocityOptionsValidator.IsValidWindowSize(size))
+        {
             throw new ArgumentOutOfRangeException(nameof(windowSize), size,
                 $"WindowSize must be between {VelocityOptionsValidator.MinWindowSize} and {VelocityOptionsValidator.MaxWindowSize} (got {size}).");
+        }
 
-        var eligible = ApplyExclusion(metrics);
+        var eligible = this.ApplyExclusion(metrics);
         if (eligible.Count == 0)
+        {
             return 0.0;
+        }
 
         var window = eligible
             .OrderByDescending(m => m.EndDate)
@@ -62,7 +66,7 @@ public class VelocityTracker
             .ToList();
 
         double avg = window.Average(m => m.CompletedStoryPoints);
-        _logger.LogDebug("Rolling velocity ({Window} sprints): {Velocity:F1} SP", window.Count, avg);
+        this._logger.LogDebug("Rolling velocity ({Window} sprints): {Velocity:F1} SP", window.Count, avg);
         return avg;
     }
 
@@ -73,7 +77,7 @@ public class VelocityTracker
     /// <returns>A <see cref="VelocityTrend"/> describing the velocity trend.</returns>
     public VelocityTrend DetectTrend(IReadOnlyList<SprintMetric> metrics)
     {
-        var eligible = ApplyExclusion(metrics);
+        var eligible = this.ApplyExclusion(metrics);
         if (eligible.Count < 2)
         {
             return new VelocityTrend("Stable", Slope: 0, SampleSize: eligible.Count);
@@ -94,7 +98,7 @@ public class VelocityTracker
             _ => "Stable"
         };
 
-        _logger.LogInformation("Velocity trend: {Direction} (slope={Slope:F2})", direction, slope);
+        this._logger.LogInformation("Velocity trend: {Direction} (slope={Slope:F2})", direction, slope);
         return new VelocityTrend(direction, slope, points.Count);
     }
 
@@ -107,9 +111,11 @@ public class VelocityTracker
     /// <returns>Forecasted velocity in story points.</returns>
     public double ForecastNextSprint(IReadOnlyList<SprintMetric> metrics, double alpha = 0.3)
     {
-        var eligible = ApplyExclusion(metrics);
+        var eligible = this.ApplyExclusion(metrics);
         if (eligible.Count == 0)
+        {
             return 0.0;
+        }
 
         var ordered = eligible.OrderBy(m => m.EndDate).ToList();
         double ewma = ordered[0].CompletedStoryPoints;
@@ -119,7 +125,7 @@ public class VelocityTracker
             ewma = alpha * ordered[i].CompletedStoryPoints + (1 - alpha) * ewma;
         }
 
-        _logger.LogDebug("EWMA forecast: {Forecast:F1} SP (alpha={Alpha})", ewma, alpha);
+        this._logger.LogDebug("EWMA forecast: {Forecast:F1} SP (alpha={Alpha})", ewma, alpha);
         return ewma;
     }
 
@@ -131,7 +137,9 @@ public class VelocityTracker
     public double GetCommitmentAccuracy(SprintMetric metric)
     {
         if (metric.PlannedStoryPoints <= 0)
+        {
             return 0.0;
+        }
 
         return (double)metric.CompletedStoryPoints / metric.PlannedStoryPoints * 100.0;
     }
@@ -143,7 +151,7 @@ public class VelocityTracker
     {
         ArgumentNullException.ThrowIfNull(metrics);
 
-        return _options.ExcludeZeroPointSprints
+        return this._options.ExcludeZeroPointSprints
             ? metrics.Where(m => m.CompletedStoryPoints > 0).ToList()
             : metrics.ToList();
     }

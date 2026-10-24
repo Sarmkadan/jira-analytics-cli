@@ -5,8 +5,6 @@
 // Security utility for JQL query construction and validation
 // =============================================================================
 
-using System.Text;
-
 namespace JiraAnalyticsCli.Services;
 
 /// <summary>
@@ -215,11 +213,11 @@ public static class JqlHelper
 public interface IJiraApiServiceConfig
 {
     /// <summary>Maximum number of issues to fetch per API request.</summary>
-    int JiraApiMaxResultsPerRequest { get; }
+    public int JiraApiMaxResultsPerRequest { get; }
 
     /// <summary>Maximum number of pages to fetch when streaming results.</summary>
-    int JiraApiMaxPages { get; }
+    public int JiraApiMaxPages { get; }
 
     /// <summary>Maximum allowed page size for pagination operations.</summary>
-    int JiraApiMaxPageSize { get; }
+    public int JiraApiMaxPageSize { get; }
 }

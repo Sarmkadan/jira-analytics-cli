@@ -33,7 +33,7 @@ public class CsvFormatter
 
     public CsvFormatter(ILogger<CsvFormatter> logger)
     {
-        _logger = logger;
+        this._logger = logger;
     }
 
     /// <summary>
@@ -43,12 +43,14 @@ public class CsvFormatter
     public string Format<T>(IEnumerable<T> data)
     {
         if (data == null)
+        {
             throw new ArgumentNullException(nameof(data));
+        }
 
         var items = data.ToList();
         if (!items.Any())
         {
-            _logger.LogWarning("No data to format as CSV");
+            this._logger.LogWarning("No data to format as CSV");
             return string.Empty;
         }
 
@@ -69,7 +71,7 @@ public class CsvFormatter
                 csv.AppendLine(EscapeCsvLine(values));
             }
 
-            _logger.LogDebug("Formatted {ItemCount} items to CSV", items.Count);
+            this._logger.LogDebug("Formatted {ItemCount} items to CSV", items.Count);
             return csv.ToString();
         }
         finally
@@ -85,7 +87,9 @@ public class CsvFormatter
     public string FormatWithMapping<T>(IEnumerable<T> data, Dictionary<string, Func<T, string>> columnMapping)
     {
         if (data == null || columnMapping == null)
+        {
             throw new ArgumentNullException(data == null ? nameof(data) : nameof(columnMapping));
+        }
 
         var items = data.ToList();
         var headers = columnMapping.Keys.ToArray();
@@ -102,7 +106,7 @@ public class CsvFormatter
                 csv.AppendLine(EscapeCsvLine(values));
             }
 
-            _logger.LogDebug("Formatted {ItemCount} items with mapping to CSV", items.Count);
+            this._logger.LogDebug("Formatted {ItemCount} items with mapping to CSV", items.Count);
             return csv.ToString();
         }
         finally
@@ -118,13 +122,17 @@ public class CsvFormatter
     public List<T> Parse<T>(string csv) where T : class, new()
     {
         if (string.IsNullOrEmpty(csv))
+        {
             return new List<T>();
+        }
 
         var lines = csv.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
         var result = new List<T>();
 
         if (lines.Length < 2)
+        {
             return result;
+        }
 
         var headers = ParseCsvLine(lines[0]);
 
@@ -137,7 +145,9 @@ public class CsvFormatter
         foreach (var prop in allProperties)
         {
             if (headers.Contains(prop.Name, StringComparer.OrdinalIgnoreCase))
+            {
                 propertyMap[prop.Name] = prop;
+            }
         }
 
         for (int i = 1; i < lines.Length; i++)
@@ -148,7 +158,9 @@ public class CsvFormatter
             for (int j = 0; j < headers.Length && j < values.Length; j++)
             {
                 if (!propertyMap.TryGetValue(headers[j], out var property))
+                {
                     continue;
+                }
 
                 try
                 {
@@ -157,7 +169,7 @@ public class CsvFormatter
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning("Could not convert value '{Value}' to type {Type}: {Error}",
+                    this._logger.LogWarning("Could not convert value '{Value}' to type {Type}: {Error}",
                         values[j], property.PropertyType.Name, ex.Message);
                 }
             }
@@ -165,7 +177,7 @@ public class CsvFormatter
             result.Add(item);
         }
 
-        _logger.LogDebug("Parsed {ItemCount} items from CSV", result.Count);
+        this._logger.LogDebug("Parsed {ItemCount} items from CSV", result.Count);
         return result;
     }
 
@@ -178,7 +190,9 @@ public class CsvFormatter
     private static string EscapeCsvField(string field)
     {
         if (string.IsNullOrEmpty(field))
+        {
             return string.Empty;
+        }
 
         if (field.Contains(Delimiter) || field.Contains(QuoteChar) || field.Contains('\n'))
         {

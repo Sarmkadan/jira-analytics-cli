@@ -17,12 +17,14 @@ public class OutputOptionsValidatorTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "jac-output-validator-" + Guid.NewGuid().ToString("N"));
 
-    public OutputOptionsValidatorTests() => Directory.CreateDirectory(_root);
+    public OutputOptionsValidatorTests() => Directory.CreateDirectory(this._root);
 
     public void Dispose()
     {
-        if (Directory.Exists(_root))
-            Directory.Delete(_root, recursive: true);
+        if (Directory.Exists(this._root))
+        {
+            Directory.Delete(this._root, recursive: true);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -153,7 +155,7 @@ public class OutputOptionsValidatorTests : IDisposable
     [Fact]
     public void CheckOutputFile_ExistingDirectory_IsRejected()
     {
-        var problem = OutputOptionsValidator.CheckOutputFile(_root);
+        var problem = OutputOptionsValidator.CheckOutputFile(this._root);
 
         problem.Should().Contain("is a directory");
     }
@@ -161,16 +163,16 @@ public class OutputOptionsValidatorTests : IDisposable
     [Fact]
     public void CheckOutputFile_MissingDirectoryThatCanBeCreated_IsValidAndNotCreated()
     {
-        var target = Path.Combine(_root, "reports", "2026", "sprint.html");
+        var target = Path.Combine(this._root, "reports", "2026", "sprint.html");
 
         OutputOptionsValidator.CheckOutputFile(target).Should().BeNull();
-        Directory.Exists(Path.Combine(_root, "reports")).Should().BeFalse();
+        Directory.Exists(Path.Combine(this._root, "reports")).Should().BeFalse();
     }
 
     [Fact]
     public void CheckOutputFile_ParentIsAFile_IsRejected()
     {
-        var blocker = Path.Combine(_root, "blocker.txt");
+        var blocker = Path.Combine(this._root, "blocker.txt");
         File.WriteAllText(blocker, "x");
 
         var problem = OutputOptionsValidator.CheckOutputFile(Path.Combine(blocker, "nested", "out.csv"));
@@ -187,7 +189,7 @@ public class OutputOptionsValidatorTests : IDisposable
     [Fact]
     public void CheckOutputFile_PathWithoutFileName_IsRejected()
     {
-        var problem = OutputOptionsValidator.CheckOutputFile(Path.Combine(_root, "missing") + Path.DirectorySeparatorChar);
+        var problem = OutputOptionsValidator.CheckOutputFile(Path.Combine(this._root, "missing") + Path.DirectorySeparatorChar);
 
         problem.Should().Contain("does not name a file");
     }
@@ -199,22 +201,22 @@ public class OutputOptionsValidatorTests : IDisposable
     [Fact]
     public void CheckOutputDirectory_ExistingDirectory_IsValid()
     {
-        OutputOptionsValidator.CheckOutputDirectory(_root).Should().BeNull();
+        OutputOptionsValidator.CheckOutputDirectory(this._root).Should().BeNull();
     }
 
     [Fact]
     public void CheckOutputDirectory_NestedMissingDirectory_IsValidAndNotCreated()
     {
-        var target = Path.Combine(_root, "a", "b", "c");
+        var target = Path.Combine(this._root, "a", "b", "c");
 
         OutputOptionsValidator.CheckOutputDirectory(target).Should().BeNull();
-        Directory.Exists(Path.Combine(_root, "a")).Should().BeFalse();
+        Directory.Exists(Path.Combine(this._root, "a")).Should().BeFalse();
     }
 
     [Fact]
     public void CheckOutputDirectory_PointsAtFile_IsRejected()
     {
-        var file = Path.Combine(_root, "file.txt");
+        var file = Path.Combine(this._root, "file.txt");
         File.WriteAllText(file, "x");
 
         OutputOptionsValidator.CheckOutputDirectory(file).Should().Contain("is a file, not a directory");
@@ -229,7 +231,7 @@ public class OutputOptionsValidatorTests : IDisposable
     [Fact]
     public void CheckOutputDirectory_UsesOptionNameInMessage()
     {
-        var file = Path.Combine(_root, "file.txt");
+        var file = Path.Combine(this._root, "file.txt");
         File.WriteAllText(file, "x");
 
         OutputOptionsValidator.CheckOutputDirectory(file, "--custom").Should().StartWith("--custom ");

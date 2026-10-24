@@ -40,10 +40,14 @@ public static class VelocityOptionsValidator
         var problems = new List<string>();
 
         if (!IsValidWindowSize(windowSize))
+        {
             problems.Add($"WindowSize must be between {MinWindowSize} and {MaxWindowSize} (got {windowSize.ToString(CultureInfo.InvariantCulture)}).");
+        }
 
         if (!IsValidStoryPointsField(storyPointsField))
+        {
             problems.Add($"StoryPointsField must match customfield_<digits>, for example customfield_10016 (got '{storyPointsField}').");
+        }
 
         return problems;
     }
@@ -58,6 +62,8 @@ public static class VelocityOptionsValidator
     {
         var problems = Validate(windowSize, storyPointsField);
         if (problems.Count > 0)
+        {
             throw new ArgumentException(string.Join(" ", problems));
+        }
     }
 }

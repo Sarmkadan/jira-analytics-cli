@@ -62,32 +62,46 @@ public class SprintMetric
     public double GetVelocity()
     {
         // Velocity as story points per day
-        var duration = (EndDate - StartDate).TotalDays;
-        if (duration <= 0) return 0;
+        var duration = (this.EndDate - this.StartDate).TotalDays;
+        if (duration <= 0)
+        {
+            return 0;
+        }
 
-        return CompletedStoryPoints / duration;
+        return this.CompletedStoryPoints / duration;
     }
 
     public double GetCompletionRate()
     {
         // Percentage of planned work completed
-        if (PlannedStoryPoints <= 0) return 0;
-        return (CompletedStoryPoints / (double)PlannedStoryPoints) * 100;
+        if (this.PlannedStoryPoints <= 0)
+        {
+            return 0;
+        }
+
+        return (this.CompletedStoryPoints / (double)this.PlannedStoryPoints) * 100;
     }
 
     public double GetCommitmentAccuracy()
     {
         // How well team hit their commitment
-        if (CommittedStoryPoints <= 0) return 0;
-        return (CompletedStoryPoints / (double)CommittedStoryPoints) * 100;
+        if (this.CommittedStoryPoints <= 0)
+        {
+            return 0;
+        }
+
+        return (this.CompletedStoryPoints / (double)this.CommittedStoryPoints) * 100;
     }
 
     public double GetQualityScore()
     {
         // Quality based on defects and completed items
-        if (CompletedIssueCount == 0) return 100;
+        if (this.CompletedIssueCount == 0)
+        {
+            return 100;
+        }
 
-        var defectRate = DefectsCount / (double)CompletedIssueCount;
+        var defectRate = this.DefectsCount / (double)this.CompletedIssueCount;
         var qualityScore = Math.Max(0, 100 - (defectRate * 100));
 
         return qualityScore;
@@ -96,25 +110,32 @@ public class SprintMetric
     public double GetProductivityPerTeamMember()
     {
         // Average story points per team member
-        if (TeamSize <= 0) return 0;
-        return CompletedStoryPoints / (double)TeamSize;
+        if (this.TeamSize <= 0)
+        {
+            return 0;
+        }
+
+        return this.CompletedStoryPoints / (double)this.TeamSize;
     }
 
     public double GetDailyBurndownRate()
     {
         // Average story points burned per day
-        var duration = (EndDate - StartDate).TotalDays;
-        if (duration <= 0) return 0;
+        var duration = (this.EndDate - this.StartDate).TotalDays;
+        if (duration <= 0)
+        {
+            return 0;
+        }
 
-        return CompletedStoryPoints / duration;
+        return this.CompletedStoryPoints / duration;
     }
 
     public double GetRiskScore()
     {
         // Risk score: overdue issues, scope changes, quality
-        var overdueRisk = OverdueIssueCount * 5;
-        var scopeRisk = ScopeChangeCount * 3;
-        var qualityRisk = (100 - GetQualityScore()) * 2;
+        var overdueRisk = this.OverdueIssueCount * 5;
+        var scopeRisk = this.ScopeChangeCount * 3;
+        var qualityRisk = (100 - this.GetQualityScore()) * 2;
 
         return Math.Min(100, overdueRisk + scopeRisk + qualityRisk);
     }
@@ -122,43 +143,59 @@ public class SprintMetric
     public string GetHealthStatus()
     {
         // Overall sprint health status
-        var completionRate = GetCompletionRate();
-        var qualityScore = GetQualityScore();
-        var riskScore = GetRiskScore();
+        var completionRate = this.GetCompletionRate();
+        var qualityScore = this.GetQualityScore();
+        var riskScore = this.GetRiskScore();
 
         if (completionRate >= 95 && qualityScore >= 90 && riskScore < 20)
+        {
             return "Excellent";
+        }
 
         if (completionRate >= 85 && qualityScore >= 80 && riskScore < 40)
+        {
             return "Healthy";
+        }
 
         if (completionRate >= 70 && qualityScore >= 70 && riskScore < 60)
+        {
             return "At Risk";
+        }
 
         return "Critical";
     }
 
     public void Validate()
     {
-        if (SprintId <= 0)
+        if (this.SprintId <= 0)
+        {
             throw new ArgumentException("Sprint ID must be positive");
+        }
 
-        if (string.IsNullOrWhiteSpace(SprintName))
+        if (string.IsNullOrWhiteSpace(this.SprintName))
+        {
             throw new ArgumentException("Sprint name cannot be empty");
+        }
 
-        if (EndDate <= StartDate)
+        if (this.EndDate <= this.StartDate)
+        {
             throw new ArgumentException("End date must be after start date");
+        }
 
-        if (PlannedStoryPoints < 0)
+        if (this.PlannedStoryPoints < 0)
+        {
             throw new ArgumentException("Planned story points cannot be negative");
+        }
 
-        if (CompletedStoryPoints > PlannedStoryPoints)
+        if (this.CompletedStoryPoints > this.PlannedStoryPoints)
+        {
             throw new ArgumentException("Completed story points cannot exceed planned");
+        }
     }
 
     public override string ToString()
     {
-        return $"[{SprintId}] {SprintName} ({GetHealthStatus()}) - {CompletedStoryPoints}/{PlannedStoryPoints} pts " +
-               $"({GetCompletionRate():F1}%), {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}";
+        return $"[{this.SprintId}] {this.SprintName} ({this.GetHealthStatus()}) - {this.CompletedStoryPoints}/{this.PlannedStoryPoints} pts " +
+               $"({this.GetCompletionRate():F1}%), {this.StartDate:yyyy-MM-dd} to {this.EndDate:yyyy-MM-dd}";
     }
 }

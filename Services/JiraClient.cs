@@ -35,11 +35,11 @@ public class JiraClient
     /// <param name="logger">Logger for diagnostic output.</param>
     public JiraClient(HttpClient httpClient, IOptions<JiraClientOptions> options, ILogger<JiraClient> logger)
     {
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        this._options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        ConfigureAuthentication();
+        this.ConfigureAuthentication();
     }
 
     /// <summary>
@@ -51,10 +51,10 @@ public class JiraClient
     /// <returns>Deserialized response or default if the request fails.</returns>
     public async Task<T?> GetAsync<T>(string endpoint, CancellationToken cancellationToken = default)
     {
-        var url = BuildUrl(endpoint);
-        _logger.LogDebug("GET {Url}", url);
+        var url = this.BuildUrl(endpoint);
+        this._logger.LogDebug("GET {Url}", url);
 
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        var response = await this._httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, cancellationToken);
@@ -71,10 +71,10 @@ public class JiraClient
     /// <returns>Deserialized response.</returns>
     public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
     {
-        var url = BuildUrl(endpoint);
-        _logger.LogDebug("POST {Url}", url);
+        var url = this.BuildUrl(endpoint);
+        this._logger.LogDebug("POST {Url}", url);
 
-        var response = await _httpClient.PostAsJsonAsync(url, body, _jsonOptions, cancellationToken);
+        var response = await this._httpClient.PostAsJsonAsync(url, body, _jsonOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<TResponse>(_jsonOptions, cancellationToken);
@@ -99,11 +99,11 @@ public class JiraClient
         {
             char separator = endpoint.Contains('?') ? '&' : '?';
             string pagedUrl = $"{endpoint}{separator}startAt={startAt}&maxResults={pageSize}";
-            var url = BuildUrl(pagedUrl);
+            var url = this.BuildUrl(pagedUrl);
 
-            _logger.LogDebug("GET paginated {Url} (startAt={StartAt})", url, startAt);
+            this._logger.LogDebug("GET paginated {Url} (startAt={StartAt})", url, startAt);
 
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var response = await this._httpClient.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             using var doc = await JsonDocument.ParseAsync(
@@ -125,7 +125,7 @@ public class JiraClient
             }
         }
 
-        _logger.LogDebug("Fetched {Total} items from {Endpoint}", allResults.Count, endpoint);
+        this._logger.LogDebug("Fetched {Total} items from {Endpoint}", allResults.Count, endpoint);
         return allResults;
     }
 
@@ -138,35 +138,35 @@ public class JiraClient
     {
         try
         {
-            var response = await _httpClient.GetAsync(
-                BuildUrl("/rest/api/3/serverInfo"), cancellationToken);
+            var response = await this._httpClient.GetAsync(
+                this.BuildUrl("/rest/api/3/serverInfo"), cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Jira connection test failed");
+            this._logger.LogError(ex, "Jira connection test failed");
             return false;
         }
     }
 
     private string BuildUrl(string endpoint)
     {
-        string baseUrl = _options.BaseUrl.TrimEnd('/');
+        string baseUrl = this._options.BaseUrl.TrimEnd('/');
         string path = endpoint.TrimStart('/');
         return $"{baseUrl}/{path}";
     }
 
     private void ConfigureAuthentication()
     {
-        if (!string.IsNullOrEmpty(_options.ApiToken))
+        if (!string.IsNullOrEmpty(this._options.ApiToken))
         {
             string credentials = Convert.ToBase64String(
-                Encoding.ASCII.GetBytes($"{_options.Username}:{_options.ApiToken}"));
-            _httpClient.DefaultRequestHeaders.Authorization =
+                Encoding.ASCII.GetBytes($"{this._options.Username}:{this._options.ApiToken}"));
+            this._httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Basic", credentials);
         }
 
-        _httpClient.DefaultRequestHeaders.Accept.Add(
+        this._httpClient.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/json"));
     }
 }

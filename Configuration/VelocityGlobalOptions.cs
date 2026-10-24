@@ -31,7 +31,9 @@ public sealed record VelocityGlobalOptions(
             StoryPointsField: new Option<string>("--story-points-field", "Jira story-points custom field id, e.g. customfield_10016 (overrides VELOCITY_STORY_POINTS_FIELD and appsettings.json)"));
 
         foreach (var option in new Option[] { options.WindowSize, options.ExcludeZeroPointSprints, options.StoryPointsField })
+        {
             rootCommand.AddGlobalOption(option);
+        }
 
         return options;
     }
@@ -46,8 +48,8 @@ public sealed record VelocityGlobalOptions(
         ArgumentNullException.ThrowIfNull(parseResult);
 
         return new VelocityOptionsOverrides(
-            WindowSize: parseResult.GetValueForOption(WindowSize),
-            ExcludeZeroPointSprints: parseResult.GetValueForOption(ExcludeZeroPointSprints),
-            StoryPointsField: parseResult.GetValueForOption(StoryPointsField));
+            WindowSize: parseResult.GetValueForOption(this.WindowSize),
+            ExcludeZeroPointSprints: parseResult.GetValueForOption(this.ExcludeZeroPointSprints),
+            StoryPointsField: parseResult.GetValueForOption(this.StoryPointsField));
     }
 }

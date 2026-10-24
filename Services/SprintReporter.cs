@@ -32,10 +32,10 @@ public class SprintReporter
         VelocityTracker velocityTracker,
         ILogger<SprintReporter> logger)
     {
-        _jiraService = jiraService ?? throw new ArgumentNullException(nameof(jiraService));
-        _burndownCalculator = burndownCalculator ?? throw new ArgumentNullException(nameof(burndownCalculator));
-        _velocityTracker = velocityTracker ?? throw new ArgumentNullException(nameof(velocityTracker));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._jiraService = jiraService ?? throw new ArgumentNullException(nameof(jiraService));
+        this._burndownCalculator = burndownCalculator ?? throw new ArgumentNullException(nameof(burndownCalculator));
+        this._velocityTracker = velocityTracker ?? throw new ArgumentNullException(nameof(velocityTracker));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -45,15 +45,15 @@ public class SprintReporter
     /// <returns>Markdown-formatted sprint report string.</returns>
     public async Task<string> GenerateSprintSummaryAsync(int sprintId)
     {
-        var sprint = await _jiraService.GetSprintAsync(sprintId);
+        var sprint = await this._jiraService.GetSprintAsync(sprintId);
         if (sprint is null)
         {
-            _logger.LogWarning("Sprint {SprintId} not found", sprintId);
+            this._logger.LogWarning("Sprint {SprintId} not found", sprintId);
             return $"# Sprint {sprintId}\n\nSprint not found.";
         }
 
-        var issues = await _jiraService.GetSprintIssuesAsync(sprintId);
-        var burndown = await _burndownCalculator.GetActualBurndownAsync(sprintId);
+        var issues = await this._jiraService.GetSprintIssuesAsync(sprintId);
+        var burndown = await this._burndownCalculator.GetActualBurndownAsync(sprintId);
 
         int totalPoints = issues.Sum(i => i.StoryPoints ?? 0);
         int completedPoints = issues.Where(i => i.Status == "Done").Sum(i => i.StoryPoints ?? 0);
@@ -74,7 +74,7 @@ public class SprintReporter
             sb.AppendLine($"- **Completion Rate:** {completionRate:F1}%");
         }
 
-        _logger.LogInformation("Generated summary for sprint {SprintName} ({Id})", sprint.Name, sprintId);
+        this._logger.LogInformation("Generated summary for sprint {SprintName} ({Id})", sprint.Name, sprintId);
         return sb.ToString();
     }
 
@@ -86,7 +86,7 @@ public class SprintReporter
     /// <returns>Markdown-formatted comparison report.</returns>
     public async Task<string> GenerateProjectReportAsync(string projectKey, int sprintCount = 5)
     {
-        var sprints = await _jiraService.GetProjectSprintsAsync(projectKey);
+        var sprints = await this._jiraService.GetProjectSprintsAsync(projectKey);
         var recentSprints = sprints
             .OrderByDescending(s => s.Id)
             .Take(sprintCount)
@@ -101,14 +101,14 @@ public class SprintReporter
 
         foreach (var sprint in recentSprints)
         {
-            var issues = await _jiraService.GetSprintIssuesAsync(sprint.Id);
+            var issues = await this._jiraService.GetSprintIssuesAsync(sprint.Id);
             int total = issues.Count;
             int done = issues.Count(i => i.Status == "Done");
             int points = issues.Where(i => i.Status == "Done").Sum(i => i.StoryPoints ?? 0);
             sb.AppendLine($"| {sprint.Name} | {total} | {done} | {points} |");
         }
 
-        _logger.LogInformation("Generated project report for {Project} with {Count} sprints", projectKey, recentSprints.Count);
+        this._logger.LogInformation("Generated project report for {Project} with {Count} sprints", projectKey, recentSprints.Count);
         return sb.ToString();
     }
 
@@ -124,7 +124,9 @@ public class SprintReporter
         double remainingDays = (sprintEnd - now).TotalDays;
 
         if (remainingDays <= 0)
+        {
             return issues.Where(i => i.Status != "Done").Select(i => i.Key).ToList();
+        }
 
         // Issues in progress for more than half the sprint without resolution
         var atRisk = issues
@@ -134,7 +136,7 @@ public class SprintReporter
             .Select(i => i.Key)
             .ToList();
 
-        _logger.LogDebug("Found {Count} at-risk issues with {Days:F1} days remaining", atRisk.Count, remainingDays);
+        this._logger.LogDebug("Found {Count} at-risk issues with {Days:F1} days remaining", atRisk.Count, remainingDays);
         return atRisk;
     }
 }

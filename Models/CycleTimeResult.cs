@@ -63,8 +63,8 @@ public class IssueCycleTime
     [JsonPropertyName("createdDate")]
     public DateTimeOffset CreatedDate
     {
-        get => _createdDate;
-        set => _createdDate = value.ToUniversalTime();
+        get => this._createdDate;
+        set => this._createdDate = value.ToUniversalTime();
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public class IssueCycleTime
     [JsonPropertyName("resolutionDate")]
     public DateTimeOffset? ResolutionDate
     {
-        get => _resolutionDate;
-        set => _resolutionDate = value.HasValue ? value.Value.ToUniversalTime() : null;
+        get => this._resolutionDate;
+        set => this._resolutionDate = value.HasValue ? value.Value.ToUniversalTime() : null;
     }
 }

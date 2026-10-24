@@ -24,7 +24,7 @@ public sealed record JiraOptionsOverrides(
 public sealed record JiraOptionsLoadResult(JiraOptions Options, IReadOnlyList<string> Problems)
 {
     /// <summary>True when no problems were found.</summary>
-    public bool IsValid => Problems.Count == 0;
+    public bool IsValid => this.Problems.Count == 0;
 }
 
 /// <summary>
@@ -66,18 +66,26 @@ public static class JiraOptionsLoader
         if (boardId is not null)
         {
             if (int.TryParse(boardId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedBoardId))
+            {
                 options.BoardId = parsedBoardId;
+            }
             else
+            {
                 problems.Add(JiraSettingLocations.BoardId.Problem("must be a whole number", boardId));
+            }
         }
 
         var timeout = Resolve(overrides.TimeoutSeconds, JiraSettingLocations.TimeoutSeconds, getEnv, json);
         if (timeout is not null)
         {
             if (int.TryParse(timeout, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedTimeout))
+            {
                 options.TimeoutSeconds = parsedTimeout;
+            }
             else
+            {
                 problems.Add(JiraSettingLocations.TimeoutSeconds.Problem("must be a whole number", timeout));
+            }
         }
 
         problems.AddRange(JiraOptionsValidator.Validate(options));
@@ -101,20 +109,26 @@ public static class JiraOptionsLoader
     private static string? Resolve(string? cliValue, JiraSettingLocation location, Func<string, string?> getEnv, JsonElement? json)
     {
         if (cliValue is not null)
+        {
             return cliValue;
+        }
 
         foreach (var name in location.EnvVars)
         {
             var envValue = getEnv(name);
             if (!string.IsNullOrWhiteSpace(envValue))
+            {
                 return envValue;
+            }
         }
 
         if (json is { } root && root.TryGetProperty(location.JsonKey, out var element) && element.ValueKind != JsonValueKind.Null)
         {
             var jsonValue = element.ValueKind == JsonValueKind.String ? element.GetString() : element.GetRawText();
             if (!string.IsNullOrWhiteSpace(jsonValue))
+            {
                 return jsonValue;
+            }
         }
 
         return null;
@@ -123,7 +137,9 @@ public static class JiraOptionsLoader
     private static JsonElement? ParseAppSettings(string? text, List<string> problems)
     {
         if (string.IsNullOrWhiteSpace(text))
+        {
             return null;
+        }
 
         try
         {
