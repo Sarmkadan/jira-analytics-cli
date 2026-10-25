@@ -1228,6 +1228,67 @@ foreach (var entry in history)
 }
 ```
 
+## JsonFormatter
+
+`JsonFormatter` (namespace `JiraAnalyticsCli.Formatters`) formats analytics data as JSON using `System.Text.Json`. It is a standalone, generic formatter: the `export` command does not use it, so the file layout shown in [JSON Export](#json-export) comes from the export pipeline, not from this class. The constructor accepts an `ILogger<JsonFormatter>` and an optional `prettyPrint` flag (default `true`) that controls indentation in `Format` and `FormatFiltered`.
+
+Its public methods are:
+
+- `Format(object data)` - serializes any object to JSON. Null properties are omitted, and circular references are not followed (the repeated reference is written as `null`). Passing a string does not parse it: the result is a JSON string literal. Use `Prettify` to re-indent JSON text. Throws `ArgumentNullException` when `data` is null and `InvalidOperationException` when serialization fails.
+- `FormatWithMetadata(object data, string title, string version = "1.0.0")` - wraps `data` in an envelope with a `metadata` object (`title`, `version`, `generatedAt`, `generatedBy`) and a `data` property. `generatedAt` is the current UTC time, and `generatedBy` is always `jira-analytics-cli`. Throws `ArgumentNullException` when `data` is null, and `ArgumentException` when `title` or `version` is null or empty.
+- `FormatFiltered(object data, string[] includedFields)` - writes only the requested fields. Each entry is a dotted path such as `Name` or `Team.Lead`, and the path itself becomes the output key: `Team.Lead` is written as a flat key `"Team.Lead"`, not as a nested object. Paths that do not exist are skipped. Names are matched as serialized with default options, so C# property names are case-sensitive. Null values that are requested are kept as `null`, unlike `Format`. Throws `ArgumentNullException` when an argument is null and `InvalidOperationException` on failure, including when `data` does not serialize to a JSON object.
+- `Prettify(string json)` - re-indents a JSON string. The output is always indented, regardless of `prettyPrint`. Throws `ArgumentException` when `json` is null or empty and `InvalidOperationException` when it is not valid JSON.
+- `Validate(string json)` - returns `(bool IsValid, string[] Errors)`. Invalid JSON returns `false` and one error message of the form `JSON parsing error at line N: ...`. The line number is zero-based, as reported by `JsonException.LineNumber`. Malformed JSON does not throw. Null or empty input does throw `ArgumentException`.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Formatters;
+using Microsoft.Extensions.Logging.Abstractions;
+
+var formatter = new JsonFormatter(NullLogger<JsonFormatter>.Instance);
+var compact = new JsonFormatter(NullLogger<JsonFormatter>.Instance, prettyPrint: false);
+
+var sprint = new
+{
+    Name = "PROJ Sprint 41",
+    Velocity = 42.5,
+    Notes = (string?)null,
+    Team = new { Lead = "A", Size = 5 },
+};
+
+// Indented JSON; the null Notes property is omitted
+Console.WriteLine(formatter.Format(sprint));
+
+// Single-line JSON
+Console.WriteLine(compact.Format(sprint));
+// {"Name":"PROJ Sprint 41","Velocity":42.5,"Team":{"Lead":"A","Size":5}}
+
+// Wrap the data with generation metadata
+var report = formatter.FormatWithMetadata(sprint, "Sprint report");
+
+// Keep only selected fields; dotted paths become flat keys
+var filtered = formatter.FormatFiltered(sprint, new[] { "Name", "Team.Lead", "Missing" });
+Console.WriteLine(filtered);
+// {
+//   "Name": "PROJ Sprint 41",
+//   "Team.Lead": "A"
+// }
+
+// Re-indent existing JSON text
+Console.WriteLine(compact.Prettify("{\"a\":1,\"b\":[2]}"));
+
+// Validate JSON text
+var (isValid, errors) = formatter.Validate("{\"a\": }");
+if (!isValid)
+{
+    foreach (var error in errors)
+    {
+        Console.WriteLine(error);
+    }
+}
+```
+
 ## XmlFormatter
 
 `XmlFormatter` (namespace `JiraAnalyticsCli.Formatters`) formats analytics data as XML with proper structure and validation. It supports nested objects, dictionaries, and collections with customizable root element names. The constructor accepts an `ILogger<XmlFormatter>` and an optional `includeXmlDeclaration` flag (default `true`).
