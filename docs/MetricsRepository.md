@@ -1,177 +1,206 @@
 # MetricsRepository
 
-The `MetricsRepository` class provides asynchronous access to persisted sprint metrics and burndown data for the Jira Analytics CLI. It encapsulates all read and write operations against the underlying storage, allowing callers to retrieve, save, and clear metric collections without dealing with low‑level data‑access details.
+`MetricsRepository` is the in-memory implementation of `IMetricsRepository`. It keeps sprint metrics and burndown snapshots in two `ConcurrentDictionary` collections and exposes asynchronous read/write methods over them. It has no persistent storage: all data lives in the process and is lost when the process exits.
 
-## API
+- **Namespace:** `JiraAnalyticsCli.Repositories`
+- **Source:** `Repositories/MetricsRepository.cs`
+- **Interface:** `IMetricsRepository` (`Repositories/IMetricsRepository.cs`)
+- **Registration:** `ServiceFactory.cs` registers it as a singleton: `services.AddSingleton<IMetricsRepository, MetricsRepository>();`
 
-### MetricsRepository()
-Initializes a new instance of the repository. The constructor configures the storage connection based on the application’s settings; no parameters are required.
+## Storage layout
+
+| Field | Type | Key | Holds |
+|-------|------|-----|-------|
+| `_metrics` | `ConcurrentDictionary<string, List<SprintMetric>>` | `SprintMetric.SprintName` | Sprint metrics, grouped by sprint name |
+| `_burndownData` | `ConcurrentDictionary<int, List<BurndownSnapshot>>` | `BurndownSnapshot.SprintId` | Burndown snapshots, grouped by sprint ID |
+
+Because the metrics dictionary is keyed by sprint name, the `projectKey` parameters below are matched against `SprintName`. `SprintMetric` has no project property, so a project key only finds metrics whose sprint name equals that key. See [Notes](#notes).
+
+## Constructor
+
+### MetricsRepository(ILogger<MetricsRepository> logger)
+Creates an empty repository. The logger is used for debug, information, and error messages. There is no parameterless constructor.
+
+**Parameters:**
+- `logger` – Logger used for all diagnostic output.
+
+## Interface members
+
+These members are declared on `IMetricsRepository` and are the ones that consumers normally depend on.
 
 ### GetByProjectAsync
 ```csharp
-public async Task<List<SprintMetric>> GetByProjectAsync(string projectKey, CancellationToken cancellationToken = default)
+public async Task<List<SprintMetric>> GetByProjectAsync(string projectKey)
 ```
-**Purpose:** Returns all sprint metrics associated with the given project.  
-**Parameters:**  
-- `projectKey` – The identifier of the Jira project (e.g., "PROJ").  
-- `cancellationToken` – Optional token to cancel the operation.  
-**Return Value:** A list of `SprintMetric` objects; an empty list if no metrics exist for the project.  
-**Exceptions:**  
-- `ArgumentNullException` if `projectKey` is null.  
-- `OperationCanceledException` if the cancellation token is triggered.  
-- `IOException` or derived storage exceptions if the underlying data store cannot be accessed.
+**Purpose:** Returns all metrics stored under `projectKey`, ordered by `EndDate` descending (newest first).
+
+**Parameters:**
+- `projectKey` – Key looked up in the metrics dictionary (matched against `SprintName`).
+
+**Return value:** A new list. Empty if the key is not present.
+
+**Errors:** Exceptions are caught and logged. On error, an empty list is returned. No exception propagates to the caller.
 
 ### GetBySprintAsync
 ```csharp
-public async Task<List<SprintMetric>> GetBySprintAsync(int sprintId, CancellationToken cancellationToken = default)
+public async Task<List<SprintMetric>> GetBySprintAsync(int sprintId)
 ```
-**Purpose:** Retrieves all metrics recorded for a specific sprint.  
-**Parameters:**  
-- `sprintId` – The numeric ID of the sprint within Jira.  
-- `cancellationToken` – Optional cancellation token.  
-**Return Value:** List of `SprintMetric` entries for the sprint; empty list when none are found.  
-**Exceptions:**  
-- `ArgumentOutOfRangeException` if `sprintId` is less than or equal to zero.  
-- `OperationCanceledException` on token cancellation.  
-- `IOException` for storage‑related failures.
+**Purpose:** Returns every metric whose `SprintId` equals `sprintId`, across all project keys. The method flattens all stored metrics and filters them, so the order is the storage order.
+
+**Parameters:**
+- `sprintId` – The Jira sprint ID.
+
+**Return value:** A new list. Empty if no metric matches.
+
+**Errors:** Caught and logged; an empty list is returned.
 
 ### GetBurndownDataAsync
 ```csharp
-public async Task<List<BurndownSnapshot>> GetBurndownDataAsync(int sprintId, CancellationToken cancellationToken = default)
+public async Task<List<BurndownSnapshot>> GetBurndownDataAsync(int sprintId)
 ```
-**Purpose:** Obtains the chronological burndown snapshots for a sprint.  
-**Parameters:**  
-- `sprintId` – The sprint identifier.  
-- `cancellationToken` – Optional cancellation token.  
-**Return Value:** Ordered list of `BurndownSnapshot` objects; empty list if no snapshots exist.  
-**Exceptions:**  
-- Same as `GetBySprintAsync` for invalid `sprintId` or cancellation.  
-- `IOException` on storage access errors.
+**Purpose:** Returns the burndown snapshots stored for a sprint, ordered by `Timestamp` ascending (oldest first).
+
+**Parameters:**
+- `sprintId` – The Jira sprint ID.
+
+**Return value:** A new list. Empty if the sprint has no snapshots.
+
+**Errors:** Caught and logged; an empty list is returned.
 
 ### GetLatestForProjectAsync
 ```csharp
-public async Task<SprintMetric?> GetLatestForProjectAsync(string projectKey, CancellationToken cancellationToken = default)
+public async Task<SprintMetric?> GetLatestForProjectAsync(string projectKey)
 ```
-**Purpose:** Returns the most recent metric entry for a project, or null if none exist.  
-**Parameters:**  
-- `projectKey` – Project identifier.  
-- `cancellationToken` – Optional cancellation token.  
-**Return Value:** The latest `SprintMetric` or null.  
-**Exceptions:**  
-- `ArgumentNullException` for a null `projectKey`.  
-- `OperationCanceledException` on cancellation.  
-- `IOException` for storage issues.
+**Purpose:** Returns the metric with the greatest `EndDate` stored under `projectKey`.
+
+**Parameters:**
+- `projectKey` – Key looked up in the metrics dictionary (matched against `SprintName`).
+
+**Return value:** The newest `SprintMetric`, or `null` if none is stored.
+
+**Errors:** Caught and logged; `null` is returned.
 
 ### SaveMetricAsync
 ```csharp
-public async Task SaveMetricAsync(SprintMetric metric, CancellationToken cancellationToken = default)
+public async Task SaveMetricAsync(SprintMetric metric)
 ```
-**Purpose:** Persists a single sprint metric.  
-**Parameters:**  
-- `metric` – The `SprintMetric` instance to store.  
-- `cancellationToken` – Optional cancellation token.  
-**Return Value:** Completes when the metric has been saved.  
-**Exceptions:**  
-- `ArgumentNullException` if `metric` is null.  
-- `OperationCanceledException` on cancellation.  
-- `IOException` if the write operation fails.
+**Purpose:** Validates a metric and appends it to the list stored under `metric.SprintName`. The list is created if it does not exist. No deduplication is performed, so saving the same metric twice stores it twice.
+
+**Parameters:**
+- `metric` – The metric to store.
+
+**Errors:**
+- `ArgumentNullException` if `metric` is `null`.
+- `ArgumentException` from `SprintMetric.Validate()` if the metric is invalid (for example, a non-positive sprint ID, an empty sprint name, an end date not after the start date, negative planned points, or completed points exceeding planned points).
+
+Errors are logged and then rethrown. Because the method is `async`, these exceptions are delivered through the returned `Task`.
 
 ### SaveBurndownAsync
 ```csharp
-public async Task SaveBurndownAsync(BurndownSnapshot snapshot, CancellationToken cancellationToken = default)
+public async Task SaveBurndownAsync(BurndownSnapshot snapshot)
 ```
-**Purpose:** Stores a single burndown snapshot.  
-**Parameters:**  
-- `snapshot` – The `BurndownSnapshot` to persist.  
-- `cancellationToken` – Optional cancellation token.  
-**Return Value:** Completes when the snapshot is saved.  
-**Exceptions:**  
-- `ArgumentNullException` for a null `snapshot`.  
-- `OperationCanceledException` on cancellation.  
-- `IOException` for storage errors.
+**Purpose:** Validates a burndown snapshot and appends it to the list stored under `snapshot.SprintId`.
+
+**Parameters:**
+- `snapshot` – The snapshot to store.
+
+**Errors:**
+- `ArgumentNullException` if `snapshot` is `null`.
+- `ArgumentException` from `BurndownSnapshot.Validate()` if the snapshot is invalid (for example, a non-positive sprint ID, a missing timestamp, negative values, a total of zero or less, or completed plus remaining points not equal to the total).
+
+Errors are logged and then rethrown.
 
 ### SaveBurndownRangeAsync
 ```csharp
-public async Task SaveBurndownRangeAsync(IEnumerable<BurndownSnapshot> snapshots, CancellationToken cancellationToken = default)
+public async Task SaveBurndownRangeAsync(List<BurndownSnapshot> snapshots)
 ```
-**Purpose:** Persists a collection of burndown snapshots in a single operation.  
-**Parameters:**  
-- `snapshots` – Sequence of `BurndownSnapshot` objects to store.  
-- `cancellationToken` – Optional cancellation token.  
-**Return Value:** Completes when all snapshots have been saved.  
-**Exceptions:**  
-- `ArgumentNullException` if `snapshots` is null.  
-- `OperationCanceledException` on cancellation.  
-- `IOException` if any write fails; partial writes may have occurred before the exception.
+**Purpose:** Validates and stores several snapshots. The input is grouped by `SprintId`, and each group is appended to its sprint's list.
+
+**Parameters:**
+- `snapshots` – The snapshots to store. Must contain at least one element.
+
+**Errors:**
+- `ArgumentException` if `snapshots` is `null` or empty.
+- `ArgumentException` from `BurndownSnapshot.Validate()` if any snapshot is invalid.
+
+Validation runs group by group. Groups that were processed before the failing one are already stored when the exception is thrown, so a failed call can leave the repository partially updated.
+
+On success, an information message records the number of snapshots saved.
+
+## Class-only members
+
+These members are public on `MetricsRepository` but are not declared on `IMetricsRepository`. Code that depends on the interface cannot call them without a cast.
 
 ### GetMetricCount
 ```csharp
-public int GetMetricCount(string projectKey)
+public int GetMetricCount()
 ```
-**Purpose:** Returns the total number of stored metrics for a project.  
-**Parameters:**  
-- `projectKey` – Project identifier.  
-**Return Value:** Integer count of metrics; zero if none exist.  
-**Exceptions:**  
-- `ArgumentNullException` for a null `projectKey`.  
-- `IOException` on storage read failure.
+**Purpose:** Returns the total number of stored `SprintMetric` entries across all project keys.
+
+**Return value:** The count, or `0` if nothing is stored.
 
 ### GetBurndownCount
 ```csharp
-public int GetBurndownCount(int sprintId)
+public int GetBurndownCount()
 ```
-**Purpose:** Returns the number of burndown snapshots stored for a sprint.  
-**Parameters:**  
-- `sprintId` – Sprint identifier.  
-**Return Value:** Integer count of snapshots; zero if none exist.  
-**Exceptions:**  
-- `ArgumentOutOfRangeException` for non‑positive `sprintId`.  
-- `IOException` on storage read failure.
+**Purpose:** Returns the total number of stored `BurndownSnapshot` entries across all sprints.
 
-### Clear()
+**Return value:** The count, or `0` if nothing is stored.
+
+### Clear
 ```csharp
 public void Clear()
 ```
-**Purpose:** Removes all persisted metrics and burndown data from the repository.  
-**Parameters:** None.  
-**Return Value:** None.  
-**Exceptions:**  
-- `IOException` if the underlying store cannot be cleared.
+**Purpose:** Removes all metrics and burndown snapshots and logs an information message.
+
+**Notes:** This removes all data, not just one project or sprint.
+
+## Validation helpers
+
+`Repositories/MetricsRepositoryValidation.cs` provides extension methods on `MetricsRepository` that check the data it holds:
+
+| Method | Returns | Behavior |
+|--------|---------|----------|
+| `Validate(this MetricsRepository)` | `IReadOnlyList<string>` | Re-runs `Validate()` on every stored metric and snapshot and returns one message per failure. An empty list means the data is valid. |
+| `IsValid(this MetricsRepository)` | `bool` | `true` when `Validate()` returns no problems. |
+| `EnsureValid(this MetricsRepository)` | `void` | Throws `ArgumentException` listing all problems if any exist. |
+
+All three throw `ArgumentNullException` when the repository argument is `null`.
+
+These helpers read the private `_metrics` and `_burndownData` fields through reflection. If those field names change, the helpers silently see no data and report the repository as valid.
 
 ## Usage
 
-### Example 1: Retrieving and displaying the latest metric for a project
-```csharp
-using var repo = new MetricsRepository();
+Inject the interface rather than constructing the class directly. The DI container supplies the singleton, so all callers share the same data.
 
-string projectKey = "ABC";
-var latest = await repo.GetLatestForProjectAsync(projectKey);
-if (latest is not null)
+```csharp
+public class SprintReportService(IMetricsRepository metrics)
 {
-    Console.WriteLine($"Latest metric for {projectKey}: {latest.CompletedStoryPoints} points completed.");
-}
-else
-{
-    Console.WriteLine($"No metrics found for project {projectKey}.");
+    public async Task<string> DescribeLatestAsync(string projectKey)
+    {
+        var latest = await metrics.GetLatestForProjectAsync(projectKey);
+        return latest is null
+            ? $"No metrics stored for {projectKey}."
+            : $"{latest.SprintName}: {latest.CompletedStoryPoints} points completed.";
+    }
 }
 ```
 
-### Example 2: Saving a batch of burndown snapshots for a sprint
+Saving a batch of snapshots:
+
 ```csharp
-using var repo = new MetricsRepository();
+var snapshots = new List<BurndownSnapshot> { /* captured from Jira */ };
+await metrics.SaveBurndownRangeAsync(snapshots);
 
-int sprintId = 42;
-var snapshots = GetBurndownSnapshotsFromSource(); // hypothetical helper
-await repo.SaveBurndownRangeAsync(snapshots);
-
-int count = repo.GetBurndownCount(sprintId);
-Console.WriteLine($"Saved {count} burndown snapshots for sprint {sprintId}.");
+var stored = await metrics.GetBurndownDataAsync(sprintId);
 ```
 
 ## Notes
-- The repository does not enforce any locking; concurrent calls to mutating methods (`SaveMetricAsync`, `SaveBurndownAsync`, `SaveBurndownRangeAsync`, `Clear`) may result in race conditions. Callers should synchronize access if multiple threads share the same instance.  
-- Read‑only methods (`GetByProjectAsync`, `GetBySprintAsync`, `GetBurndownDataAsync`, `GetLatestForProjectAsync`, `GetMetricCount`, `GetBurndownCount`) are safe to invoke concurrently with each other, but not concurrently with mutating operations on the same data without external synchronization.  
-- All asynchronous methods accept a `CancellationToken`; passing a token that is already cancelled will cause the method to throw `OperationCanceledException` before performing any I/O.  
-- The `Clear` method removes **all** data indiscriminately; use it only in test scenarios or when intentional data wiping is required.  
-- If the underlying storage throws an `IOException`, the repository does not retry automatically; callers may implement retry logic based on their reliability requirements.  
-- The `GetMetricCount` and `GetBurndownCount` methods return instantaneous counts; rapid successive calls may observe different values if other threads are modifying the repository concurrently.
+
+- **Project keys are sprint names.** `GetByProjectAsync` and `GetLatestForProjectAsync` look up the dictionary by `SprintName`, not by a Jira project key. Callers must store metrics under the key they later query with, or those queries return nothing.
+- **No cancellation support.** None of the methods accept a `CancellationToken`.
+- **Errors are mostly swallowed on reads.** The read methods catch exceptions, log them, and return an empty result or `null`. Write methods log and rethrow.
+- **No duplicate checks.** Saving the same metric or snapshot again adds another copy.
+- **Thread safety.** The dictionaries are concurrent, but the lists stored in them are plain `List<T>`. Appends through `AddOrUpdate` are not synchronized with reads of the same list. Concurrent writes to one sprint or project can race, and reads can observe a list while it is being modified. Callers that share an instance across threads should serialize access.
+- **Data is not persisted.** Metrics and snapshots stored in one run are not available in the next.
+- **Redundant `finally` blocks.** Each method has `finally { await Task.CompletedTask; }`, which does nothing useful. It is kept as-is here, and no behavior depends on it.
