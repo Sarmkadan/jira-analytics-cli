@@ -162,4 +162,32 @@ public class AppConfigurationProviderTests
 
         options.ToString().Should().NotContain(ValidToken).And.Contain("<redacted>");
     }
+
+    // -------------------------------------------------------------------------
+    // Constructor arguments must not be null
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        var act = () => new AppConfigurationProvider(null!, ValidOptions());
+
+        act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("logger");
+    }
+
+    [Fact]
+    public void Constructor_NullJiraOptions_ThrowsArgumentNullException()
+    {
+        var act = () => new AppConfigurationProvider(NullLogger<AppConfigurationProvider>.Instance, null!);
+
+        act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("jiraOptions");
+    }
+
+    [Fact]
+    public void Constructor_NullEnvLookup_ThrowsArgumentNullException()
+    {
+        var act = () => new AppConfigurationProvider(NullLogger<AppConfigurationProvider>.Instance, ValidOptions(), null!);
+
+        act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("getEnv");
+    }
 }
