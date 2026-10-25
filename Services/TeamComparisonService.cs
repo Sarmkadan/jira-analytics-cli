@@ -15,6 +15,25 @@ namespace JiraAnalyticsCli.Services;
 /// </summary>
 public class TeamComparisonService : ITeamComparisonService
 {
+    private const int DefaultSprintCount = 5;
+    private const int MetricDecimalPlaces = 2;
+    private const double RatioToPercent = 100d;
+    private const string OneDecimalFormat = "F1";
+    private const string GeneratedAtFormat = "yyyy-MM-dd HH:mm:ss";
+    private const string NotAvailableText = "N/A";
+    private const string UnknownHealthText = "Unknown";
+    private const string NoTeamDataText = "No team data available.";
+    private const string NoTeamDataMarkdownRow = "| *No team data available* | | | | | | |";
+    private const string MarkdownHeaderRow = "| Project | Avg Vel | Completion% | Pts Total | Defects | Cycle(d) | Health |";
+    private const string MarkdownDividerRow = "|---|---|---|---|---|---|---|";
+    private const char TableSeparatorChar = '─';
+    private const int TableSeparatorWidth = 80;
+    private const string FastestAwardIcon = "⚡";
+    private const string HighestQualityAwardIcon = "✅";
+    private const string MostConsistentAwardIcon = "🎯";
+    private const string AwardPrefix = "  ";
+    private const string AwardSeparator = " ";
+
     private readonly IAnalyticsService _analyticsService;
     private readonly ILogger<TeamComparisonService> _logger;
 
@@ -28,7 +47,7 @@ public class TeamComparisonService : ITeamComparisonService
     /// <inheritdoc/>
     public async Task<TeamComparisonReport> CompareTeamsAsync(
         IEnumerable<string> projectKeys,
-        int sprintCount = 5,
+        int sprintCount = DefaultSprintCount,
         CancellationToken cancellationToken = default)
     {
         var keys = (projectKeys ?? throw new ArgumentNullException(nameof(projectKeys)))
@@ -85,12 +104,12 @@ public class TeamComparisonService : ITeamComparisonService
         sb.AppendLine("╔════════════════════════════════════════════════════════════════╗");
         sb.AppendLine("║                  TEAM COMPARISON REPORT                       ║");
         sb.AppendLine("╚════════════════════════════════════════════════════════════════╝");
-        sb.AppendLine($"Generated: {report.GeneratedAt:yyyy-MM-dd HH:mm:ss} UTC");
+        sb.AppendLine($"Generated: {report.GeneratedAt.ToString(GeneratedAtFormat)} UTC");
         sb.AppendLine();
 
         if (!report.Teams.Any())
         {
-            sb.AppendLine("No team data available.");
+            sb.AppendLine(NoTeamDataText);
             return sb.ToString();
         }
 
@@ -105,26 +124,26 @@ public class TeamComparisonService : ITeamComparisonService
         sb.AppendLine(
             $"{"Project".PadRight(projW)} {"Avg Vel".PadRight(velW)} {"Completion%".PadRight(rateW)} " +
             $"{"Pts Total".PadRight(ptsW)} {"Defects".PadRight(defW)} {"Cycle(d)".PadRight(cycleW)} Health");
-        sb.AppendLine(new string('─', 80));
+        sb.AppendLine(new string(TableSeparatorChar, TableSeparatorWidth));
 
         foreach (var team in report.Teams.OrderByDescending(t => t.AverageVelocity))
         {
             var awards = BuildAwardIcons(team, report);
             sb.AppendLine(
                 $"{team.ProjectKey.PadRight(projW)} " +
-                $"{team.AverageVelocity.ToString("F1", CultureInfo.InvariantCulture).PadRight(velW)} " +
-                $"{team.AvgCompletionRate.ToString("F1", CultureInfo.InvariantCulture).PadRight(rateW)} " +
+                $"{team.AverageVelocity.ToString(OneDecimalFormat, CultureInfo.InvariantCulture).PadRight(velW)} " +
+                $"{team.AvgCompletionRate.ToString(OneDecimalFormat, CultureInfo.InvariantCulture).PadRight(rateW)} " +
                 $"{team.TotalPointsDelivered.ToString(CultureInfo.InvariantCulture).PadRight(ptsW)} " +
                 $"{team.TotalDefects.ToString(CultureInfo.InvariantCulture).PadRight(defW)} " +
-                $"{team.AvgCycleTime.ToString("F1", CultureInfo.InvariantCulture).PadRight(cycleW)} " +
+                $"{team.AvgCycleTime.ToString(OneDecimalFormat, CultureInfo.InvariantCulture).PadRight(cycleW)} " +
                 $"{team.OverallHealth}{awards}");
         }
 
         sb.AppendLine();
         sb.AppendLine("🏆 Rankings:");
-        sb.AppendLine($"  Fastest team         : {report.FastestTeam ?? "N/A"}");
-        sb.AppendLine($"  Highest quality      : {report.HighestQualityTeam ?? "N/A"}");
-        sb.AppendLine($"  Most consistent      : {report.MostConsistentTeam ?? "N/A"}");
+        sb.AppendLine($"  Fastest team         : {report.FastestTeam ?? NotAvailableText}");
+        sb.AppendLine($"  Highest quality      : {report.HighestQualityTeam ?? NotAvailableText}");
+        sb.AppendLine($"  Most consistent      : {report.MostConsistentTeam ?? NotAvailableText}");
 
         return sb.ToString();
     }
@@ -140,12 +159,12 @@ public class TeamComparisonService : ITeamComparisonService
         var sb = new StringBuilder();
 
         // Header
-        sb.AppendLine("| Project | Avg Vel | Completion% | Pts Total | Defects | Cycle(d) | Health |");
-        sb.AppendLine("|---|---|---|---|---|---|---|");
+        sb.AppendLine(MarkdownHeaderRow);
+        sb.AppendLine(MarkdownDividerRow);
 
         if (!report.Teams.Any())
         {
-            sb.AppendLine("| *No team data available* | | | | | | |");
+            sb.AppendLine(NoTeamDataMarkdownRow);
             return sb.ToString();
         }
 
@@ -154,11 +173,11 @@ public class TeamComparisonService : ITeamComparisonService
             var awards = BuildAwardIcons(team, report);
             sb.AppendLine(
                 $"| {team.ProjectKey} " +
-                $"| {team.AverageVelocity.ToString("F1", CultureInfo.InvariantCulture)} " +
-                $"| {team.AvgCompletionRate.ToString("F1", CultureInfo.InvariantCulture)} " +
+                $"| {team.AverageVelocity.ToString(OneDecimalFormat, CultureInfo.InvariantCulture)} " +
+                $"| {team.AvgCompletionRate.ToString(OneDecimalFormat, CultureInfo.InvariantCulture)} " +
                 $"| {team.TotalPointsDelivered.ToString(CultureInfo.InvariantCulture)} " +
                 $"| {team.TotalDefects.ToString(CultureInfo.InvariantCulture)} " +
-                $"| {team.AvgCycleTime.ToString("F1", CultureInfo.InvariantCulture)} " +
+                $"| {team.AvgCycleTime.ToString(OneDecimalFormat, CultureInfo.InvariantCulture)} " +
                 $"| {team.OverallHealth}{awards} |");
         }
 
@@ -183,13 +202,13 @@ public class TeamComparisonService : ITeamComparisonService
                 return new TeamProjectSnapshot
                 {
                     ProjectKey    = projectKey,
-                    OverallHealth = "Unknown"
+                    OverallHealth = UnknownHealthText
                 };
             }
 
             var totalIssues    = analysis.Metrics.Sum(m => m.TotalIssueCount);
             var totalDefects   = analysis.Metrics.Sum(m => m.DefectsCount);
-            var defectRate     = totalIssues > 0 ? (totalDefects / (double)totalIssues) * 100 : 0d;
+            var defectRate     = totalIssues > 0 ? (totalDefects / (double)totalIssues) * RatioToPercent : 0d;
             var avgCompletionRate = analysis.Metrics.Average(m => m.GetCompletionRate());
             var avgCycleTime   = analysis.Metrics.Any(m => m.AverageCycleTime > 0)
                 ? analysis.Metrics.Where(m => m.AverageCycleTime > 0).Average(m => m.AverageCycleTime)
@@ -198,15 +217,15 @@ public class TeamComparisonService : ITeamComparisonService
             return new TeamProjectSnapshot
             {
                 ProjectKey           = projectKey,
-                AverageVelocity      = Math.Round(analysis.AverageVelocity, 2),
-                AvgCompletionRate    = Math.Round(avgCompletionRate, 2),
+                AverageVelocity      = Math.Round(analysis.AverageVelocity, MetricDecimalPlaces),
+                AvgCompletionRate    = Math.Round(avgCompletionRate, MetricDecimalPlaces),
                 TotalPointsDelivered = analysis.Metrics.Sum(m => m.CompletedStoryPoints),
                 TotalIssuesCompleted = analysis.Metrics.Sum(m => m.CompletedIssueCount),
                 TotalDefects         = totalDefects,
-                DefectRate           = Math.Round(defectRate, 2),
-                AvgCycleTime         = Math.Round(avgCycleTime, 2),
+                DefectRate           = Math.Round(defectRate, MetricDecimalPlaces),
+                AvgCycleTime         = Math.Round(avgCycleTime, MetricDecimalPlaces),
                 OverallHealth        = analysis.OverallHealth,
-                VelocityTrend        = Math.Round(analysis.TrendPercentage, 2),
+                VelocityTrend        = Math.Round(analysis.TrendPercentage, MetricDecimalPlaces),
                 SprintCount          = analysis.Metrics.Count
             };
         }
@@ -222,19 +241,19 @@ public class TeamComparisonService : ITeamComparisonService
         var icons = new List<string>();
         if (team.ProjectKey == report.FastestTeam)
         {
-            icons.Add("⚡");
+            icons.Add(FastestAwardIcon);
         }
 
         if (team.ProjectKey == report.HighestQualityTeam)
         {
-            icons.Add("✅");
+            icons.Add(HighestQualityAwardIcon);
         }
 
         if (team.ProjectKey == report.MostConsistentTeam)
         {
-            icons.Add("🎯");
+            icons.Add(MostConsistentAwardIcon);
         }
 
-        return icons.Count > 0 ? "  " + string.Join(" ", icons) : string.Empty;
+        return icons.Count > 0 ? AwardPrefix + string.Join(AwardSeparator, icons) : string.Empty;
     }
 }
