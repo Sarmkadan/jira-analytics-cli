@@ -96,4 +96,26 @@ public static class IssueRepositoryExtensions
             .Take(count)
             .ToList();
     }
+
+    /// <summary>
+    /// Gets all issues whose status matches the specified status name (case-insensitive).
+    /// </summary>
+    /// <param name="repository">The issue repository instance.</param>
+    /// <param name="projectKey">The project key to filter by.</param>
+    /// <param name="status">The status name to filter by (e.g., "In Progress").</param>
+    /// <returns>A list of issues with the specified status.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="projectKey"/> or <paramref name="status"/> is null or empty.</exception>
+    public static async ValueTask<List<JiraIssue>> GetByStatusAsync(this IssueRepository repository, string projectKey, string status)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+
+        ArgumentException.ThrowIfNullOrEmpty(projectKey);
+        ArgumentException.ThrowIfNullOrEmpty(status);
+
+        var allIssues = await repository.GetByProjectAsync(projectKey);
+        return allIssues
+            .Where(issue => string.Equals(issue.Status, status, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
 }
