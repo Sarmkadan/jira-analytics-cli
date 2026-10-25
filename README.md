@@ -1278,6 +1278,62 @@ var values = formatter.SelectValues(xml, "//Velocity");
 Console.WriteLine($"Velocity: {values.FirstOrDefault()}"); // Velocity: 42.5
 ```
 
+## InMemoryCache
+
+`InMemoryCache` (namespace `JiraAnalyticsCli.Caching`) is a thread-safe, process-local cache for analytics and API responses. Values are serialized to JSON when stored and deserialized on every `Get`, so callers always receive a fresh copy and never a reference to the cached instance. Each entry carries a `CachePolicy` that decides when it expires. The constructor accepts an `ILogger<InMemoryCache>`; pass `NullLogger<InMemoryCache>.Instance` when logging is not needed.
+
+Expiration is evaluated lazily: an expired entry is removed the next time it is read, checked, or swept by `CleanupExpired()`. An entry is treated as expired when any of these hold:
+
+- its `AbsoluteExpiration` has passed since creation,
+- its `SlidingExpiration` has passed since the last successful `Get` (each hit refreshes the window),
+- its `Condition` delegate returns `false`.
+
+`MaxSize` on `CachePolicy` is stored but not enforced by `InMemoryCache`; the cache does not cap the number or total size of entries.
+
+Its public methods are:
+
+- `Set<T>(key, value, policy)` - serializes `value` and stores it under `key`, overwriting any existing entry. Throws `ArgumentException` when `key` is null or empty and `ArgumentNullException` when `value` or `policy` is null.
+- `Get<T>(key, defaultValue = default)` - returns the deserialized value, or `defaultValue` when the key is missing, expired, or cannot be deserialized into `T` (a deserialization failure also evicts the entry and logs an error).
+- `Contains(key)` - returns `true` when the key exists and has not expired.
+- `Remove(key)` - removes a single entry if present.
+- `RemoveByPattern(pattern)` - removes every entry whose key matches a wildcard pattern (`*` matches any run of characters, `?` matches one character) and returns the number removed.
+- `Clear()` - removes all entries.
+- `CleanupExpired()` - removes all expired entries and returns how many were removed. Call it periodically from a background task if memory reclamation matters; otherwise expired entries are removed only when they are next accessed.
+- `GetStatistics()` - returns a `CacheStatistics` record with `Hits`, `Misses`, `Evictions`, `EntryCount`, and a computed `HitRate` (0 when no lookups have occurred).
+
+Statistics count a read of an expired entry as both an eviction and a miss. `Remove`, `RemoveByPattern`, and `Clear` do not increment the eviction counter.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Caching;
+using Microsoft.Extensions.Logging.Abstractions;
+using System;
+
+// Example type: public record SprintSummary(int SprintId, double Velocity);
+
+var cache = new InMemoryCache(NullLogger<InMemoryCache>.Instance);
+
+// Cache a sprint summary for 10 minutes, refreshed on each read
+var policy = CachePolicy.WithSlidingExpiration("sprint:123", TimeSpan.FromMinutes(10));
+cache.Set("sprint:123", new SprintSummary(123, 42.5), policy);
+
+// Read it back; a miss returns the supplied default
+var summary = cache.Get<SprintSummary>("sprint:123");
+if (summary is null)
+{
+    // Recompute and store again
+}
+
+// Remove every cached sprint entry at once
+var removed = cache.RemoveByPattern("sprint:*");
+Console.WriteLine($"Removed {removed} entries");
+
+// Inspect cache effectiveness
+var stats = cache.GetStatistics();
+Console.WriteLine($"Hit rate: {stats.HitRate:P0} ({stats.Hits} hits, {stats.Misses} misses)");
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
