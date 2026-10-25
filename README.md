@@ -1752,6 +1752,56 @@ var network = new JiraApiException("Request timed out", new TimeoutException());
 Console.WriteLine(network.GetErrorSummary()); // Jira API error with no status code
 ```
 
+## ConfigurationException
+
+`ConfigurationException` (namespace `JiraAnalyticsCli.Exceptions`) derives from `Exception`. It reports a configuration setting that cannot be used. Its `PropertyName` property names the setting, so a caller can tell the user which value to fix.
+
+- `string? PropertyName` - the environment variable name for the failing setting, or `null` when none was given.
+
+Constructors:
+
+- `ConfigurationException(string message)`
+- `ConfigurationException(string message, string propertyName)`
+- `ConfigurationException(string message, Exception innerException)`
+
+### When it is thrown
+
+The only code path that throws it is `AppConfigurationProvider`, while it reads the integer environment variables listed in [AppConfigurationProvider](#appconfigurationprovider). It is thrown when a variable is set to a value that is not a whole number, or is outside its allowed range. `PropertyName` is set to the variable name, and the message does not include the value.
+
+The provider does not catch it, so it propagates out of `LoadConfiguration()`. `ServiceFactory` resolves `ICliConfig` through that method, so the CLI fails at startup with this exception.
+
+It is not thrown for these cases:
+
+- Problems in `appsettings.json`. Invalid JSON is logged as a warning, and wrongly typed values are skipped.
+- An empty API token, an empty or malformed base URL, or a non-positive number. `CliConfig.Validate()` throws `InvalidOperationException` for these.
+
+### Extension methods
+
+These are in `ConfigurationExceptionExtensions`. Each one throws `ArgumentNullException` when the exception is null.
+
+- `IsMissingConfiguration()` - `true` when `PropertyName` is set and the message contains both "missing" and "required".
+- `IsInvalidConfiguration()` - `true` when `PropertyName` is set and the message contains "invalid".
+- `WithContext(string additionalPropertyName, object? additionalPropertyValue)` - returns a new exception. Its message gets an `(Additional context: ...)` suffix when `PropertyName` is set. The new exception keeps `PropertyName`, or uses `additionalPropertyName` when `PropertyName` is `null`.
+- `WithValueContext(object? propertyValue)` - returns a new exception with a `(Property: ..., Value: ...)` suffix when `PropertyName` is set. The original exception is stored as the inner exception. The new exception's `PropertyName` is `null`, so read the name from the inner exception. The value appears in the message, so do not pass credentials to it.
+
+The message from the provider has neither "missing required" nor "invalid", so both `Is...` checks return `false` for exceptions it throws today. Match on `PropertyName` instead.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Exceptions;
+
+var error = new ConfigurationException(
+    "JIRA_API_MAX_PAGES must be a whole number from 1 to 1000. Fix the environment variable and run the command again.",
+    "JIRA_API_MAX_PAGES");
+
+Console.WriteLine(error.PropertyName);            // JIRA_API_MAX_PAGES
+Console.WriteLine(error.IsInvalidConfiguration()); // False (the message has no "invalid")
+
+var noName = new ConfigurationException("Configuration is incomplete");
+Console.WriteLine(noName.PropertyName is null);   // True
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
