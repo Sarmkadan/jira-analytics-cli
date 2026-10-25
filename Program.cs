@@ -12,6 +12,7 @@ using JiraAnalyticsCli.Services;
 using JiraAnalyticsCli.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
 namespace JiraAnalyticsCli;
 
 internal class Program
@@ -77,7 +78,6 @@ internal class Program
             return 1;
         }
     }
-
 
     /// <summary>Root flag that runs the configuration checks and exits.</summary>
     private const string CheckConfigFlag = "--check-config";
@@ -264,108 +264,107 @@ internal class Program
             }
         }, exportProjectOpt, exportFormatOpt, exportOutputOpt, exportOutputDirOpt);
 
-    // CSV export command
-    var csvExportCommand = new Command("export-csv", "Export sprint metrics to CSV format");
-    var csvExportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
-    var csvExportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output CSV file path") { IsRequired = true };
-    ValidateOutputFile(csvExportOutputOpt);
-    csvExportCommand.AddOption(csvExportProjectOpt);
-    csvExportCommand.AddOption(csvExportOutputOpt);
+        // CSV export command
+        var csvExportCommand = new Command("export-csv", "Export sprint metrics to CSV format");
+        var csvExportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
+        var csvExportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output CSV file path") { IsRequired = true };
+        ValidateOutputFile(csvExportOutputOpt);
+        csvExportCommand.AddOption(csvExportProjectOpt);
+        csvExportCommand.AddOption(csvExportOutputOpt);
 
-    csvExportCommand.SetHandler(async (project, output) =>
-    {
-        var analyticsService = serviceProvider.GetRequiredService<IAnalyticsService>();
-        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-
-        try
+        csvExportCommand.SetHandler(async (project, output) =>
         {
-            logger.LogInformation("Exporting sprint metrics for project {Project} to CSV at {Output}", project, output);
-            var analysis = await analyticsService.AnalyzeSprints(project, 5);
-            var csvService = serviceProvider.GetRequiredService<ICsvExportService>();
-            await csvService.ExportSprintMetrics(analysis.Metrics, output);
-            logger.LogInformation("Sprint metrics exported successfully to {Output}", output);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "CSV export command failed");
-            throw;
-        }
-    }, csvExportProjectOpt, csvExportOutputOpt);
-
-    // Team metrics CSV export command
-    var teamCsvExportCommand = new Command("export-team-csv", "Export team metrics to CSV format");
-    var teamCsvExportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
-    var teamCsvExportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output CSV file path") { IsRequired = true };
-    ValidateOutputFile(teamCsvExportOutputOpt);
-    teamCsvExportCommand.AddOption(teamCsvExportProjectOpt);
-    teamCsvExportCommand.AddOption(teamCsvExportOutputOpt);
-
-    teamCsvExportCommand.SetHandler(async (project, output) =>
-    {
-        var analyticsService = serviceProvider.GetRequiredService<IAnalyticsService>();
-        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-
-        try
-        {
-            logger.LogInformation("Exporting team metrics for project {Project} to CSV at {Output}", project, output);
-            var teamAnalysis = await analyticsService.AnalyzeTeam(project);
-            var csvService = serviceProvider.GetRequiredService<ICsvExportService>();
-            await csvService.ExportTeamMetrics(teamAnalysis.WorkloadDistribution, output);
-            logger.LogInformation("Team metrics exported successfully to {Output}", output);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Team CSV export command failed");
-            throw;
-        }
-    }, teamCsvExportProjectOpt, teamCsvExportOutputOpt);
-
-
-        // Burndown command
-        var burndownCommand = new Command("burndown", "Generate burndown chart for sprint");
-        var burndownProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key");
-        var burndownSprintIdOpt = new Option<int>(new[] { "--sprint-id" }, "Sprint ID");
-        var burndownOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output image path");
-        var burndownOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save reports to (created if it does not exist)");
-        ValidateOutputFile(burndownOutputOpt);
-        ValidateOutputDirectory(burndownOutputDirOpt);
-        burndownCommand.AddOption(burndownProjectOpt);
-        burndownCommand.AddOption(burndownSprintIdOpt);
-        burndownCommand.AddOption(burndownOutputOpt);
-        burndownCommand.AddOption(burndownOutputDirOpt);
-
-        burndownCommand.SetHandler(async (project, sprintId, output, outputDir) =>
-        {
-            var reportService = serviceProvider.GetRequiredService<IReportService>();
+            var analyticsService = serviceProvider.GetRequiredService<IAnalyticsService>();
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
             try
             {
-                var resolvedOutput = ResolveOutputPath(output, outputDir, "burndown.png");
-                logger.LogInformation("Generating burndown chart for sprint {SprintId}", sprintId);
-                await reportService.GenerateBurndownChart(project, sprintId, resolvedOutput);
-                logger.LogInformation("Burndown chart saved to {Output}", resolvedOutput);
+                logger.LogInformation("Exporting sprint metrics for project {Project} to CSV at {Output}", project, output);
+                var analysis = await analyticsService.AnalyzeSprints(project, 5);
+                var csvService = serviceProvider.GetRequiredService<ICsvExportService>();
+                await csvService.ExportSprintMetrics(analysis.Metrics, output);
+                logger.LogInformation("Sprint metrics exported successfully to {Output}", output);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Burndown command failed");
+                logger.LogError(ex, "CSV export command failed");
                 throw;
             }
-        }, burndownProjectOpt, burndownSprintIdOpt, burndownOutputOpt, burndownOutputDirOpt);
+        }, csvExportProjectOpt, csvExportOutputOpt);
 
-        rootCommand.AddCommand(analyticsCommand);
-        rootCommand.AddCommand(exportCommand);
-        rootCommand.AddCommand(burndownCommand);
-rootCommand.AddCommand(csvExportCommand);
-rootCommand.AddCommand(teamCsvExportCommand);
+        // Team metrics CSV export command
+        var teamCsvExportCommand = new Command("export-team-csv", "Export team metrics to CSV format");
+        var teamCsvExportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
+        var teamCsvExportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output CSV file path") { IsRequired = true };
+        ValidateOutputFile(teamCsvExportOutputOpt);
+        teamCsvExportCommand.AddOption(teamCsvExportProjectOpt);
+        teamCsvExportCommand.AddOption(teamCsvExportOutputOpt);
+
+        teamCsvExportCommand.SetHandler(async (project, output) =>
+        {
+            var analyticsService = serviceProvider.GetRequiredService<IAnalyticsService>();
+            var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+            try
+            {
+                logger.LogInformation("Exporting team metrics for project {Project} to CSV at {Output}", project, output);
+                var teamAnalysis = await analyticsService.AnalyzeTeam(project);
+                var csvService = serviceProvider.GetRequiredService<ICsvExportService>();
+                await csvService.ExportTeamMetrics(teamAnalysis.WorkloadDistribution, output);
+                logger.LogInformation("Team metrics exported successfully to {Output}", output);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Team CSV export command failed");
+                throw;
+            }
+        }, teamCsvExportProjectOpt, teamCsvExportOutputOpt);
+
+            // Burndown command
+            var burndownCommand = new Command("burndown", "Generate burndown chart for sprint");
+            var burndownProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key");
+            var burndownSprintIdOpt = new Option<int>(new[] { "--sprint-id" }, "Sprint ID");
+            var burndownOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output image path");
+            var burndownOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save reports to (created if it does not exist)");
+            ValidateOutputFile(burndownOutputOpt);
+            ValidateOutputDirectory(burndownOutputDirOpt);
+            burndownCommand.AddOption(burndownProjectOpt);
+            burndownCommand.AddOption(burndownSprintIdOpt);
+            burndownCommand.AddOption(burndownOutputOpt);
+            burndownCommand.AddOption(burndownOutputDirOpt);
+
+            burndownCommand.SetHandler(async (project, sprintId, output, outputDir) =>
+            {
+                var reportService = serviceProvider.GetRequiredService<IReportService>();
+                var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+                try
+                {
+                    var resolvedOutput = ResolveOutputPath(output, outputDir, "burndown.png");
+                    logger.LogInformation("Generating burndown chart for sprint {SprintId}", sprintId);
+                    await reportService.GenerateBurndownChart(project, sprintId, resolvedOutput);
+                    logger.LogInformation("Burndown chart saved to {Output}", resolvedOutput);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Burndown command failed");
+                    throw;
+                }
+            }, burndownProjectOpt, burndownSprintIdOpt, burndownOutputOpt, burndownOutputDirOpt);
+
+            rootCommand.AddCommand(analyticsCommand);
+            rootCommand.AddCommand(exportCommand);
+            rootCommand.AddCommand(burndownCommand);
+    rootCommand.AddCommand(csvExportCommand);
+    rootCommand.AddCommand(teamCsvExportCommand);
 
         // JQL query command
-        var jqlCommand         = new Command("jql", "Execute a custom JQL query and display results");
-        var jqlQueryOpt        = new Option<string>(new[] { "-q", "--query" }, "JQL query string") { IsRequired = true };
-        var jqlMaxResultsOpt   = new Option<int>(new[] { "-n", "--max-results" }, () => 50, "Maximum number of results to return");
-        var jqlStartAtOpt      = new Option<int>(new[] { "--start-at" }, () => 0, "Zero-based index of the first result (pagination)");
-        var jqlOutputOpt       = new Option<string>(new[] { "-o", "--output" }, "Output file path (omit to print to console)");
-        var jqlFormatOpt       = new Option<string>(new[] { "-f", "--format" }, () => "text", "Output format: text or json");
+        var jqlCommand = new Command("jql", "Execute a custom JQL query and display results");
+        var jqlQueryOpt = new Option<string>(new[] { "-q", "--query" }, "JQL query string") { IsRequired = true };
+        var jqlMaxResultsOpt = new Option<int>(new[] { "-n", "--max-results" }, () => 50, "Maximum number of results to return");
+        var jqlStartAtOpt = new Option<int>(new[] { "--start-at" }, () => 0, "Zero-based index of the first result (pagination)");
+        var jqlOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output file path (omit to print to console)");
+        var jqlFormatOpt = new Option<string>(new[] { "-f", "--format" }, () => "text", "Output format: text or json");
         ValidateFormat(jqlFormatOpt, OutputOptionsValidator.TextOrJsonFormats);
         ValidateOutputFile(jqlOutputOpt);
         jqlCommand.AddOption(jqlQueryOpt);
@@ -377,15 +376,15 @@ rootCommand.AddCommand(teamCsvExportCommand);
         jqlCommand.SetHandler(async (query, maxResults, startAt, output, format) =>
         {
             var jqlService = serviceProvider.GetRequiredService<IJqlQueryService>();
-            var logger     = serviceProvider.GetRequiredService<ILogger<Program>>();
+            var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
             try
             {
                 var result = await jqlService.ExecuteQueryAsync(new JqlQueryRequest
                 {
-                    Jql        = query,
+                    Jql = query,
                     MaxResults = maxResults,
-                    StartAt    = startAt
+                    StartAt = startAt
                 });
 
                 string content = format.Equals("json", StringComparison.OrdinalIgnoreCase)
@@ -416,11 +415,11 @@ rootCommand.AddCommand(teamCsvExportCommand);
         }, jqlQueryOpt, jqlMaxResultsOpt, jqlStartAtOpt, jqlOutputOpt, jqlFormatOpt);
 
         // HTML report command
-        var reportCommand        = new Command("report", "Generate a self-contained HTML analytics report");
-        var reportProjectOpt     = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
-        var reportSprintsOpt     = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include (1-50)");
-        var reportOutputOpt      = new Option<string>(new[] { "-o", "--output" }, "Output HTML file path");
-        var reportOutputDirOpt   = new Option<string>(new[] { "--output-dir" }, "Directory to save the report (created if needed)");
+        var reportCommand = new Command("report", "Generate a self-contained HTML analytics report");
+        var reportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
+        var reportSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include (1-50)");
+        var reportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output HTML file path");
+        var reportOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save the report (created if needed)");
         ValidateSprintCount(reportSprintsOpt);
         ValidateOutputFile(reportOutputOpt);
         ValidateOutputDirectory(reportOutputDirOpt);
@@ -432,7 +431,7 @@ rootCommand.AddCommand(teamCsvExportCommand);
         reportCommand.SetHandler(async (project, sprints, output, outputDir) =>
         {
             var htmlService = serviceProvider.GetRequiredService<IHtmlReportService>();
-            var logger      = serviceProvider.GetRequiredService<ILogger<Program>>();
+            var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
             try
             {
@@ -455,11 +454,11 @@ rootCommand.AddCommand(teamCsvExportCommand);
         }, reportProjectOpt, reportSprintsOpt, reportOutputOpt, reportOutputDirOpt);
 
         // Team comparison command
-        var teamCompareCommand      = new Command("team-compare", "Compare metrics across multiple Jira projects side by side");
-        var teamCompareProjectsOpt  = new Option<string>(new[] { "-p", "--projects" }, "Comma-separated list of project keys to compare") { IsRequired = true };
-        var teamCompareSprintsOpt   = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints per project (1-50)");
-        var teamCompareOutputOpt    = new Option<string>(new[] { "-o", "--output" }, "Output file path (omit to print to console)");
-        var teamCompareFormatOpt    = new Option<string>(new[] { "-f", "--format" }, () => "text", "Output format: text or json");
+        var teamCompareCommand = new Command("team-compare", "Compare metrics across multiple Jira projects side by side");
+        var teamCompareProjectsOpt = new Option<string>(new[] { "-p", "--projects" }, "Comma-separated list of project keys to compare") { IsRequired = true };
+        var teamCompareSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints per project (1-50)");
+        var teamCompareOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output file path (omit to print to console)");
+        var teamCompareFormatOpt = new Option<string>(new[] { "-f", "--format" }, () => "text", "Output format: text or json");
         ValidateSprintCount(teamCompareSprintsOpt);
         ValidateOutputFile(teamCompareOutputOpt);
         ValidateFormat(teamCompareFormatOpt, OutputOptionsValidator.TextOrJsonFormats);
@@ -471,11 +470,11 @@ rootCommand.AddCommand(teamCsvExportCommand);
         teamCompareCommand.SetHandler(async (projects, sprints, output, format) =>
         {
             var comparisonService = serviceProvider.GetRequiredService<ITeamComparisonService>();
-            var logger            = serviceProvider.GetRequiredService<ILogger<Program>>();
+            var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
             try
             {
-                var keys   = projects.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var keys = projects.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 var report = await comparisonService.CompareTeamsAsync(keys, sprints);
 
                 string content = format.Equals("json", StringComparison.OrdinalIgnoreCase)
@@ -509,90 +508,90 @@ rootCommand.AddCommand(teamCsvExportCommand);
         rootCommand.AddCommand(reportCommand);
         rootCommand.AddCommand(teamCompareCommand);
 
-    // Markdown report command
-    var markdownReportCommand = new Command("report-md", "Generate a Markdown analytics report");
-    var markdownReportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
-    var markdownReportSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include (1-50)");
-    var markdownReportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output Markdown file path");
-    var markdownReportOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save the report (created if needed)");
-    ValidateSprintCount(markdownReportSprintsOpt);
-    ValidateOutputFile(markdownReportOutputOpt);
-    ValidateOutputDirectory(markdownReportOutputDirOpt);
-    markdownReportCommand.AddOption(markdownReportProjectOpt);
-    markdownReportCommand.AddOption(markdownReportSprintsOpt);
-    markdownReportCommand.AddOption(markdownReportOutputOpt);
-    markdownReportCommand.AddOption(markdownReportOutputDirOpt);
+        // Markdown report command
+        var markdownReportCommand = new Command("report-md", "Generate a Markdown analytics report");
+        var markdownReportProjectOpt = new Option<string>(new[] { "-p", "--project" }, "Jira project key") { IsRequired = true };
+        var markdownReportSprintsOpt = new Option<int>(new[] { "-s", "--sprints" }, () => 5, "Number of recent sprints to include (1-50)");
+        var markdownReportOutputOpt = new Option<string>(new[] { "-o", "--output" }, "Output Markdown file path");
+        var markdownReportOutputDirOpt = new Option<string>(new[] { "--output-dir" }, "Directory to save the report (created if needed)");
+        ValidateSprintCount(markdownReportSprintsOpt);
+        ValidateOutputFile(markdownReportOutputOpt);
+        ValidateOutputDirectory(markdownReportOutputDirOpt);
+        markdownReportCommand.AddOption(markdownReportProjectOpt);
+        markdownReportCommand.AddOption(markdownReportSprintsOpt);
+        markdownReportCommand.AddOption(markdownReportOutputOpt);
+        markdownReportCommand.AddOption(markdownReportOutputDirOpt);
 
-    markdownReportCommand.SetHandler(async (project, sprints, output, outputDir) =>
-    {
-        var markdownService = serviceProvider.GetRequiredService<IMarkdownReportService>();
-        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-
-        try
+        markdownReportCommand.SetHandler(async (project, sprints, output, outputDir) =>
         {
-            var resolvedOutput = ResolveOutputPath(output, outputDir, $"{project}-report.md");
-            if (string.IsNullOrEmpty(resolvedOutput))
+            var markdownService = serviceProvider.GetRequiredService<IMarkdownReportService>();
+            var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+            try
             {
-                resolvedOutput = $"{project}-report.md";
+                var resolvedOutput = ResolveOutputPath(output, outputDir, $"{project}-report.md");
+                if (string.IsNullOrEmpty(resolvedOutput))
+                {
+                    resolvedOutput = $"{project}-report.md";
+                }
+
+                logger.LogInformation("Generating Markdown report for {Project} to {Output}", project, resolvedOutput);
+                await markdownService.GenerateReportAsync(project, sprints, resolvedOutput);
+                logger.LogInformation("Markdown report written to {Output}", resolvedOutput);
+                Console.WriteLine($"Markdown report saved to: {resolvedOutput}");
             }
-
-            logger.LogInformation("Generating Markdown report for {Project} to {Output}", project, resolvedOutput);
-            await markdownService.GenerateReportAsync(project, sprints, resolvedOutput);
-            logger.LogInformation("Markdown report written to {Output}", resolvedOutput);
-            Console.WriteLine($"Markdown report saved to: {resolvedOutput}");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Markdown report command failed");
-            throw;
-        }
-    }, markdownReportProjectOpt, markdownReportSprintsOpt, markdownReportOutputOpt, markdownReportOutputDirOpt);
-
-    rootCommand.AddCommand(markdownReportCommand);
-
-    // Trend command - analyzes the locally persisted snapshot history for a sprint
-    var trendCommand = new Command("trend", "Analyze historical burndown trend for a sprint from locally persisted snapshots");
-    var trendSprintIdOpt = new Option<int>(new[] { "--sprint-id" }, "Sprint ID") { IsRequired = true };
-    trendCommand.AddOption(trendSprintIdOpt);
-
-    trendCommand.SetHandler(async (int sprintId) =>
-    {
-        var snapshotStore = serviceProvider.GetRequiredService<ISnapshotStore>();
-        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-
-        try
-        {
-            var history = await snapshotStore.LoadAsync(sprintId);
-            if (history.Count == 0)
+            catch (Exception ex)
             {
-                Console.WriteLine($"No persisted snapshots found for sprint {sprintId}. Run 'burndown --sprint-id {sprintId}' first to start collecting history.");
-                return;
+                logger.LogError(ex, "Markdown report command failed");
+                throw;
             }
+        }, markdownReportProjectOpt, markdownReportSprintsOpt, markdownReportOutputOpt, markdownReportOutputDirOpt);
 
-            var orderedHistory = history.ToList();
-            var latest = orderedHistory[^1];
-            var priorSnapshots = orderedHistory.Count > 1
-                ? orderedHistory.GetRange(0, orderedHistory.Count - 1)
-                : new List<BurndownSnapshot>();
+        rootCommand.AddCommand(markdownReportCommand);
 
-            Console.WriteLine($"Trend analysis for sprint {sprintId} ({history.Count} snapshot(s))");
-            Console.WriteLine(new string('-', 70));
-            Console.WriteLine(latest.ToStatusString());
-            Console.WriteLine($"Velocity trend:       {latest.CalculateVelocityTrend(priorSnapshots):F2} pts/day");
-            Console.WriteLine($"Velocity accelerating: {latest.IsVelocityAccelerating(priorSnapshots)}");
-            Console.WriteLine($"Burn rate:             {latest.GetBurnRate():F2} pts/day");
-            Console.WriteLine($"Scope creep detected:  {latest.HasScopeCreep()}");
-            Console.WriteLine($"Completed pts over time: {string.Join(", ", orderedHistory.GetCompletedStoryPointsOverTime())}");
-            Console.WriteLine($"Remaining pts over time: {string.Join(", ", orderedHistory.GetRemainingStoryPointsOverTime())}");
-        }
-        catch (Exception ex)
+        // Trend command - analyzes the locally persisted snapshot history for a sprint
+        var trendCommand = new Command("trend", "Analyze historical burndown trend for a sprint from locally persisted snapshots");
+        var trendSprintIdOpt = new Option<int>(new[] { "--sprint-id" }, "Sprint ID") { IsRequired = true };
+        trendCommand.AddOption(trendSprintIdOpt);
+
+        trendCommand.SetHandler(async (int sprintId) =>
         {
-            logger.LogError(ex, "Trend command failed");
-            throw;
-        }
-    }, trendSprintIdOpt);
+            var snapshotStore = serviceProvider.GetRequiredService<ISnapshotStore>();
+            var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
-    rootCommand.AddCommand(trendCommand);
+            try
+            {
+                var history = await snapshotStore.LoadAsync(sprintId);
+                if (history.Count == 0)
+                {
+                    Console.WriteLine($"No persisted snapshots found for sprint {sprintId}. Run 'burndown --sprint-id {sprintId}' first to start collecting history.");
+                    return;
+                }
+
+                var orderedHistory = history.ToList();
+                var latest = orderedHistory[^1];
+                var priorSnapshots = orderedHistory.Count > 1
+                    ? orderedHistory.GetRange(0, orderedHistory.Count - 1)
+                    : new List<BurndownSnapshot>();
+
+                Console.WriteLine($"Trend analysis for sprint {sprintId} ({history.Count} snapshot(s))");
+                Console.WriteLine(new string('-', 70));
+                Console.WriteLine(latest.ToStatusString());
+                Console.WriteLine($"Velocity trend:       {latest.CalculateVelocityTrend(priorSnapshots):F2} pts/day");
+                Console.WriteLine($"Velocity accelerating: {latest.IsVelocityAccelerating(priorSnapshots)}");
+                Console.WriteLine($"Burn rate:             {latest.GetBurnRate():F2} pts/day");
+                Console.WriteLine($"Scope creep detected:  {latest.HasScopeCreep()}");
+                Console.WriteLine($"Completed pts over time: {string.Join(", ", orderedHistory.GetCompletedStoryPointsOverTime())}");
+                Console.WriteLine($"Remaining pts over time: {string.Join(", ", orderedHistory.GetRemainingStoryPointsOverTime())}");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Trend command failed");
+                throw;
+            }
+        }, trendSprintIdOpt);
+
+        rootCommand.AddCommand(trendCommand);
 
         return rootCommand;
     }
