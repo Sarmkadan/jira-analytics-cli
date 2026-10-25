@@ -15,6 +15,13 @@ namespace JiraAnalyticsCli.Formatters;
 /// </summary>
 public class JsonFormatter
 {
+    private const string DefaultVersion = "1.0.0";
+    private const string GeneratorName = "jira-analytics-cli";
+    private const char PathSeparator = '.';
+    private const string FormatErrorMessage = "Failed to format JSON";
+    private const string FilterErrorMessage = "Failed to filter JSON";
+    private const string InvalidJsonMessage = "Invalid JSON format";
+
     private readonly ILogger<JsonFormatter> _logger;
     private readonly bool _prettyPrint;
 
@@ -49,7 +56,7 @@ public class JsonFormatter
         catch (Exception ex)
         {
             this._logger.LogError(ex, "Error formatting JSON");
-            throw new InvalidOperationException("Failed to format JSON", ex);
+            throw new InvalidOperationException(FormatErrorMessage, ex);
         }
     }
 
@@ -57,7 +64,7 @@ public class JsonFormatter
     /// Adds custom metadata wrapper around core analytics data.
     /// Includes generation timestamp and version information.
     /// </summary>
-    public string FormatWithMetadata(object data, string title, string version = "1.0.0")
+    public string FormatWithMetadata(object data, string title, string version = DefaultVersion)
     {
         ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(title);
@@ -71,7 +78,7 @@ public class JsonFormatter
                 title,
                 version,
                 generatedAt = DateTime.UtcNow,
-                generatedBy = "jira-analytics-cli"
+                generatedBy = GeneratorName
             },
             data
         };
@@ -114,7 +121,7 @@ public class JsonFormatter
         catch (Exception ex)
         {
             this._logger.LogError(ex, "Error filtering JSON");
-            throw new InvalidOperationException("Failed to filter JSON", ex);
+            throw new InvalidOperationException(FilterErrorMessage, ex);
         }
     }
 
@@ -134,7 +141,7 @@ public class JsonFormatter
         catch (JsonException ex)
         {
             this._logger.LogError(ex, "Invalid JSON provided for prettification");
-            throw new InvalidOperationException("Invalid JSON format", ex);
+            throw new InvalidOperationException(InvalidJsonMessage, ex);
         }
     }
 
@@ -167,7 +174,7 @@ public class JsonFormatter
 
     private static JsonElement? SelectToken(JsonElement element, string path)
     {
-        var parts = path.Split('.');
+        var parts = path.Split(PathSeparator);
         var current = element;
 
         foreach (var part in parts)
