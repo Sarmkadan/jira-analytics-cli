@@ -13,6 +13,8 @@ namespace JiraAnalyticsCli.Caching;
 /// </summary>
 public class CacheManager
 {
+    private const int DefaultExpirationMinutes = 15;
+
     private readonly Dictionary<string, InMemoryCache> _stores = new();
     private readonly ILogger<CacheManager> _logger;
     private readonly TimeSpan _defaultExpiration;
@@ -21,7 +23,7 @@ public class CacheManager
     {
         ArgumentNullException.ThrowIfNull(logger);
         this._logger = logger;
-        this._defaultExpiration = defaultExpiration ?? TimeSpan.FromMinutes(15);
+        this._defaultExpiration = defaultExpiration ?? TimeSpan.FromMinutes(DefaultExpirationMinutes);
     }
 
     /// <summary>
