@@ -154,6 +154,34 @@ public class DebuggerDisplayTests
         snapshot.ToString().Should().Be("[sprint 42] 2026-09-05 12:30 UTC - 5/20 pts done (25.0%), 15 remaining");
     }
 
+    [Fact]
+    public void Developer_ToString_ShowsDisplayNameAndCompletedAndInProgressCounts()
+    {
+        var developer = new Developer
+        {
+            Key = "jdoe",
+            Name = "jdoe",
+            DisplayName = "Jane Doe",
+            AssignedIssues =
+            {
+                new JiraIssue { Key = "PROJ-1", Status = "Done" },
+                new JiraIssue { Key = "PROJ-2", Status = "Closed" },
+                new JiraIssue { Key = "PROJ-3", Status = "In Progress" },
+                new JiraIssue { Key = "PROJ-4", Status = "To Do" }
+            }
+        };
+
+        developer.ToString().Should().Be("Jane Doe - 2 completed, 1 in progress");
+    }
+
+    [Fact]
+    public void Developer_ToString_WithNoAssignedIssues_ShowsZeroCounts()
+    {
+        var developer = new Developer { Key = "jdoe", Name = "jdoe", DisplayName = "Jane Doe" };
+
+        developer.ToString().Should().Be("Jane Doe - 0 completed, 0 in progress");
+    }
+
     [Theory]
     [InlineData(typeof(Sprint))]
     [InlineData(typeof(JiraIssue))]
