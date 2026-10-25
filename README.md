@@ -1334,6 +1334,58 @@ var stats = cache.GetStatistics();
 Console.WriteLine($"Hit rate: {stats.HitRate:P0} ({stats.Hits} hits, {stats.Misses} misses)");
 ```
 
+## SprintRepository
+
+`SprintRepository` (namespace `JiraAnalyticsCli.Repositories`) is the in-memory store for `Sprint` entities behind `ISprintRepository`. Sprints are kept in a thread-safe `ConcurrentDictionary` keyed by the Jira sprint `Id`, so saving a sprint with an existing `Id` replaces the stored copy (upsert). Nothing is written to disk: the contents live only as long as the instance, and `Clear()` or a new instance starts empty. The constructor accepts an `ILogger<SprintRepository>`; pass `NullLogger<SprintRepository>.Instance` when logging is not needed.
+
+Its public methods are:
+
+- `GetByIdAsync(sprintId)` - returns the stored `Sprint` or `null` when the ID is unknown. Errors are logged and swallowed, so it returns `null` rather than throwing.
+- `GetByProjectAsync(projectKey)` - returns every stored sprint whose `ProjectKey` matches exactly (case-sensitive), ordered by `EndDate` descending. Sprints without an end date sort last. Errors are logged and an empty list is returned.
+- `GetActiveSprints()` - returns the sprints for which `Sprint.IsActive()` is true, across all projects: either the state is `"Active"`, or the current UTC time falls inside the start/end date window. No particular order is guaranteed.
+- `GetRecentClosedSprints(count)` - returns up to `count` sprints for which `Sprint.IsClosed()` is true (state `"Closed"` or a `CompleteDate` is set), ordered by `CompleteDate` descending. A non-positive `count` yields an empty list.
+- `SaveAsync(sprint)` - validates the sprint with `Sprint.Validate()` and stores it (insert or replace). Throws `ArgumentNullException` when the sprint is null and `ArgumentException` when validation fails; both are logged and rethrown.
+- `SaveRangeAsync(sprints)` - validates and stores each sprint in turn. Throws `ArgumentException` when the list is null or empty. The batch is not atomic: if a sprint fails validation, the exception is rethrown and the sprints saved before it remain in the repository.
+- `GetCount()` - returns the number of distinct sprints currently stored.
+- `Clear()` - removes all stored sprints and logs an informational message.
+
+Sprint validation rules (from `Sprint.Validate()`): `Id` must be positive, `Name` must not be empty or whitespace, and when both dates are set `EndDate` must be after `StartDate`.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Models;
+using JiraAnalyticsCli.Repositories;
+using Microsoft.Extensions.Logging.Abstractions;
+using System;
+using System.Threading.Tasks;
+
+var repository = new SprintRepository(NullLogger<SprintRepository>.Instance);
+
+// Store a sprint that is currently running
+await repository.SaveAsync(new Sprint
+{
+    Id = 123,
+    Name = "Sprint 42",
+    ProjectKey = "PROJ",
+    State = "Active",
+    StartDate = DateTime.UtcNow.AddDays(-7),
+    EndDate = DateTime.UtcNow.AddDays(7)
+});
+
+// Look up one sprint, or list sprints by project
+var sprint = await repository.GetByIdAsync(123);
+var projectSprints = await repository.GetByProjectAsync("PROJ");
+Console.WriteLine($"{projectSprints.Count} sprints in PROJ, stored total: {repository.GetCount()}");
+
+// Query active and recently closed sprints
+var active = await repository.GetActiveSprints();
+var recentlyClosed = await repository.GetRecentClosedSprints(count: 5);
+
+// Reset the in-memory store
+repository.Clear();
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
