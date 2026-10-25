@@ -18,6 +18,14 @@ namespace JiraAnalyticsCli.Services;
 /// </summary>
 public class ExportService : IExportService
 {
+    private const string PngFormat = "png";
+    private const string JpgFormat = "jpg";
+    private const string SvgFormat = "svg";
+    private const string JsonFormat = "json";
+    private const string CsvFormat = "csv";
+    private const string MarkdownFormat = "md";
+    private const string DefaultTeamName = "unknown";
+
     private readonly IJiraApiService _jiraService;
     private readonly IAnalyticsService _analyticsService;
     private readonly ILogger<ExportService> _logger;
@@ -46,11 +54,11 @@ public class ExportService : IExportService
 
             await (format.ToLower() switch
             {
-                "png" or "jpg" => this.ExportAsImage(analysis, format, outputPath),
-                "svg" => this.ExportAsImageSvg(analysis, outputPath),
-                "json" => this.ExportAsJson(analysis, outputPath),
-                "csv" => this.ExportAnalyticsAsCsv(analysis, outputPath),
-        "md" => this.ExportAsMarkdown(analysis, outputPath),
+                PngFormat or JpgFormat => this.ExportAsImage(analysis, format, outputPath),
+                SvgFormat => this.ExportAsImageSvg(analysis, outputPath),
+                JsonFormat => this.ExportAsJson(analysis, outputPath),
+                CsvFormat => this.ExportAnalyticsAsCsv(analysis, outputPath),
+                MarkdownFormat => this.ExportAsMarkdown(analysis, outputPath),
                 _ => throw new NotSupportedException($"Format {format} is not supported")
             });
 
@@ -70,9 +78,9 @@ public class ExportService : IExportService
         try
         {
             var markdownService = this._serviceProvider.GetRequiredService<IMarkdownReportService>();
-            var teamAnalysis = await this._analyticsService.AnalyzeTeam("unknown");
-            
-            var markdown = markdownService.BuildMarkdown("unknown", analysis, teamAnalysis);
+            var teamAnalysis = await this._analyticsService.AnalyzeTeam(DefaultTeamName);
+
+            var markdown = markdownService.BuildMarkdown(DefaultTeamName, analysis, teamAnalysis);
             
             var dir = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(dir))
@@ -110,15 +118,15 @@ public class ExportService : IExportService
             var burndownData = await this._jiraService.GetBurndownDataAsync(sprintId);
 
             var fmt = format.ToLower();
-            if (fmt is "png" or "jpg")
+            if (fmt is PngFormat or JpgFormat)
             {
                 await this.DrawBurndownChart(sprint, burndownData, format, outputPath);
             }
-            else if (fmt == "svg")
+            else if (fmt == SvgFormat)
             {
                 await this.DrawBurndownChartSvg(sprint, burndownData, outputPath);
             }
-            else if (fmt == "json")
+            else if (fmt == JsonFormat)
             {
                 await this.ExportAsJson(burndownData, outputPath);
             }
@@ -142,8 +150,8 @@ public class ExportService : IExportService
 
             await (format.ToLower() switch
             {
-                "json" => this.ExportAsJson(teamAnalysis, outputPath),
-                "csv" => this.ExportTeamAsCsv(teamAnalysis, outputPath),
+                JsonFormat => this.ExportAsJson(teamAnalysis, outputPath),
+                CsvFormat => this.ExportTeamAsCsv(teamAnalysis, outputPath),
                 _ => throw new NotSupportedException($"Format {format} is not supported")
             });
 
@@ -260,7 +268,7 @@ public class ExportService : IExportService
             }
 
             // Save image
-            var format_enum = format.ToLower() == "png" ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Jpeg;
+            var format_enum = format.ToLower() == PngFormat ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Jpeg;
             using (var image = surface.Snapshot())
             using (var data = image.Encode(format_enum, 80))
             {
@@ -314,7 +322,7 @@ public class ExportService : IExportService
             this.DrawActualBurndown(canvas, burndowns, padding, width, height);
 
             // Save
-            var format_enum = format.ToLower() == "png" ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Jpeg;
+            var format_enum = format.ToLower() == PngFormat ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Jpeg;
             using (var image = surface.Snapshot())
             using (var data = image.Encode(format_enum, 80))
             {
