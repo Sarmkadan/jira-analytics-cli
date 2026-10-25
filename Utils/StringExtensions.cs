@@ -268,4 +268,25 @@ public static partial class StringExtensions
 
         return value.Replace("'", "''");
     }
+
+    /// <summary>
+    /// Ensures string starts with the given prefix, adding it only when missing.
+    /// Useful for normalizing Jira URLs, paths, or keys (e.g. "/rest/api" or "PROJ-").
+    /// Comparison is ordinal and case-sensitive.
+    /// </summary>
+    /// <param name="value">The string to check.</param>
+    /// <param name="prefix">The prefix that the result must start with.</param>
+    /// <returns>The original string if it already starts with the prefix; otherwise the prefix followed by the string.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="value"/> or <paramref name="prefix"/> is null.
+    /// </exception>
+    public static string EnsurePrefix(this string value, string prefix)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(prefix);
+
+        return value.StartsWith(prefix, StringComparison.Ordinal)
+            ? value
+            : string.Concat(prefix, value);
+    }
 }
