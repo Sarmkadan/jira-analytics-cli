@@ -15,15 +15,35 @@ namespace JiraAnalyticsCli.Services;
 /// </summary>
 public class AnalyticsService : IAnalyticsService
 {
+    private const int DefaultSprintLengthDays = 14;
+    private const int ExcellentHealthScore = 4;
+    private const int HealthyHealthScore = 3;
+    private const int AtRiskHealthScore = 2;
+    private const int CriticalHealthScore = 1;
+    private const int DefaultHealthScore = 1;
+    private const double ExcellentHealthThreshold = 3.5;
+    private const double HealthyHealthThreshold = 2.5;
+    private const double AtRiskHealthThreshold = 1.5;
+    private const int TopPerformersCount = 3;
+    private const int LowPerformersCount = 3;
+    private const int MinimumSprintsForTrend = 2;
+    private const int MaxHighRiskAreas = 5;
+    private const int MinimumTeamSize = 1;
+    private const double PercentScale = 100.0;
+    private const double VelocityTrendStableThreshold = 10;
+    private const double P50Percentile = 50;
+    private const double P75Percentile = 75;
+    private const double P90Percentile = 90;
+
     // FrozenDictionary is optimised for read-heavy workloads: its internal layout allows
     // the JIT to generate branchless lookups, outperforming a switch on string keys.
     private static readonly FrozenDictionary<string, int> _healthScoreMap =
         new Dictionary<string, int>(4)
         {
-            ["Excellent"] = 4,
-            ["Healthy"]   = 3,
-            ["At Risk"]   = 2,
-            ["Critical"]  = 1
+            ["Excellent"] = ExcellentHealthScore,
+            ["Healthy"]   = HealthyHealthScore,
+            ["At Risk"]   = AtRiskHealthScore,
+            ["Critical"]  = CriticalHealthScore
         }.ToFrozenDictionary();
 
     private readonly IJiraApiService _jiraService;
@@ -83,7 +103,7 @@ public class AnalyticsService : IAnalyticsService
                 {
                     SprintId = sprint.Id,
                     SprintName = sprint.Name,
-                    StartDate = sprint.StartDate ?? DateTime.UtcNow.AddDays(-14),
+                    StartDate = sprint.StartDate ?? DateTime.UtcNow.AddDays(-DefaultSprintLengthDays),
                     EndDate = sprint.EndDate ?? DateTime.UtcNow,
                     PlannedStoryPoints = sprint.GetPlannedStoryPoints(),
                     CompletedStoryPoints = sprint.GetCompletedStoryPoints(),
@@ -115,25 +135,25 @@ public class AnalyticsService : IAnalyticsService
                 result.AverageVelocity = result.Metrics.Any() ? result.Metrics.Average(m => m.GetVelocity()) : 0;
                 var sortedMetrics = result.Metrics.OrderBy(m => m.EndDate).ToList();
 
-                if (sortedMetrics.Count >= 2)
+                if (sortedMetrics.Count >= MinimumSprintsForTrend)
                 {
                     var oldVelocity = sortedMetrics[0].GetVelocity();
                     var newVelocity = sortedMetrics[sortedMetrics.Count - 1].GetVelocity();
 
                     if (oldVelocity > 0)
                     {
-                        result.TrendPercentage = ((newVelocity - oldVelocity) / oldVelocity) * 100;
+                        result.TrendPercentage = ((newVelocity - oldVelocity) / oldVelocity) * PercentScale;
                     }
                 }
 
                 var healthScores = result.Metrics
-                    .Average(m => _healthScoreMap.GetValueOrDefault(m.GetHealthStatus(), 1));
+                    .Average(m => _healthScoreMap.GetValueOrDefault(m.GetHealthStatus(), DefaultHealthScore));
 
                 result.OverallHealth = healthScores switch
                 {
-                    >= 3.5 => "Excellent",
-                    >= 2.5 => "Healthy",
-                    >= 1.5 => "At Risk",
+                    >= ExcellentHealthThreshold => "Excellent",
+                    >= HealthyHealthThreshold => "Healthy",
+                    >= AtRiskHealthThreshold => "At Risk",
                     _ => "Critical"
                 };
             }
@@ -185,8 +205,8 @@ public class AnalyticsService : IAnalyticsService
 
             // Calculate metrics
             var sortedByProductivity = team.OrderByDescending(d => d.GetProductivity()).ToList();
-            result.TopPerformers = sortedByProductivity.Take(3).ToList();
-            result.LowPerformers = sortedByProductivity.TakeLast(3).Reverse().ToList();
+            result.TopPerformers = sortedByProductivity.Take(TopPerformersCount).ToList();
+            result.LowPerformers = sortedByProductivity.TakeLast(LowPerformersCount).Reverse().ToList();
             result.AverageProductivity = team.Any() ? team.Average(d => d.GetProductivity()) : 0;
 
             // Workload distribution
@@ -238,7 +258,7 @@ public class AnalyticsService : IAnalyticsService
 
             if (allIssues.Any())
             {
-                result.DefectRate = (result.TotalDefects / (double)allIssues.Count) * 100;
+                result.DefectRate = (result.TotalDefects / (double)allIssues.Count) * PercentScale;
             }
 
             // Identify high-risk areas
@@ -248,7 +268,7 @@ public class AnalyticsService : IAnalyticsService
                 .Where(x => x.Issue.IssueType == "Bug")
                 .GroupBy(x => x.Component)
                 .OrderByDescending(g => g.Count())
-                .Take(5)
+                .Take(MaxHighRiskAreas)
                 .Select(g => g.Key)
                 .ToList();
 
@@ -301,17 +321,17 @@ public class AnalyticsService : IAnalyticsService
             }
 
             // Calculate trend
-            if (result.Velocities.Count >= 2)
+            if (result.Velocities.Count >= MinimumSprintsForTrend)
             {
                 var velocityValues = result.Velocities.Select(v => v.Velocity).ToList();
                 var firstHalf = velocityValues.Take(velocityValues.Count / 2).Average();
                 var secondHalf = velocityValues.Skip(velocityValues.Count / 2).Average();
 
-                result.TrendSlope = (secondHalf - firstHalf) / firstHalf * 100;
+                result.TrendSlope = (secondHalf - firstHalf) / firstHalf * PercentScale;
                 result.Trend = result.TrendSlope switch
                 {
-                    > 10 => "Increasing",
-                    < -10 => "Decreasing",
+                    > VelocityTrendStableThreshold => "Increasing",
+                    < -VelocityTrendStableThreshold => "Decreasing",
                     _ => "Stable"
                 };
             }
@@ -339,7 +359,7 @@ public class AnalyticsService : IAnalyticsService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
 
-        return Math.Max(uniqueAssignees, 1);
+        return Math.Max(uniqueAssignees, MinimumTeamSize);
     }
 
     /// <summary>
@@ -426,9 +446,9 @@ public class AnalyticsService : IAnalyticsService
                 {
                     result.AverageCycleTime = cycleTimes.Average();
                     result.MedianCycleTime = CalculateMedian(cycleTimes);
-                    result.P50CycleTime = CalculatePercentile(cycleTimes, 50);
-                result.P75CycleTime = CalculatePercentile(cycleTimes, 75);
-                result.P90CycleTime = CalculatePercentile(cycleTimes, 90);
+                    result.P50CycleTime = CalculatePercentile(cycleTimes, P50Percentile);
+                    result.P75CycleTime = CalculatePercentile(cycleTimes, P75Percentile);
+                    result.P90CycleTime = CalculatePercentile(cycleTimes, P90Percentile);
                 }
 
                 // Create detailed per-issue list
@@ -494,7 +514,7 @@ public class AnalyticsService : IAnalyticsService
         }
 
         var sorted = values.OrderBy(v => v).ToList();
-        var n = (int)Math.Ceiling((percentile / 100.0) * sorted.Count);
+        var n = (int)Math.Ceiling((percentile / PercentScale) * sorted.Count);
         return sorted[Math.Max(0, n - 1)];
     }
 }

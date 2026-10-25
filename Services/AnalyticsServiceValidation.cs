@@ -16,6 +16,14 @@ namespace JiraAnalyticsCli.Services;
 /// </summary>
 public static class AnalyticsServiceValidation
 {
+    private const int MinProjectKeyLength = 2;
+    private const int MaxProjectKeyLength = 20;
+    private const int MaxSprintCount = 50;
+    private const int MinimumValidYear = 2000;
+    private const int MaxFutureYears = 1;
+    private const double DefaultMinNumericValue = 0;
+    private const double DefaultMaxNumericValue = 10000;
+
     /// <summary>
     /// Validates that an AnalyticsService instance is not null.
     /// Note: Dependency validation is handled by the DI container; this only checks for null instance.
@@ -79,14 +87,14 @@ public static class AnalyticsServiceValidation
             problems.Add("Project key contains invalid characters. Only letters, digits, and hyphens are allowed");
         }
 
-        if (normalized.Length > 20)
+        if (normalized.Length > MaxProjectKeyLength)
         {
-            problems.Add("Project key is too long (maximum 20 characters)");
+            problems.Add($"Project key is too long (maximum {MaxProjectKeyLength} characters)");
         }
 
-        if (normalized.Length < 2)
+        if (normalized.Length < MinProjectKeyLength)
         {
-            problems.Add("Project key is too short (minimum 2 characters)");
+            problems.Add($"Project key is too short (minimum {MinProjectKeyLength} characters)");
         }
 
         return problems;
@@ -107,9 +115,9 @@ public static class AnalyticsServiceValidation
         {
             problems.Add("Sprint count must be a positive integer");
         }
-        else if (sprintCount > 50)
+        else if (sprintCount > MaxSprintCount)
         {
-            problems.Add("Sprint count is too large (maximum 50 sprints)");
+            problems.Add($"Sprint count is too large (maximum {MaxSprintCount} sprints)");
         }
 
         return problems;
@@ -133,13 +141,13 @@ public static class AnalyticsServiceValidation
         {
             problems.Add($"{paramName} cannot be the default date (Unix epoch)");
         }
-        else if (date < new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc))
+        else if (date < new DateTime(MinimumValidYear, 1, 1, 0, 0, 0, DateTimeKind.Utc))
         {
-            problems.Add($"{paramName} date is before year 2000 (too old)");
+            problems.Add($"{paramName} date is before year {MinimumValidYear} (too old)");
         }
-        else if (date > DateTime.UtcNow.AddYears(1))
+        else if (date > DateTime.UtcNow.AddYears(MaxFutureYears))
         {
-            problems.Add($"{paramName} date is more than 1 year in the future");
+            problems.Add($"{paramName} date is more than {MaxFutureYears} year in the future");
         }
 
         return problems;
@@ -154,7 +162,7 @@ public static class AnalyticsServiceValidation
     /// <param name="maxValue">Maximum allowed value (inclusive)</param>
     /// <returns>A list of validation problems (empty if valid)</returns>
     /// <exception cref="ArgumentException">Thrown if paramName is null or empty</exception>
-    public static IReadOnlyList<string> ValidateNumber(double value, string paramName, double minValue = 0, double maxValue = 10000)
+    public static IReadOnlyList<string> ValidateNumber(double value, string paramName, double minValue = DefaultMinNumericValue, double maxValue = DefaultMaxNumericValue)
     {
         ArgumentException.ThrowIfNullOrEmpty(paramName);
 
