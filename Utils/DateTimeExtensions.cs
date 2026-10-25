@@ -40,6 +40,32 @@ public static class DateTimeExtensions
 	}
 
 	/// <summary>
+	/// Add a number of business days (Monday-Friday) to a date, preserving the time of day.
+	/// Weekend days are skipped and never counted. A negative count moves backwards.
+	/// A count of zero returns the date unchanged, even if it falls on a weekend.
+	/// </summary>
+	/// <param name="date">The starting date</param>
+	/// <param name="businessDays">Number of business days to add (negative to subtract)</param>
+	/// <returns>The date after the given number of business days</returns>
+	public static DateTime AddBusinessDays(this DateTime date, int businessDays)
+	{
+		var step = businessDays < 0 ? -1 : 1;
+		var remaining = Math.Abs((long)businessDays);
+		var result = date;
+
+		while (remaining > 0)
+		{
+			result = result.AddDays(step);
+			if (result.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
+			{
+				remaining--;
+			}
+		}
+
+		return result;
+	}
+
+	/// <summary>
 	/// Check if date is within business hours (9 AM to 5 PM)
 	/// </summary>
 	/// <param name="dateTime">The date and time to check</param>
