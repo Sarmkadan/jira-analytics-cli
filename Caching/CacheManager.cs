@@ -19,6 +19,7 @@ public class CacheManager
 
     public CacheManager(ILogger<CacheManager> logger, TimeSpan? defaultExpiration = null)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         this._logger = logger;
         this._defaultExpiration = defaultExpiration ?? TimeSpan.FromMinutes(15);
     }
@@ -29,6 +30,7 @@ public class CacheManager
     /// </summary>
     public InMemoryCache GetStore(string storeName = "default")
     {
+        ArgumentNullException.ThrowIfNull(storeName);
         this._logger.LogInformation("Getting cache store: {StoreName}", storeName);
         if (!this._stores.ContainsKey(storeName))
         {
@@ -45,6 +47,8 @@ public class CacheManager
     /// </summary>
     public void SetDefault<T>(string key, T value)
     {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(value);
         this._logger.LogInformation("Setting default cache value for key: {Key}", key);
         var policy = CachePolicy.WithAbsoluteExpiration(key, this._defaultExpiration);
         this.GetStore().Set(key, value, policy);
@@ -56,6 +60,7 @@ public class CacheManager
     /// </summary>
     public T? GetDefault<T>(string key, T? defaultValue = default)
     {
+        ArgumentNullException.ThrowIfNull(key);
         this._logger.LogInformation("Getting default cache value for key: {Key}", key);
         var value = this.GetStore().Get(key, defaultValue);
         if (value is null)
@@ -74,6 +79,10 @@ public class CacheManager
     /// </summary>
     public void Set<T>(string storeName, string key, T value, CachePolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(storeName);
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(policy);
         this._logger.LogInformation("Setting cache value in store: {StoreName}, key: {Key}", storeName, key);
         this.GetStore(storeName).Set(key, value, policy);
         this._logger.LogInformation("Cache value set in store: {StoreName}, key: {Key}", storeName, key);
@@ -84,6 +93,8 @@ public class CacheManager
     /// </summary>
     public T? Get<T>(string storeName, string key, T? defaultValue = default)
     {
+        ArgumentNullException.ThrowIfNull(storeName);
+        ArgumentNullException.ThrowIfNull(key);
         this._logger.LogInformation("Getting cache value from store: {StoreName}, key: {Key}", storeName, key);
         var value = this.GetStore(storeName).Get(key, defaultValue);
         if (value is null)
@@ -102,6 +113,8 @@ public class CacheManager
     /// </summary>
     public bool Contains(string key, string storeName = "default")
     {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(storeName);
         this._logger.LogInformation("Checking if cache contains key: {Key} in store: {StoreName}", key, storeName);
         var contains = this.GetStore(storeName).Contains(key);
         this._logger.LogInformation("Cache contains key {Key}: {Contains}", key, contains);
@@ -113,6 +126,8 @@ public class CacheManager
     /// </summary>
     public void Remove(string key, string storeName = "default")
     {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(storeName);
         this._logger.LogInformation("Removing cache entry: {Key} from store: {StoreName}", key, storeName);
         this.GetStore(storeName).Remove(key);
     }
@@ -122,6 +137,7 @@ public class CacheManager
     /// </summary>
     public void ClearStore(string storeName = "default")
     {
+        ArgumentNullException.ThrowIfNull(storeName);
         this._logger.LogInformation("Clearing cache store: {StoreName}", storeName);
         this.GetStore(storeName).Clear();
     }
