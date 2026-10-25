@@ -1278,6 +1278,94 @@ var values = formatter.SelectValues(xml, "//Velocity");
 Console.WriteLine($"Velocity: {values.FirstOrDefault()}"); // Velocity: 42.5
 ```
 
+## CsvFormatter
+
+`CsvFormatter` (namespace `JiraAnalyticsCli.Formatters`) converts a sequence of objects into CSV text. It is a standalone, generic formatter: the `export-csv` command does not use it, so the column layout shown in [CSV Export](#csv-export) comes from the export pipeline, not from this class. The constructor accepts an `ILogger<CsvFormatter>`.
+
+Its public methods are:
+
+- `Format<T>(IEnumerable<T> data)` - writes one column per public instance property of `T`, with a header row first. Throws `ArgumentNullException` when `data` is null. For an empty sequence it logs a warning and returns an empty string, so no header is written.
+- `FormatWithMapping<T>(IEnumerable<T> data, Dictionary<string, Func<T, string>> columnMapping)` - writes one column per dictionary key, in the dictionary's enumeration order, with each cell produced by the mapper for that key. Throws `ArgumentNullException` when either argument is null. Unlike `Format`, the header row is written even when `data` is empty.
+- `Parse<T>(string csv)` - reads CSV text back into a `List<T>` where `T` is a class with a parameterless constructor. Returns an empty list for null or empty input, or when there are no data rows.
+
+### Output format
+
+**Layout**
+
+- The delimiter is `,`.
+- Every row, including the last, ends with `Environment.NewLine` (`\n` on Linux and macOS, `\r\n` on Windows).
+- Header names are the property names (for `Format`) or the mapping keys (for `FormatWithMapping`), written unchanged.
+- `Format` column order follows reflection order. In practice this is declaration order, but the .NET API does not guarantee it.
+
+**Quoting and escaping**
+
+- A field is wrapped in double quotes only when it contains a comma, a double quote, or a line feed (`\n`). Other fields are written as-is.
+- Inside a quoted field, every `"` is doubled (`"` becomes `""`).
+- Null and empty values are written as an empty field (for example `a,,c`).
+- Leading and trailing spaces are written unchanged and are not quoted.
+- A value that contains a carriage return (`\r`) without a line feed is not quoted. Remove bare `\r` characters from text values before formatting.
+
+**Value formatting**
+
+| Value type | Written as |
+|------------|------------|
+| `null` | empty field |
+| `DateTime` | `yyyy-MM-dd HH:mm:ss` (for example `2026-10-09 17:00:00`). No milliseconds, no time zone, and `DateTimeKind` is not converted. The pattern is formatted with the current culture. |
+| Other `IFormattable` (numbers, `bool`, `Guid`, enums, and so on) | `ToString(null, InvariantCulture)`. Decimals use `.`, there are no group separators, and booleans are written as `True` / `False`. |
+| Any other object | `ToString()`, or an empty field if that returns `null` |
+
+**Parsing (`Parse<T>`)**
+
+- Input is split into lines on `\r\n`, `\r`, or `\n` before quoted fields are processed. A quoted field that contains a line break therefore does not round-trip.
+- Blank lines are skipped. Header names are matched to properties case-insensitively. Columns with no matching property are ignored.
+- Surrounding whitespace is trimmed from every field.
+- Values are converted with `Convert.ChangeType`. A value that cannot be converted is logged as a warning and left at the property's default.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Formatters;
+using Microsoft.Extensions.Logging.Abstractions;
+
+var formatter = new CsvFormatter(NullLogger<CsvFormatter>.Instance);
+
+var sprints = new[]
+{
+    new Sprint { Name = "PROJ Sprint 41", Planned = 45, Completed = 38.5, End = new DateTime(2026, 10, 9, 17, 0, 0) },
+    new Sprint { Name = "Login, \"SSO\" fixes", Planned = 12, Completed = 12.0, End = new DateTime(2026, 9, 25, 17, 0, 0) },
+};
+
+// Every public property becomes a column
+var csv = formatter.Format(sprints);
+Console.Write(csv);
+// Name,Planned,Completed,End
+// PROJ Sprint 41,45,38.5,2026-10-09 17:00:00
+// "Login, ""SSO"" fixes",12,12,2026-09-25 17:00:00
+
+// Explicit columns, with the header names and cell values chosen by the mapping
+var mapping = new Dictionary<string, Func<Sprint, string>>
+{
+    ["Sprint"] = s => s.Name,
+    ["Planned Points"] = s => s.Planned.ToString(),
+};
+Console.Write(formatter.FormatWithMapping(sprints, mapping));
+// Sprint,Planned Points
+// PROJ Sprint 41,45
+// "Login, ""SSO"" fixes",12
+
+// Read CSV text back into objects
+var parsed = formatter.Parse<Sprint>(csv);
+Console.WriteLine(parsed.Count); // 2
+
+public class Sprint
+{
+    public string Name { get; set; } = string.Empty;
+    public int Planned { get; set; }
+    public double Completed { get; set; }
+    public DateTime End { get; set; }
+}
+```
+
 ## InMemoryCache
 
 `InMemoryCache` (namespace `JiraAnalyticsCli.Caching`) is a thread-safe, process-local cache for analytics and API responses. Values are serialized to JSON when stored and deserialized on every `Get`, so callers always receive a fresh copy and never a reference to the cached instance. Each entry carries a `CachePolicy` that decides when it expires. The constructor accepts an `ILogger<InMemoryCache>`; pass `NullLogger<InMemoryCache>.Instance` when logging is not needed.
