@@ -1705,6 +1705,53 @@ Console.WriteLine(ValidationHelpers.ToProgressBar(50, 10));              // [█
 Console.WriteLine(ValidationHelpers.ToProgressBar(150, 10));             // [░░░░░░░░░░]
 ```
 
+## JiraApiException
+
+`JiraApiException` (namespace `JiraAnalyticsCli.Exceptions`) derives from `Exception`. It is meant to represent a failed call to the Jira REST API. It carries the HTTP status code and the response body when the server sent them.
+
+- `int? StatusCode` - the HTTP status code, or `null` when no response was received.
+- `string? ResponseContent` - the raw response body, or `null` when there was none.
+- `ToString()` - appends `HTTP Status Code:` and `Response:` lines when those values are set.
+
+Constructors:
+
+- `JiraApiException(string message)`
+- `JiraApiException(string message, Exception innerException)` - for wrapping a transport failure such as a timeout or a dropped connection. `StatusCode` stays `null`.
+- `JiraApiException(string message, int statusCode, string? responseContent = null)` - for a non-success HTTP response.
+
+### When it is thrown
+
+No code path in the current library throws `JiraApiException`. Failures are handled differently depending on the class you call:
+
+- `JiraApiService` catches errors, logs them, and returns `null`, an empty result, or `false`.
+- `JiraClient.TestConnectionAsync` returns `false` on failure.
+- `JiraClient.GetAsync`, `PostAsync` and `GetAllPaginatedAsync` call `EnsureSuccessStatusCode()`. A non-success response therefore throws `HttpRequestException`, not `JiraApiException`.
+
+A `catch (JiraApiException)` around these calls will never match today. Catch `HttpRequestException` if you use `JiraClient`. The class and its extension methods are available for code that wraps Jira failures in its own exception.
+
+### Extension methods
+
+These are in `JiraApiExceptionExtensions`. Each one throws `ArgumentNullException` when the exception is null.
+
+- `IsServerError()` - `true` when `StatusCode` is 500-599.
+- `IsClientError()` - `true` when `StatusCode` is 400-499.
+- `GetErrorSummary()` - returns `Jira API error with no status code` when `StatusCode` is `null`. Otherwise it returns `Jira API error {code}: {first 100 characters of ResponseContent}...` when there is a response body, or `Jira API error {code}` when there is not.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Exceptions;
+
+var error = new JiraApiException("Failed to fetch sprint", 503, "Service Unavailable");
+
+Console.WriteLine(error.IsServerError());    // True
+Console.WriteLine(error.IsClientError());    // False
+Console.WriteLine(error.GetErrorSummary());  // Jira API error 503: Service Unavailable...
+
+var network = new JiraApiException("Request timed out", new TimeoutException());
+Console.WriteLine(network.GetErrorSummary()); // Jira API error with no status code
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
