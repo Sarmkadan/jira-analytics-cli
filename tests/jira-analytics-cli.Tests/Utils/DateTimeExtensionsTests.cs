@@ -226,4 +226,118 @@ public class DateTimeExtensionsTests
         result.Day.Should().Be(30);
         result.DayOfWeek.Should().Be(DayOfWeek.Tuesday);
     }
+
+    // -------------------------------------------------------------------------
+    // AddBusinessDays
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that AddBusinessDays moves a weekday forward by one business day to the next day.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_OneDayFromMidweek_ReturnsNextDay()
+    {
+        var monday = new DateTime(2026, 5, 18); // Monday
+        monday.AddBusinessDays(1).Should().Be(new DateTime(2026, 5, 19));
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays skips the weekend when moving forward from a Friday.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_OneDayFromFriday_SkipsWeekend()
+    {
+        var friday = new DateTime(2026, 5, 22); // Friday
+        friday.AddBusinessDays(1).Should().Be(new DateTime(2026, 5, 25)); // Monday
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays counts forward from a Saturday as if it were the preceding Friday.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_OneDayFromSaturday_ReturnsMonday()
+    {
+        var saturday = new DateTime(2026, 5, 23); // Saturday
+        saturday.AddBusinessDays(1).Should().Be(new DateTime(2026, 5, 25)); // Monday
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays across a full week of five business days lands on the following Monday.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_FiveDaysFromMonday_ReturnsNextMonday()
+    {
+        var monday = new DateTime(2026, 5, 18); // Monday
+        monday.AddBusinessDays(5).Should().Be(new DateTime(2026, 5, 25)); // Monday
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays across ten business days from a Monday lands on the Monday two weeks later.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_TenDaysFromMonday_ReturnsMondayTwoWeeksLater()
+    {
+        var monday = new DateTime(2026, 5, 18); // Monday
+        monday.AddBusinessDays(10).Should().Be(new DateTime(2026, 6, 1)); // Monday
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays preserves the time of day of the input date.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_PreservesTimeOfDay()
+    {
+        var friday = new DateTime(2026, 5, 22, 14, 30, 45); // Friday
+        friday.AddBusinessDays(2).Should().Be(new DateTime(2026, 5, 26, 14, 30, 45)); // Tuesday
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays with a count of zero returns the input unchanged, including on a weekend.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_Zero_ReturnsSameDate()
+    {
+        var saturday = new DateTime(2026, 5, 23, 10, 0, 0); // Saturday
+        saturday.AddBusinessDays(0).Should().Be(saturday);
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays with a negative count moves backwards from a Monday to the previous Friday.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_NegativeOneFromMonday_ReturnsPreviousFriday()
+    {
+        var monday = new DateTime(2026, 5, 25); // Monday
+        monday.AddBusinessDays(-1).Should().Be(new DateTime(2026, 5, 22)); // Friday
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays with a negative count from a Sunday returns the preceding Friday.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_NegativeOneFromSunday_ReturnsFriday()
+    {
+        var sunday = new DateTime(2026, 5, 24); // Sunday
+        sunday.AddBusinessDays(-1).Should().Be(new DateTime(2026, 5, 22)); // Friday
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays with a negative count of three from a Wednesday skips the weekend.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_NegativeThreeFromWednesday_SkipsWeekend()
+    {
+        var wednesday = new DateTime(2026, 5, 27); // Wednesday
+        wednesday.AddBusinessDays(-3).Should().Be(new DateTime(2026, 5, 22)); // Friday
+    }
+
+    /// <summary>
+    /// Verifies that AddBusinessDays forward and then backward by the same count returns to a weekday start date.
+    /// </summary>
+    [Fact]
+    public void AddBusinessDays_ForwardThenBackward_ReturnsOriginalWeekday()
+    {
+        var wednesday = new DateTime(2026, 5, 20); // Wednesday
+        wednesday.AddBusinessDays(7).AddBusinessDays(-7).Should().Be(wednesday);
+    }
 }
