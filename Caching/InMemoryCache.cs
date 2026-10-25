@@ -15,6 +15,14 @@ namespace JiraAnalyticsCli.Caching;
 /// </summary>
 public class InMemoryCache
 {
+    private const string UnknownPolicyName = "unknown";
+    private const string PatternAnchorStart = "^";
+    private const string PatternAnchorEnd = "$";
+    private const string EscapedWildcardStar = "\\*";
+    private const string EscapedWildcardQuestion = "\\?";
+    private const string RegexAnyCharsSequence = ".*";
+    private const string RegexAnySingleChar = ".";
+
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
     private readonly ILogger<InMemoryCache> _logger;
     private readonly object _mutationLock = new();
@@ -152,9 +160,9 @@ public class InMemoryCache
 
         var removed = 0;
         var regex = new System.Text.RegularExpressions.Regex(
-            "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
-                .Replace("\\*", ".*")
-                .Replace("\\?", ".") + "$");
+            PatternAnchorStart + System.Text.RegularExpressions.Regex.Escape(pattern)
+                .Replace(EscapedWildcardStar, RegexAnyCharsSequence)
+                .Replace(EscapedWildcardQuestion, RegexAnySingleChar) + PatternAnchorEnd);
 
         foreach (var key in this._cache.Keys)
         {
@@ -262,7 +270,7 @@ public class InMemoryCache
         public Type? ValueType { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastAccessedAt { get; set; }
-        public CachePolicy Policy { get; set; } = new CachePolicy("unknown");
+        public CachePolicy Policy { get; set; } = new CachePolicy(UnknownPolicyName);
     }
 
     public record CacheStatistics(long Hits, long Misses, long Evictions, int EntryCount)
