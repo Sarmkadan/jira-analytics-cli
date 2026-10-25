@@ -10,20 +10,37 @@ namespace JiraAnalyticsCli.Configuration;
 /// </summary>
 public class CliConfig : ICliConfig
 {
-    public string JiraBaseUrl { get; set; } = "https://jira.atlassian.net";
+    private const string JiraBaseUrlDefault = "https://jira.atlassian.net";
+    private const int CacheExpirationMinutesDefault = 15;
+    private const bool EnableDetailedLoggingDefault = false;
+    private const int DefaultSprintCountDefault = 5;
+    private const string ExportFormatDefault = "txt";
+    private const int JiraApiMaxRetryAttemptsDefault = 5;
+    private const int JiraApiCircuitBreakerFailureThresholdDefault = 5;
+    private const int JiraApiCircuitBreakerDurationSecondsDefault = 30;
+    private const int JiraApiTimeoutSecondsDefault = 30;
+    private const int JiraApiMaxResultsPerRequestDefault = 1000;
+    private const int JiraApiMaxPagesDefault = 100;
+    private const int JiraApiMaxPageSizeDefault = 200;
+
+    private const string HttpScheme = "http";
+    private const string HttpsScheme = "https";
+    private const string RedactedValue = "<redacted>";
+
+    public string JiraBaseUrl { get; set; } = JiraBaseUrlDefault;
     public string JiraApiToken { get; set; } = string.Empty;
     public string? DefaultProject { get; set; }
-    public int CacheExpirationMinutes { get; set; } = 15;
-    public bool EnableDetailedLogging { get; set; } = false;
-    public int DefaultSprintCount { get; set; } = 5;
-    public string ExportFormat { get; set; } = "txt";
-    public int JiraApiMaxRetryAttempts { get; set; } = 5;
-    public int JiraApiCircuitBreakerFailureThreshold { get; set; } = 5;
-    public int JiraApiCircuitBreakerDurationSeconds { get; set; } = 30;
-    public int JiraApiTimeoutSeconds { get; set; } = 30;
-    public int JiraApiMaxResultsPerRequest { get; set; } = 1000;
-    public int JiraApiMaxPages { get; set; } = 100;
-    public int JiraApiMaxPageSize { get; set; } = 200;
+    public int CacheExpirationMinutes { get; set; } = CacheExpirationMinutesDefault;
+    public bool EnableDetailedLogging { get; set; } = EnableDetailedLoggingDefault;
+    public int DefaultSprintCount { get; set; } = DefaultSprintCountDefault;
+    public string ExportFormat { get; set; } = ExportFormatDefault;
+    public int JiraApiMaxRetryAttempts { get; set; } = JiraApiMaxRetryAttemptsDefault;
+    public int JiraApiCircuitBreakerFailureThreshold { get; set; } = JiraApiCircuitBreakerFailureThresholdDefault;
+    public int JiraApiCircuitBreakerDurationSeconds { get; set; } = JiraApiCircuitBreakerDurationSecondsDefault;
+    public int JiraApiTimeoutSeconds { get; set; } = JiraApiTimeoutSecondsDefault;
+    public int JiraApiMaxResultsPerRequest { get; set; } = JiraApiMaxResultsPerRequestDefault;
+    public int JiraApiMaxPages { get; set; } = JiraApiMaxPagesDefault;
+    public int JiraApiMaxPageSize { get; set; } = JiraApiMaxPageSizeDefault;
 
     public void Validate()
     {
@@ -34,7 +51,7 @@ public class CliConfig : ICliConfig
 
         // The URL is not echoed: it may carry user info, and it is also the host every request is sent to.
         if (!Uri.TryCreate(this.JiraBaseUrl, UriKind.Absolute, out var baseUri)
-            || baseUri.Scheme is not ("http" or "https")
+            || baseUri.Scheme is not (HttpScheme or HttpsScheme)
             || string.IsNullOrEmpty(baseUri.Host))
         {
             throw new InvalidOperationException("JiraBaseUrl must be an absolute http or https URL");
@@ -96,6 +113,6 @@ public class CliConfig : ICliConfig
     /// </summary>
     /// <returns>A single-line summary without the API token.</returns>
     public override string ToString() =>
-        $"CliConfig {{ JiraBaseUrl = {this.JiraBaseUrl}, JiraApiToken = <redacted>, DefaultProject = {this.DefaultProject}, " +
+        $"CliConfig {{ JiraBaseUrl = {this.JiraBaseUrl}, JiraApiToken = {RedactedValue}, DefaultProject = {this.DefaultProject}, " +
         $"JiraApiTimeoutSeconds = {this.JiraApiTimeoutSeconds}, JiraApiMaxPageSize = {this.JiraApiMaxPageSize}, JiraApiMaxPages = {this.JiraApiMaxPages} }}";
 }
