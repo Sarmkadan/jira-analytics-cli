@@ -1,109 +1,140 @@
 # IssueRepository
 
-Centralizes access to Jira issues stored in a local cache, providing asynchronous retrieval and persistence operations for issue data.
+In-memory repository for `JiraIssue` data, implementing `IIssueRepository`. Issues are keyed by `JiraIssue.Key` in a `ConcurrentDictionary<string, JiraIssue>`, and the repository offers lookup by key, project, and sprint, filtered views for overdue and high-priority issues, and upsert-style saves.
+
+Namespace: `JiraAnalyticsCli.Repositories`
+
+Nothing is persisted. Data lives only for the lifetime of the instance. `ServiceFactory` registers `IIssueRepository` as a singleton, so the whole process shares one cache.
+
+All methods return `ValueTask` because the work is synchronous. Query methods are fail-soft: an exception is logged and a `null` or empty result is returned. Save methods log and rethrow.
 
 ## API
 
-### `public IssueRepository`
+### `public IssueRepository(ILogger<IssueRepository> logger)`
 
-Constructs a new `IssueRepository` instance. The repository is initialized with an empty in-memory collection and requires explicit calls to `SaveAsync` or `SaveRangeAsync` to persist changes to a backing store.
-
-### `public ValueTask<JiraIssue?> GetByKeyAsync(string key)`
-
-Retrieves a single issue by its unique key (e.g., "PROJ-123"). The key is case-sensitive.
+Creates an empty repository. `logger` receives debug, information, and error messages for each operation.
 
 - **Parameters**
-  - `key`: The issue key to search for.
-- **Return value**
-  - A `ValueTask<JiraIssue?>` resolving to the found issue or `null` if no match exists.
+  - `logger`: Logger used for diagnostics.
 - **Exceptions**
-  - Throws `ArgumentNullException` if `key` is `null`.
-  - Throws `ArgumentException` if `key` is empty or whitespace.
+  - None are thrown by the constructor itself. `logger` is stored without a null check.
+
+### `public ValueTask<JiraIssue?> GetByKeyAsync(string issueKey)`
+
+Returns the issue stored under `issueKey`. Keys are matched case-sensitively and ordinally, so `"proj-1"` does not match `"PROJ-1"`.
+
+- **Parameters**
+  - `issueKey`: The issue key to look up (e.g., `"PROJ-123"`).
+- **Return value**
+  - The stored issue, or `null` if no issue has that key.
+- **Exceptions**
+  - None. A `null` key is passed to the dictionary, which throws. The exception is caught, logged as an error, and `null` is returned.
 
 ### `public ValueTask<List<JiraIssue>> GetByProjectAsync(string projectKey)`
 
-Retrieves all issues belonging to the specified project.
+Returns all issues whose `ProjectKey` equals `projectKey`.
 
 - **Parameters**
-  - `projectKey`: The project key to filter by (e.g., "PROJ").
+  - `projectKey`: The project key to filter by (e.g., `"PROJ"`). Compared case-sensitively.
 - **Return value**
-  - A `ValueTask<List<JiraIssue>>` containing all matching issues. The list is empty if no issues exist for the project.
+  - A new `List<JiraIssue>` with the matching issues. The list is empty if there are none.
 - **Exceptions**
-  - Throws `ArgumentNullException` if `projectKey` is `null`.
-  - Throws `ArgumentException` if `projectKey` is empty or whitespace.
+  - None. The method performs no argument validation. Any exception is logged and an empty list is returned.
 
-### `public ValueTask<List<JiraIssue>> GetBySprintAsync(string sprintId)`
+### `public ValueTask<List<JiraIssue>> GetBySprintAsync(int sprintId)`
 
-Retrieves all issues assigned to the specified sprint.
+Returns all issues whose `SprintId` equals `sprintId`.
 
 - **Parameters**
-  - `sprintId`: The sprint identifier to filter by.
+  - `sprintId`: The numeric sprint identifier.
 - **Return value**
-  - A `ValueTask<List<JiraIssue>>` containing all matching issues. The list is empty if no issues are assigned to the sprint.
+  - A new `List<JiraIssue>` with the matching issues. Issues with no sprint (`SprintId == null`) never match. The list is empty if there are none.
 - **Exceptions**
-  - Throws `ArgumentNullException` if `sprintId` is `null`.
-  - Throws `ArgumentException` if `sprintId` is empty or whitespace.
+  - None. Any exception is logged and an empty list is returned.
 
-### `public ValueTask<List<JiraIssue>> GetOverdueAsync()`
+### `public ValueTask<List<JiraIssue>> GetOverdueAsync(string projectKey)`
 
-Retrieves all issues that are past their due date.
+Returns the issues in `projectKey` that are overdue, as defined by `JiraIssue.IsOverdue()`. That check compares `DueDate` against `DateTime.UtcNow`, and issues without a due date are excluded.
 
+- **Parameters**
+  - `projectKey`: The project key to filter by.
 - **Return value**
-  - A `ValueTask<List<JiraIssue>>` containing all overdue issues. The list is empty if no issues are overdue.
+  - A new `List<JiraIssue>` ordered by `DueDate` descending (latest due date first). The list is empty if none are overdue.
 - **Exceptions**
-  - None.
+  - None. Any exception is logged and an empty list is returned.
 
-### `public ValueTask<List<JiraIssue>> GetHighPriorityAsync()`
+### `public ValueTask<List<JiraIssue>> GetHighPriorityAsync(string projectKey)`
 
-Retrieves all issues marked as high priority.
+Returns the issues in `projectKey` whose priority is high, as defined by `JiraIssue.IsHighPriority()`. The high-priority values are `"Critical"`, `"Blocker"`, and `"High"`.
 
+- **Parameters**
+  - `projectKey`: The project key to filter by.
 - **Return value**
-  - A `ValueTask<List<JiraIssue>>` containing all high-priority issues. The list is empty if no high-priority issues exist.
+  - A new `List<JiraIssue>` ordered by the `Priority` string, descending. This is alphabetical order, not severity order. The list is empty if there are none.
 - **Exceptions**
-  - None.
+  - None. Any exception is logged and an empty list is returned.
 
 ### `public ValueTask SaveAsync(JiraIssue issue)`
 
-Persists a single issue to the backing store, replacing any existing entry with the same key.
+Validates `issue` with `JiraIssue.Validate()` and stores it. An existing entry with the same `Key` is replaced.
 
 - **Parameters**
-  - `issue`: The issue to save.
+  - `issue`: The issue to store.
 - **Return value**
-  - A `ValueTask` representing the asynchronous save operation.
+  - A completed `ValueTask`.
 - **Exceptions**
-  - Throws `ArgumentNullException` if `issue` is `null`.
-  - Throws `InvalidOperationException` if the issue key is malformed or invalid.
+  - `ArgumentNullException` if `issue` is `null`.
+  - `ArgumentException` if validation fails (empty key, empty summary, unset `CreatedDate`, or `DueDate` earlier than `CreatedDate`).
+  - Both are logged before being rethrown. Nothing is stored on failure.
 
-### `public ValueTask SaveRangeAsync(IEnumerable<JiraIssue> issues)`
+### `public ValueTask SaveRangeAsync(List<JiraIssue> issues)`
 
-Persists a collection of issues to the backing store, replacing any existing entries with matching keys.
+Validates and stores each issue in `issues`, replacing entries with matching keys.
 
 - **Parameters**
-  - `issues`: The issues to save.
+  - `issues`: The issues to store.
 - **Return value**
-  - A `ValueTask` representing the asynchronous save operation.
+  - A completed `ValueTask`.
 - **Exceptions**
-  - Throws `ArgumentNullException` if `issues` is `null`.
-  - Throws `InvalidOperationException` if any issue key is malformed or invalid.
+  - `ArgumentException` if `issues` is `null` or empty.
+  - `ArgumentException` from `JiraIssue.Validate()` if any issue is invalid.
+  - The operation is not atomic. Issues are validated and stored one at a time, so issues before the failing one remain stored. The error is logged and rethrown.
 
 ### `public int GetCount()`
 
-Returns the total number of issues currently cached in memory.
+Returns the number of issues currently stored.
 
 - **Return value**
-  - The count of cached issues.
+  - The count of stored issues.
 - **Exceptions**
   - None.
 
 ### `public void Clear()`
 
-Removes all issues from the in-memory cache. Does not affect the backing store.
+Removes all issues from the repository and logs an information message.
 
-- **Parameters**
-  - None.
 - **Return value**
   - None.
 - **Exceptions**
   - None.
 
 ## Usage
+
+```csharp
+using JiraAnalyticsCli.Repositories;
+
+var repository = new IssueRepository(logger);
+
+await repository.SaveRangeAsync(issuesFromJira);
+
+var issue = await repository.GetByKeyAsync("PROJ-123");
+var overdue = await repository.GetOverdueAsync("PROJ");
+var highPriority = await repository.GetHighPriorityAsync("PROJ");
+
+Console.WriteLine($"Cached issues: {repository.GetCount()}");
+```
+
+## See also
+
+- `IIssueRepository`: the interface this class implements.
+- `IssueRepositoryExtensions`: additional query helpers.
