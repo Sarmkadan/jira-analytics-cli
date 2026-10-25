@@ -34,6 +34,15 @@ public class CycleTimeResult
 
     /// <summary>Gets or sets the list of individual issue cycle times.</summary>
     public List<IssueCycleTime> IssueCycleTimes { get; set; } = new();
+
+    /// <summary>
+    /// Returns a one-line summary, e.g. <c>PROJ: avg 4.0d, median 3.5d, p75 6.0d, p90 9.0d (3 issues)</c>.
+    /// Numbers are formatted with the invariant culture so the output is stable across locales.
+    /// </summary>
+    public override string ToString()
+    {
+        return FormattableString.Invariant($"{this.ProjectKey}: avg {this.AverageCycleTime:F1}d, median {this.MedianCycleTime:F1}d, p75 {this.P75CycleTime:F1}d, p90 {this.P90CycleTime:F1}d ({this.IssueCycleTimes.Count} issues)");
+    }
 }
 
 /// <summary>
