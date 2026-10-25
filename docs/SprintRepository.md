@@ -1,95 +1,106 @@
 # SprintRepository
 
-Provides data access operations for Jira sprints, including retrieval by identifier, project, active state, and recent closure, as well as persistence methods for single and batch saving.
+In-memory repository for `Sprint` data, implementing `ISprintRepository`. Sprints are keyed by `Sprint.Id` in a `ConcurrentDictionary<int, Sprint>`. The repository offers lookup by ID, by project key, and by state (active or recently closed), plus upsert-style saves.
+
+Namespace: `JiraAnalyticsCli.Repositories`
+
+Nothing is persisted. Data lives only for the lifetime of the instance. `ServiceFactory` registers `ISprintRepository` as a singleton, so the whole process shares one store.
+
+All methods are `async` but do no I/O. They return completed tasks. Query methods are fail-soft: an exception is logged and a `null` or empty result is returned. Save methods log and rethrow.
 
 ## API
 
-### `public SprintRepository`
+### `public SprintRepository(ILogger<SprintRepository> logger)`
 
-Initializes a new instance of the `SprintRepository` with required dependencies for interacting with Jira sprint data.
-
-### `public async Task<Sprint?> GetByIdAsync(int id)`
-
-Retrieves a sprint by its unique identifier.
+Creates an empty repository. `logger` receives debug, information, and error messages for each operation.
 
 - **Parameters**
-  - `id`: The numeric identifier of the sprint to retrieve.
-- **Return value**
-  - A `Task` resolving to the `Sprint` instance if found; otherwise `null`.
+  - `logger`: Logger used for diagnostics.
 - **Exceptions**
-  - Throws `ArgumentOutOfRangeException` if `id` is less than or equal to zero.
+  - None are thrown by the constructor itself. `logger` is stored without a null check.
+
+### `public async Task<Sprint?> GetByIdAsync(int sprintId)`
+
+Returns the sprint stored under `sprintId`.
+
+- **Parameters**
+  - `sprintId`: The Jira sprint identifier.
+- **Return value**
+  - The stored sprint, or `null` if no sprint has that ID.
+- **Exceptions**
+  - None. The ID is not validated, so zero or negative values simply do not match. Any unexpected exception is logged and `null` is returned.
 
 ### `public async Task<List<Sprint>> GetByProjectAsync(string projectKey)`
 
-Retrieves all sprints associated with a given Jira project key.
+Returns all sprints whose `ProjectKey` equals `projectKey`, ordered by `EndDate` descending (latest end date first). Sprints with no `EndDate` sort last.
 
 - **Parameters**
-  - `projectKey`: The uppercase project key (e.g., `"PROJ"`).
+  - `projectKey`: The Jira project key (e.g., `"PROJ"`). Compared case-sensitively.
 - **Return value**
-  - A `Task` resolving to a `List<Sprint>` of sprints belonging to the project.
+  - A new `List<Sprint>` with the matching sprints. The list is empty if there are none.
 - **Exceptions**
-  - Throws `ArgumentException` if `projectKey` is `null`, empty, or whitespace.
+  - None. The key is not validated. Any exception is logged and an empty list is returned.
 
 ### `public async Task<List<Sprint>> GetActiveSprints()`
 
-Retrieves all sprints currently marked as active.
+Returns all sprints for which `Sprint.IsActive()` is `true`, across all projects. A sprint is active when its `State` is `"Active"`, or when its start date is in the past and its end date is either unset or in the future (compared against `DateTime.UtcNow`).
 
 - **Return value**
-  - A `Task` resolving to a `List<Sprint>` of active sprints.
+  - A new `List<Sprint>` with the active sprints, in no guaranteed order. The list is empty if there are none.
 - **Exceptions**
-  - None.
+  - None. Any exception is logged and an empty list is returned.
 
-### `public async Task<List<Sprint>> GetRecentClosedSprints(int limit)`
+### `public async Task<List<Sprint>> GetRecentClosedSprints(int count)`
 
-Retrieves a limited number of recently closed sprints, ordered by closure date descending.
+Returns up to `count` sprints for which `Sprint.IsClosed()` is `true`, across all projects, ordered by `CompleteDate` descending. A sprint is closed when its `State` is `"Closed"` or it has a `CompleteDate`. Closed sprints with no `CompleteDate` sort last.
 
 - **Parameters**
-  - `limit`: Maximum number of sprints to return.
+  - `count`: Maximum number of sprints to return. Values less than or equal to zero produce an empty list, because LINQ `Take` yields nothing for them.
 - **Return value**
-  - A `Task` resolving to a `List<Sprint>` of the most recent closed sprints.
+  - A new `List<Sprint>` with at most `count` sprints. The list is empty if there are none.
 - **Exceptions**
-  - Throws `ArgumentOutOfRangeException` if `limit` is less than zero.
+  - None. The method performs no argument validation. Any exception is logged and an empty list is returned.
 
 ### `public async Task SaveAsync(Sprint sprint)`
 
-Persists a single sprint to the underlying data store.
+Validates `sprint` with `Sprint.Validate()` and stores it. An existing entry with the same `Id` is replaced.
 
 - **Parameters**
-  - `sprint`: The `Sprint` instance to save.
+  - `sprint`: The sprint to store.
 - **Return value**
-  - A `Task` representing the asynchronous save operation.
+  - A completed `Task`.
 - **Exceptions**
-  - Throws `ArgumentNullException` if `sprint` is `null`.
-  - Throws `InvalidOperationException` if the sprint’s required fields are invalid.
+  - `ArgumentNullException` if `sprint` is `null`.
+  - `ArgumentException` if validation fails: `Id` is not positive, `Name` is empty or whitespace, or `EndDate` is not after `StartDate` (when both are set).
+  - Both are logged before being rethrown. Nothing is stored on failure.
 
-### `public async Task SaveRangeAsync(IEnumerable<Sprint> sprints)`
+### `public async Task SaveRangeAsync(List<Sprint> sprints)`
 
-Persists a collection of sprints to the underlying data store in a single transaction.
+Validates and stores each sprint in `sprints`, replacing entries with matching IDs.
 
 - **Parameters**
-  - `sprints`: The collection of `Sprint` instances to save.
+  - `sprints`: The sprints to store.
 - **Return value**
-  - A `Task` representing the asynchronous batch save operation.
+  - A completed `Task`.
 - **Exceptions**
-  - Throws `ArgumentNullException` if `sprints` is `null`.
-  - Throws `InvalidOperationException` if any sprint in the collection has invalid required fields.
+  - `ArgumentException` if `sprints` is `null` or empty.
+  - `ArgumentException` from `Sprint.Validate()` if any sprint is invalid.
+  - The operation is not atomic. Sprints are validated and stored one at a time, so sprints before the failing one remain stored. The error is logged and rethrown.
 
 ### `public int GetCount()`
 
-Returns the total number of sprints currently stored.
+Returns the number of sprints currently stored.
 
 - **Return value**
-  - The count of sprints as an `int`.
+  - The count of stored sprints.
 - **Exceptions**
   - None.
 
 ### `public void Clear()`
 
-Removes all sprints from the in-memory cache or persistent store managed by this repository.
+Removes all sprints from the repository and logs an information message.
 
 - **Return value**
   - None.
 - **Exceptions**
   - None.
-
-## Usage
