@@ -60,7 +60,9 @@ public class JsonFormatter
     public string FormatWithMetadata(object data, string title, string version = "1.0.0")
     {
         ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(title);
         ArgumentException.ThrowIfNullOrEmpty(title);
+        ArgumentNullException.ThrowIfNull(version);
         ArgumentException.ThrowIfNullOrEmpty(version);
         var wrapper = new
         {
@@ -122,6 +124,7 @@ public class JsonFormatter
     /// </summary>
     public string Prettify(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
         ArgumentException.ThrowIfNullOrEmpty(json);
         try
         {
@@ -141,6 +144,7 @@ public class JsonFormatter
     /// </summary>
     public (bool IsValid, string[] Errors) Validate(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
         ArgumentException.ThrowIfNullOrEmpty(json);
         var errors = new List<string>();
 

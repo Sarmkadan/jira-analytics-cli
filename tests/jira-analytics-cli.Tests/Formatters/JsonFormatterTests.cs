@@ -146,4 +146,103 @@ public class JsonFormatterTests
 
         _loggerMock.Object.LogInformation("Finished {TestName}", testName);
     }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a null logger.
+    /// </summary>
+    [Fact]
+    public void Constructor_ShouldThrowWhenLoggerIsNull()
+    {
+        Action act = () => _ = new JsonFormatter(null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("logger");
+    }
+
+    /// <summary>
+    /// Verifies that the Format method rejects null data.
+    /// </summary>
+    [Fact]
+    public void Format_ShouldThrowWhenDataIsNull()
+    {
+        Action act = () => _formatter.Format(null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("data");
+    }
+
+    /// <summary>
+    /// Verifies that the FormatWithMetadata method rejects null data.
+    /// </summary>
+    [Fact]
+    public void FormatWithMetadata_ShouldThrowWhenDataIsNull()
+    {
+        Action act = () => _formatter.FormatWithMetadata(null!, "Report");
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("data");
+    }
+
+    /// <summary>
+    /// Verifies that the FormatWithMetadata method rejects a null title.
+    /// </summary>
+    [Fact]
+    public void FormatWithMetadata_ShouldThrowWhenTitleIsNull()
+    {
+        Action act = () => _formatter.FormatWithMetadata(new { Id = 1 }, null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("title");
+    }
+
+    /// <summary>
+    /// Verifies that the FormatWithMetadata method rejects a null version.
+    /// </summary>
+    [Fact]
+    public void FormatWithMetadata_ShouldThrowWhenVersionIsNull()
+    {
+        Action act = () => _formatter.FormatWithMetadata(new { Id = 1 }, "Report", null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("version");
+    }
+
+    /// <summary>
+    /// Verifies that the FormatFiltered method rejects null data.
+    /// </summary>
+    [Fact]
+    public void FormatFiltered_ShouldThrowWhenDataIsNull()
+    {
+        Action act = () => _formatter.FormatFiltered(null!, ["Id"]);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("data");
+    }
+
+    /// <summary>
+    /// Verifies that the FormatFiltered method rejects null included fields.
+    /// </summary>
+    [Fact]
+    public void FormatFiltered_ShouldThrowWhenIncludedFieldsIsNull()
+    {
+        Action act = () => _formatter.FormatFiltered(new { Id = 1 }, null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("includedFields");
+    }
+
+    /// <summary>
+    /// Verifies that the Prettify method rejects null JSON.
+    /// </summary>
+    [Fact]
+    public void Prettify_ShouldThrowWhenJsonIsNull()
+    {
+        Action act = () => _formatter.Prettify(null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("json");
+    }
+
+    /// <summary>
+    /// Verifies that the Validate method rejects null JSON.
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldThrowWhenJsonIsNull()
+    {
+        Action act = () => _formatter.Validate(null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("json");
+    }
 }
