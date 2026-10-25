@@ -11,12 +11,35 @@ namespace JiraAnalyticsCli.Caching;
 /// </summary>
 public class CachePolicy
 {
+    /// <summary>
+    /// Gets or sets the cache key this policy applies to.
+    /// </summary>
     public string Key { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum lifetime of an entry measured from its creation time, or <c>null</c> to disable.
+    /// </summary>
     public TimeSpan? AbsoluteExpiration { get; set; }
+
+    /// <summary>
+    /// Gets or sets the idle timeout measured from the last access, or <c>null</c> to disable.
+    /// </summary>
     public TimeSpan? SlidingExpiration { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional predicate; the entry is treated as expired when it returns <c>false</c>.
+    /// </summary>
     public Func<bool>? Condition { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum size of a cache entry in bytes. Defaults to 1 MB.
+    /// </summary>
     public int MaxSize { get; set; } = 1024 * 1024; // 1MB default
 
+    /// <summary>
+    /// Initializes a new policy for the specified cache key.
+    /// </summary>
+    /// <param name="key">The cache key this policy applies to.</param>
     public CachePolicy(string key)
     {
         this.Key = key;
