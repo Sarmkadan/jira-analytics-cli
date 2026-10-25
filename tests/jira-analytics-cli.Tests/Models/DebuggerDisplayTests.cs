@@ -87,6 +87,56 @@ public class DebuggerDisplayTests
     }
 
     [Fact]
+    public void SprintMetric_ToString_WithNoPlannedPoints_ShowsCriticalAndZeroPercent()
+    {
+        var metric = new SprintMetric
+        {
+            SprintId = 7,
+            SprintName = "Sprint 7",
+            StartDate = new DateTimeOffset(2026, 1, 5, 0, 0, 0, TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2026, 1, 18, 0, 0, 0, TimeSpan.Zero)
+        };
+
+        metric.ToString().Should().Be("[7] Sprint 7 (Critical) - 0/0 pts (0.0%), 2026-01-05 to 2026-01-18");
+    }
+
+    [Fact]
+    public void SprintMetric_ToString_WithPartialCompletion_RoundsPercentageToOneDecimal()
+    {
+        var metric = new SprintMetric
+        {
+            SprintId = 3,
+            SprintName = "Sprint 3",
+            PlannedStoryPoints = 3,
+            CompletedStoryPoints = 1,
+            CommittedStoryPoints = 3,
+            CompletedIssueCount = 1,
+            StartDate = new DateTimeOffset(2026, 1, 5, 0, 0, 0, TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2026, 1, 18, 0, 0, 0, TimeSpan.Zero)
+        };
+
+        metric.ToString().Should().Be("[3] Sprint 3 (Critical) - 1/3 pts (33.3%), 2026-01-05 to 2026-01-18");
+    }
+
+    [Fact]
+    public void SprintMetric_ToString_WithTimeOfDayAndOffset_FormatsDatesWithoutTime()
+    {
+        var metric = new SprintMetric
+        {
+            SprintId = 11,
+            SprintName = "Sprint 11",
+            PlannedStoryPoints = 10,
+            CompletedStoryPoints = 10,
+            CommittedStoryPoints = 10,
+            CompletedIssueCount = 10,
+            StartDate = new DateTimeOffset(2026, 3, 2, 23, 30, 0, TimeSpan.FromHours(2)),
+            EndDate = new DateTimeOffset(2026, 3, 16, 8, 15, 0, TimeSpan.FromHours(-5))
+        };
+
+        metric.ToString().Should().EndWith(", 2026-03-02 to 2026-03-16");
+    }
+
+    [Fact]
     public void BurndownSnapshot_ToString_ShowsSprintIdTimestampPointsAndRemaining()
     {
         var snapshot = new BurndownSnapshot
