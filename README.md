@@ -1612,6 +1612,63 @@ catch (InvalidOperationException ex)
 }
 ```
 
+## FormattingHelpers
+
+`FormattingHelpers` (namespace `JiraAnalyticsCli.Utils`) is a static class of text formatting helpers for console output and reports. Numbers, dates and percentages are formatted with `CultureInfo.InvariantCulture`, so the output does not depend on the machine's locale.
+
+Its public methods are:
+
+- `FormatPercentage(double value, int decimalPlaces = 1)` - formats `value` with a fixed number of decimals and a `%` suffix. The value is not multiplied by 100, so pass `84.4` to get `84.4%`. A negative `decimalPlaces` is not rejected and produces an invalid result such as `F-1%`; pass 0 or more.
+- `FormatNumber(int value)` - adds thousands separators and no decimals: `1234567` becomes `1,234,567`.
+- `FormatDecimal(double value, int decimalPlaces = 2)` - fixed decimals without a suffix: `42.5` becomes `42.50`.
+- `FormatDate(DateTime date, string format = "yyyy-MM-dd")` - formats a date with a custom format string. Throws `ArgumentNullException` when `format` is null and `ArgumentException` when it is empty.
+- `FormatDateTime(DateTime dateTime, string format = "yyyy-MM-dd HH:mm:ss")` - the same as `FormatDate`, with a date and time default.
+- `FormatBytes(long bytes)` - converts a byte count to a size in steps of 1024 up to `TB`, with at most two decimals and no trailing zeros (`1536` becomes `1.5 KB`). Sizes above 1024 TB stay in `TB` (3 PB is shown as `3072 TB`). Negative values are not handled specially.
+- `CreateTable(string[] headers, List<string[]> rows)` - builds a Markdown-style pipe table. Each column is as wide as its longest header or cell, measured by `string.Length`, so emoji and wide CJK characters can misalign. A row with fewer cells than headers is padded with empty cells; extra cells are ignored. Returns an empty string when there are no headers or no rows. Throws `ArgumentNullException` for a null argument. Each line ends with a trailing space before the last `|`.
+- `ColorText(string text, ConsoleColor color)` - wraps `text` in an ANSI escape sequence (`ESC[<n>m` ... `ESC[0m`), where `<n>` is the integer value of `color`. The enum values are not the ANSI foreground codes, so `ConsoleColor.Red` (12) emits `ESC[12m`, which most terminals do not show as red. Do not rely on the colors until this is changed. Throws for null or empty `text`.
+- `FormatStatus(string status)` - prefixes a Jira status with an emoji. The match is exact and case-sensitive: `Done` and `Closed` get `✅`, `In Progress` and `In Review` get `🔄`, `Open` gets `📋`, `Blocked` gets `🚫`, `On Hold` gets `⏸️`. Any other value gets `❓`. Throws for null or empty input.
+- `RepeatChar(char character, int count)` - returns `character` repeated `count` times, for drawing lines. A negative `count` throws `ArgumentOutOfRangeException`.
+- `Indent(string text, int spaces = 2)` - prepends `spaces` spaces to `text`. It does not split lines, so a multi-line string gets indented only at its start. Throws for null or empty `text`.
+- `CenterText(string text, int width)` - pads `text` with spaces on both sides to reach `width`. When the padding is odd, the extra space goes on the right. Returns `text` unchanged when it is already at least `width` long. Throws for null or empty `text`.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Utils;
+using System;
+using System.Collections.Generic;
+
+var headers = new[] { "Sprint", "Planned", "Completed", "Completion" };
+var rows = new List<string[]>
+{
+    new[] { "MYPROJ Sprint 41", FormattingHelpers.FormatNumber(45), "38", FormattingHelpers.FormatPercentage(84.4) },
+    new[] { "MYPROJ Sprint 40", FormattingHelpers.FormatNumber(1200), "1,147", FormattingHelpers.FormatPercentage(95.6) }
+};
+
+Console.WriteLine(FormattingHelpers.CenterText("SPRINT SUMMARY", 40));
+Console.WriteLine(FormattingHelpers.RepeatChar('-', 40));
+Console.Write(FormattingHelpers.CreateTable(headers, rows));
+Console.WriteLine(FormattingHelpers.FormatDate(new DateTime(2026, 10, 14)));
+Console.WriteLine(FormattingHelpers.FormatBytes(2_621_440));
+Console.WriteLine(FormattingHelpers.FormatStatus("In Progress"));
+Console.WriteLine(FormattingHelpers.Indent("MYPROJ-101 Fix login"));
+```
+
+Output:
+
+```
+             SPRINT SUMMARY             
+----------------------------------------
+| Sprint           | Planned | Completed | Completion | 
+|------------------|---------|-----------|------------|
+| MYPROJ Sprint 41 | 45      | 38        | 84.4%      | 
+| MYPROJ Sprint 40 | 1,200   | 1,147     | 95.6%      | 
+2026-10-14
+2.5 MB
+🔄 In Progress
+  MYPROJ-101 Fix login
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
