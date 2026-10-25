@@ -1669,6 +1669,42 @@ Output:
   MYPROJ-101 Fix login
 ```
 
+## ValidationHelpers
+
+`ValidationHelpers` (namespace `JiraAnalyticsCli.Utils`) is a static class of validation and small text helpers. The `Is*` methods return `bool` and do not throw; the string checks return `false` for null, empty or whitespace input. The text helpers accept null and return an empty string where noted below.
+
+Its public methods are:
+
+- `IsValidJiraIssueKey(string? issueKey)` - matches `PROJ-123`: an uppercase letter, at least one more uppercase letter or digit, a `-`, then digits. The project part must be at least two characters, so `P-1` is rejected. Lowercase is rejected.
+- `IsValidProjectKey(string? projectKey)` - uppercase letter followed by uppercase letters or digits, at most 10 characters in total. A single letter such as `A` is accepted.
+- `IsValidUrl(string? url)` - accepts only absolute `http` and `https` URIs. `ftp://...` and relative paths are rejected.
+- `IsValidEmail(string? email)` - uses `System.Net.Mail.MailAddress` and then requires the parsed `Address` to equal the input exactly. Plain `user@example.com` passes; the display-name form `Name <user@example.com>` is rejected.
+- `IsValidSprintId(int sprintId)` - true for any value greater than 0.
+- `IsValidStoryPoints(int? storyPoints)` - true for `null` or any value of 0 or more. Fractional story points are not checked here because the parameter is an `int`.
+- `IsValidDateRange(DateTime startDate, DateTime endDate)` - true only when `startDate` is strictly earlier than `endDate`. Equal dates return `false`.
+- `IsValidPercentage(double value)` - true for values from 0 to 100 inclusive. `NaN` returns `false`.
+- `TruncateWithEllipsis(string? value, int maxLength = 50)` - returns null or empty input as `""`, and returns `value` unchanged when it fits. Otherwise it keeps the first `maxLength - 3` characters and appends `...`, so the result is exactly `maxLength` long. A `maxLength` below 3 throws `ArgumentOutOfRangeException` when the value is too long to fit (`maxLength = 2` with `"abcdefghij"` throws; `maxLength = 3` returns `"..."`).
+- `SanitizeForCsv(string? value)` - removes commas, double quotes, `\r` and `\n` from the value. It does not escape them, so the text changes: `a,"b"\nc` becomes `abc`. Null or empty input returns `""`. Use it only where losing those characters is acceptable.
+- `ToProgressBar(double percentage, int length = 20)` - builds a text bar such as `[█████░░░░░]`, with `█` for the filled part and `░` for the rest. The filled count is `(int)(percentage / 100 * length)`, rounded down. A percentage outside 0-100, or `NaN`, is treated as 0. A negative `length` throws `ArgumentOutOfRangeException`.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Utils;
+using System;
+
+Console.WriteLine(ValidationHelpers.IsValidJiraIssueKey("MYPROJ-101"));  // True
+Console.WriteLine(ValidationHelpers.IsValidProjectKey("myproj"));        // False
+Console.WriteLine(ValidationHelpers.IsValidUrl("https://example.atlassian.net")); // True
+Console.WriteLine(ValidationHelpers.IsValidDateRange(
+    new DateTime(2026, 10, 1), new DateTime(2026, 10, 14)));             // True
+
+Console.WriteLine(ValidationHelpers.TruncateWithEllipsis("Refactor the login flow", 12)); // Refactor ...
+Console.WriteLine(ValidationHelpers.SanitizeForCsv("Fix \"login\", retry"));            // Fix login retry
+Console.WriteLine(ValidationHelpers.ToProgressBar(50, 10));              // [█████░░░░░]
+Console.WriteLine(ValidationHelpers.ToProgressBar(150, 10));             // [░░░░░░░░░░]
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
