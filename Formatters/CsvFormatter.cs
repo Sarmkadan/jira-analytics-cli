@@ -33,6 +33,7 @@ public class CsvFormatter
 
     public CsvFormatter(ILogger<CsvFormatter> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         this._logger = logger;
     }
 
@@ -42,10 +43,7 @@ public class CsvFormatter
     /// </summary>
     public string Format<T>(IEnumerable<T> data)
     {
-        if (data == null)
-        {
-            throw new ArgumentNullException(nameof(data));
-        }
+        ArgumentNullException.ThrowIfNull(data);
 
         var items = data.ToList();
         if (!items.Any())
@@ -86,10 +84,8 @@ public class CsvFormatter
     /// </summary>
     public string FormatWithMapping<T>(IEnumerable<T> data, Dictionary<string, Func<T, string>> columnMapping)
     {
-        if (data == null || columnMapping == null)
-        {
-            throw new ArgumentNullException(data == null ? nameof(data) : nameof(columnMapping));
-        }
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(columnMapping);
 
         var items = data.ToList();
         var headers = columnMapping.Keys.ToArray();
