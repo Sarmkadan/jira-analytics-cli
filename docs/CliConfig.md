@@ -1,88 +1,109 @@
 # CliConfig
 
-`CliConfig` holds the runtime configuration parameters for the Jira Analytics CLI tool. It centralizes connection details, caching behavior, logging verbosity, and output preferences so that all application components operate against a single validated configuration object. An instance is typically populated from command-line arguments, environment variables, or a configuration file before being passed to the analytics engine.
+`CliConfig` (namespace `JiraAnalyticsCli.Configuration`) is the runtime settings object for the CLI. It implements `ICliConfig`, which exposes read-only properties. Application code receives it through `ICliConfig`, which `ServiceFactory` registers as a singleton after `AppConfigurationProvider.LoadConfiguration()` builds and validates it.
 
-## API
+This page lists every option, the environment variable and `appsettings.json` key that set it, its default, and what `Validate()` enforces. The loading rules are described in more detail in the Configuration section of the [README](../README.md).
 
-### `public string JiraBaseUrl`
+## Sources and precedence
 
-The root URL of the target Jira instance (for example, `https://your-domain.atlassian.net`). Must be an absolute URI. The value is required; validation will reject null, empty, or malformed URLs.
+Each source overwrites the one before it:
 
-### `public string JiraApiToken`
+1. Built-in defaults in `CliConfig`.
+2. `appsettings.json` in the current working directory. Keys are camelCase. A missing file is skipped silently.
+3. Environment variables (see the table below).
+4. Jira values from `JiraOptions`, which are resolved from CLI flags, then environment variables, then `appsettings.json`. These always replace the values from steps 2 and 3 for the four settings marked **JiraOptions** below.
 
-The bearer token or personal access token used to authenticate against the Jira REST API. This field is required and must be non-empty. It is treated as a secret and should never be logged in plain text, even when `EnableDetailedLogging` is active.
+Environment variables that are unset or empty are ignored.
 
-### `public string? DefaultProject`
+## Options
 
-An optional Jira project key (for example, `PROJ`) that scopes queries when no explicit project is supplied at runtime. When set to `null`, commands that require a project will demand one at invocation time.
+| Property | `appsettings.json` key | Environment variable(s) | Default | Allowed values |
+|---|---|---|---|---|
+| `JiraBaseUrl` | `jiraBaseUrl` | `JIRA_URL`, `JIRA_BASE_URL` | `https://jira.atlassian.net` | Absolute `http` or `https` URI with a host. **JiraOptions** (`BaseUrl`) overrides it. |
+| `JiraApiToken` | `jiraApiToken` | `JIRA_TOKEN`, `JIRA_API_TOKEN` | `""` | Non-empty. Sent as a Bearer token. **JiraOptions** (`ApiToken`) overrides it. |
+| `DefaultProject` | `defaultProject` | `JIRA_PROJECT`, `JIRA_DEFAULT_PROJECT` | `null` | Any string or `null`. **JiraOptions** (`ProjectKey`) overrides it. A per-command `-p/--project` still takes precedence. |
+| `JiraApiTimeoutSeconds` | `jiraApiTimeoutSeconds` | `JIRA_API_TIMEOUT_SECONDS` | `30` | Integer 1–300 from the environment. Used as the `HttpClient` timeout. **JiraOptions** (`TimeoutSeconds`) overrides it. |
+| `CacheExpirationMinutes` | `cacheExpirationMinutes` | `CACHE_EXPIRATION_MINUTES` | `15` | Integer 0–10080 from the environment. JSON values must be ≥ 0. |
+| `EnableDetailedLogging` | `enableDetailedLogging` | `DETAILED_LOGGING` | `false` | `true` or `false`, case-insensitive. Other values are ignored. |
+| `DefaultSprintCount` | `defaultSprintCount` | `DEFAULT_SPRINT_COUNT` | `5` | Integer 1–100 from the environment. JSON values must be > 0. |
+| `ExportFormat` | `exportFormat` | `EXPORT_FORMAT` | `"txt"` | Any string. Not checked by `Validate()`. |
+| `JiraApiMaxRetryAttempts` | `jiraApiMaxRetryAttempts` | `JIRA_API_MAX_RETRY_ATTEMPTS` | `5` | Integer 1–10 from the environment. JSON values must be > 0. |
+| `JiraApiCircuitBreakerFailureThreshold` | `jiraApiCircuitBreakerFailureThreshold` | `JIRA_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD` | `5` | Integer 1–100 from the environment. JSON values must be > 0. |
+| `JiraApiCircuitBreakerDurationSeconds` | `jiraApiCircuitBreakerDurationSeconds` | `JIRA_API_CIRCUIT_BREAKER_DURATION_SECONDS` | `30` | Integer 1–3600 from the environment. JSON values must be > 0. |
+| `JiraApiMaxResultsPerRequest` | `jiraApiMaxResultsPerRequest` | `JIRA_API_MAX_RESULTS_PER_REQUEST` | `1000` | Integer 1–1000 from the environment. JSON values must be > 0. |
+| `JiraApiMaxPages` | `jiraApiMaxPages` | `JIRA_API_MAX_PAGES` | `100` | Integer 1–1000 from the environment. JSON values must be > 0. |
+| `JiraApiMaxPageSize` | `jiraApiMaxPageSize` | `JIRA_API_MAX_PAGE_SIZE` | `200` | Integer 1–1000 from the environment. JSON values must be > 0. |
 
-### `public int CacheExpirationMinutes`
+### Consumers in this tree
 
-The number of minutes a cached API response remains valid before a fresh request is forced. Must be greater than or equal to zero. A value of zero disables caching entirely, causing every query to hit the live API.
+Not every option is read by production code yet. Current readers:
 
-### `public bool EnableDetailedLogging`
+- `JiraBaseUrl` and `JiraApiToken` are read by `ServiceFactory` to configure the `jira` `HttpClient` (base address and Bearer header).
+- `JiraApiTimeoutSeconds` is read by `ServiceFactory` to set the `HttpClient` timeout.
+- `JiraApiMaxResultsPerRequest`, `JiraApiMaxPages` and `JiraApiMaxPageSize` are read by `Services/JqlHelper.cs`.
 
-When `true`, the application emits verbose diagnostic output including request URLs, timing information, and cache hit/miss events. When `false`, only warnings and errors are written. Does not affect the `ExportFormat` output stream.
+The following options are loaded and validated, but no code outside `Configuration/` reads them at the time of writing: `DefaultProject`, `CacheExpirationMinutes`, `EnableDetailedLogging`, `DefaultSprintCount`, `ExportFormat`, `JiraApiMaxRetryAttempts`, `JiraApiCircuitBreakerFailureThreshold` and `JiraApiCircuitBreakerDurationSeconds`. Setting them changes the object, but no behavior changes yet. The `-f/--format` option of the export command is separate from `ExportFormat` and is validated by `OutputOptionsValidator`.
 
-### `public int DefaultSprintCount`
+## Environment variable rules
 
-The default number of recent sprints to include in velocity and trend reports when no explicit count is provided. Must be a positive integer. Validation rejects zero and negative values.
+- Integer variables must be whole numbers, with optional sign and surrounding whitespace, inside the range shown above. Anything else throws `ConfigurationException` with `PropertyName` set to the variable name. The message never repeats the value, because it may be a credential pasted into the wrong variable.
+- `DETAILED_LOGGING` is parsed with `bool.TryParse`. An invalid value is silently ignored and the previous value is kept.
+- `EXPORT_FORMAT`, `JIRA_URL`, `JIRA_TOKEN` and `JIRA_PROJECT` accept any non-empty string. Validation of the URL and token happens in `Validate()`.
 
-### `public string ExportFormat`
+## `appsettings.json` rules
 
-Specifies the output format for exported reports. Accepted values are determined by the validation logic (typically `json`, `csv`, or `markdown`). The string is case-insensitive during validation but stored as provided.
+- Numeric keys must be JSON integers. A value of the wrong type is ignored, and the value from the previous source is kept.
+- A string key whose value is not a JSON string stops the rest of the file from being read, so the remaining keys keep their defaults.
+- JSON integers are not range-checked by the loader. Only `Validate()` checks them, and it checks lower bounds only.
+- If the file is not valid JSON, a warning is logged with the line and byte position, and loading continues with environment variables and defaults. The warning does not quote the file contents.
+
+## Methods
 
 ### `public void Validate()`
 
-Performs a full consistency check on all configuration fields.
+Checks the whole object and throws `InvalidOperationException` on the first problem. The message names the setting. It does not contact Jira.
 
-- **Parameters:** none.
-- **Return value:** void.
-- **Throws:** `ArgumentException` when `JiraBaseUrl` is null, empty, or not a well-formed absolute URI. `ArgumentException` when `JiraApiToken` is null or empty. `ArgumentOutOfRangeException` when `CacheExpirationMinutes` is negative. `ArgumentOutOfRangeException` when `DefaultSprintCount` is less than 1. `ArgumentException` when `ExportFormat` is not one of the recognized format identifiers.
+Checks, in order:
 
-Callers must invoke `Validate()` before using the configuration. The method does not perform network connectivity checks; it only validates structural correctness of the fields.
+- `JiraBaseUrl` is non-empty, is an absolute URI with an `http` or `https` scheme, and has a host. The URL is not echoed in the message.
+- `JiraApiToken` is non-empty.
+- `CacheExpirationMinutes` ≥ 0.
+- `DefaultSprintCount`, `JiraApiMaxRetryAttempts`, `JiraApiCircuitBreakerFailureThreshold`, `JiraApiCircuitBreakerDurationSeconds`, `JiraApiTimeoutSeconds`, `JiraApiMaxResultsPerRequest`, `JiraApiMaxPages` and `JiraApiMaxPageSize` are each > 0.
 
-## Usage
+`Validate()` does not check `DefaultProject`, `ExportFormat`, `EnableDetailedLogging`, or upper bounds for JSON-supplied values.
 
-### Example 1: Minimal valid configuration
+`AppConfigurationProvider.LoadConfiguration()` calls `Validate()`, logs any failure, and rethrows it.
+
+### `public override string ToString()`
+
+Returns a one-line summary for diagnostics: base URL, `JiraApiToken = <redacted>`, default project, timeout, page size and page count. Use it for logging instead of serializing the object.
+
+## Example
+
+Loading the configuration through the provider, which is how the application does it:
 
 ```csharp
-var config = new CliConfig
-{
-    JiraBaseUrl = "https://mycompany.atlassian.net",
-    JiraApiToken = Environment.GetEnvironmentVariable("JIRA_TOKEN"),
-    DefaultProject = null,
-    CacheExpirationMinutes = 15,
-    EnableDetailedLogging = false,
-    DefaultSprintCount = 3,
-    ExportFormat = "json"
-};
+ICliConfig config = provider.LoadConfiguration(); // applies sources in order, then Validate()
 
-config.Validate(); // succeeds, project is optional
+Console.WriteLine(config); // token is redacted
 ```
 
-### Example 2: Configuration with explicit project and disabled cache
+Building the object directly, for example in a test:
 
 ```csharp
 var config = new CliConfig
 {
     JiraBaseUrl = "https://mycompany.atlassian.net",
-    JiraApiToken = "ATATT3xFfGF0...",
+    JiraApiToken = "test-token",
     DefaultProject = "DEV",
-    CacheExpirationMinutes = 0,
-    EnableDetailedLogging = true,
-    DefaultSprintCount = 5,
-    ExportFormat = "csv"
+    JiraApiTimeoutSeconds = 60,
 };
 
-config.Validate(); // cache disabled, detailed logging on
+config.Validate(); // throws InvalidOperationException if any rule above fails
 ```
 
 ## Notes
 
-- **Thread safety:** `CliConfig` is a plain data object with no internal synchronization. After `Validate()` completes successfully, the instance should be treated as immutable and shared freely across threads. If fields are mutated after validation, the caller must re-validate and ensure no concurrent readers are using stale values.
-- **Validation scope:** `Validate()` does not verify that `JiraBaseUrl` is reachable or that `JiraApiToken` is accepted by the server. Runtime authentication failures will surface as exceptions from the HTTP layer, not from configuration validation.
-- **`DefaultProject` null handling:** When `DefaultProject` is `null`, every command that requires a project scope must receive an explicit project argument. The configuration itself remains valid regardless.
-- **`ExportFormat` casing:** Validation is case-insensitive, but downstream formatters may rely on the exact stored string. Supplying a recognized value in unexpected casing (e.g., `JSON` instead of `json`) will pass validation but could cause mismatches if consumers perform case-sensitive comparisons. Normalizing to lowercase before storage is recommended.
-- **`CacheExpirationMinutes` at zero:** A value of zero bypasses the cache layer entirely. This is distinct from a very small positive value, which would still consult the cache and potentially return stale data within that narrow window.
-- **`EnableDetailedLogging` and secrets:** Even when detailed logging is enabled, the application must suppress the token value. The configuration object itself does not enforce this; it is the responsibility of the logging pipeline.
+- **Secrets:** `JiraApiToken` must not be logged. `ToString()` redacts it, and the provider never includes it in exception messages. Do not add it to `appsettings.json` in version control; use `JIRA_API_TOKEN` instead.
+- **Thread safety:** `CliConfig` is a plain mutable object with no synchronization. Treat it as read-only once `Validate()` has succeeded and share it freely across threads. If you change a property after validation, call `Validate()` again.
+- **Units:** timeouts and circuit-breaker durations are in seconds. `CacheExpirationMinutes` is in minutes.
