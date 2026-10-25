@@ -1535,6 +1535,83 @@ var recentlyClosed = await repository.GetRecentClosedSprints(count: 5);
 repository.Clear();
 ```
 
+## AppConfigurationProvider
+
+`AppConfigurationProvider` (namespace `JiraAnalyticsCli.Configuration`) implements `IConfigurationProvider` and builds the `ICliConfig` used by the rest of the application. `LoadConfiguration()` reads the sources in order, validates the result, and returns a new `CliConfig`. `ServiceFactory` registers the provider as a singleton and resolves `ICliConfig` by calling `LoadConfiguration()` once.
+
+The constructor takes an `ILogger<AppConfigurationProvider>` and a `JiraOptions` instance. Both arguments must be non-null (`ArgumentNullException` otherwise). The `JiraOptions` argument carries the Jira settings already resolved from CLI flags, environment variables and `appsettings.json` (see [2. Configure credentials](#2-configure-credentials)).
+
+Sources are applied in this order, and each later source overwrites the earlier one:
+
+1. Built-in defaults from `CliConfig`.
+2. `appsettings.json` in the current working directory (a relative path, not the executable's folder). The keys are camelCase, for example `cacheExpirationMinutes`. A file that is missing is skipped without a warning.
+3. Environment variables. Each one is listed in the table below.
+4. The `JiraOptions` values for the base URL, API token, timeout and default project. These are always copied in, so `JIRA_URL`, `JIRA_API_TOKEN`, `JIRA_PROJECT` and `JIRA_API_TIMEOUT_SECONDS` take effect through `JiraOptions`. The provider still reads them and rejects bad values in step 3.
+
+Environment variables with an unset or empty value are ignored. Numeric variables also ignore whitespace-only values. Numeric variables must be whole numbers within the range shown below. Any other value causes a `ConfigurationException` whose `PropertyName` is the variable name. The message does not repeat the value, because the value may be a credential pasted into the wrong variable.
+
+| Environment variable | `appsettings.json` key | Allowed values | Default |
+|---|---|---|---|
+| `JIRA_URL`, `JIRA_BASE_URL` | `jiraBaseUrl` | Any string, replaced by `JiraOptions.BaseUrl` | `https://jira.atlassian.net` |
+| `JIRA_TOKEN`, `JIRA_API_TOKEN` | `jiraApiToken` | Any string, replaced by `JiraOptions.ApiToken` | empty |
+| `JIRA_PROJECT`, `JIRA_DEFAULT_PROJECT` | `defaultProject` | Any string, replaced by `JiraOptions.ProjectKey` | none |
+| `JIRA_API_TIMEOUT_SECONDS` | `jiraApiTimeoutSeconds` | 1 to 300 (env only); replaced by `JiraOptions.TimeoutSeconds` | 30 |
+| `CACHE_EXPIRATION_MINUTES` | `cacheExpirationMinutes` | 0 to 10080 (env only) | 15 |
+| `DETAILED_LOGGING` | `enableDetailedLogging` | `true` or `false`, case-insensitive (`bool.TryParse`); JSON must be a boolean | `false` |
+| `DEFAULT_SPRINT_COUNT` | `defaultSprintCount` | 1 to 100 (env only) | 5 |
+| `EXPORT_FORMAT` | `exportFormat` | Any string, not checked here | `txt` |
+| `JIRA_API_MAX_RETRY_ATTEMPTS` | `jiraApiMaxRetryAttempts` | 1 to 10 (env only) | 5 |
+| `JIRA_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD` | `jiraApiCircuitBreakerFailureThreshold` | 1 to 100 (env only) | 5 |
+| `JIRA_API_CIRCUIT_BREAKER_DURATION_SECONDS` | `jiraApiCircuitBreakerDurationSeconds` | 1 to 3600 (env only) | 30 |
+| `JIRA_API_MAX_RESULTS_PER_REQUEST` | `jiraApiMaxResultsPerRequest` | 1 to 1000 (env only) | 1000 |
+| `JIRA_API_MAX_PAGES` | `jiraApiMaxPages` | 1 to 1000 (env only) | 100 |
+| `JIRA_API_MAX_PAGE_SIZE` | `jiraApiMaxPageSize` | 1 to 1000 (env only) | 200 |
+
+For JSON, numeric keys must be JSON integers. A value of the wrong type is ignored and the default or earlier value is kept. A string key whose value is not a JSON string stops the rest of the file from being read, and the remaining keys fall back to their defaults.
+
+If `appsettings.json` is not valid JSON, the provider logs a warning with the line and byte position and continues with the environment variables and defaults. The warning does not quote the bad text, because it may contain a token.
+
+After all sources are applied, `CliConfig.Validate()` runs. It requires a non-empty absolute `http` or `https` base URL, a non-empty API token, and positive values for every numeric setting. It throws `InvalidOperationException` with a message that names the setting. The provider logs the error and rethrows it.
+
+The provider never logs or throws the token. Its log messages name variables and keys, and report only parsed numbers.
+
+### Usage Example
+
+```csharp
+using JiraAnalyticsCli.Configuration;
+using JiraAnalyticsCli.Exceptions;
+using Microsoft.Extensions.Logging.Abstractions;
+using System;
+
+// Settings already resolved from CLI flags, environment and appsettings.json
+var jiraOptions = new JiraOptions
+{
+    BaseUrl = "https://your-company.atlassian.net",
+    ApiToken = Environment.GetEnvironmentVariable("JIRA_API_TOKEN") ?? string.Empty,
+    ProjectKey = "PROJ",
+    TimeoutSeconds = 30
+};
+
+var provider = new AppConfigurationProvider(NullLogger<AppConfigurationProvider>.Instance, jiraOptions);
+
+try
+{
+    // Reads appsettings.json, applies environment overrides, then validates
+    var config = provider.LoadConfiguration();
+    Console.WriteLine($"Cache: {config.CacheExpirationMinutes} min, page size: {config.JiraApiMaxPageSize}");
+}
+catch (ConfigurationException ex)
+{
+    // A numeric environment variable is out of range or not a whole number
+    Console.Error.WriteLine($"Fix {ex.PropertyName} and try again.");
+}
+catch (InvalidOperationException ex)
+{
+    // Validation failed, for example when the API token is empty
+    Console.Error.WriteLine(ex.Message);
+}
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
