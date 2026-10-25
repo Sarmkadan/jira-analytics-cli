@@ -212,6 +212,37 @@ public class DebuggerDisplayTests
         developer.ToString().Should().Be("Jane Doe - 0 completed, 0 in progress");
     }
 
+    [Fact]
+    public void JiraProject_ToString_ShowsNameKeySprintCountAndActiveTeamSize()
+    {
+        var project = new JiraProject
+        {
+            Key = "ALPHA",
+            Name = "Alpha",
+            Sprints =
+            {
+                new Sprint { Id = 1, Key = "ALPHA-S1", Name = "Sprint 1", State = "Closed" },
+                new Sprint { Id = 2, Key = "ALPHA-S2", Name = "Sprint 2", State = "Active" }
+            },
+            TeamMembers =
+            {
+                new Developer { Key = "jdoe", Name = "jdoe", DisplayName = "Jane Doe", Active = true },
+                new Developer { Key = "asmith", Name = "asmith", DisplayName = "Alex Smith", Active = true },
+                new Developer { Key = "bold", Name = "bold", DisplayName = "Bob Old", Active = false }
+            }
+        };
+
+        project.ToString().Should().Be("Project: Alpha (ALPHA) - 2 sprints, 2 team members");
+    }
+
+    [Fact]
+    public void JiraProject_ToString_WithNoSprintsOrTeam_ShowsZeroCounts()
+    {
+        var project = new JiraProject { Key = "EMPTY", Name = "Empty" };
+
+        project.ToString().Should().Be("Project: Empty (EMPTY) - 0 sprints, 0 team members");
+    }
+
     [Theory]
     [InlineData(typeof(Sprint))]
     [InlineData(typeof(JiraIssue))]
