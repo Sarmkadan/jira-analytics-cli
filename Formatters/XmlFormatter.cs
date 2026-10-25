@@ -16,6 +16,8 @@ public class XmlFormatter
 
     public XmlFormatter(ILogger<XmlFormatter> logger, bool includeXmlDeclaration = true)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+
         this._logger = logger;
         this._includeXmlDeclaration = includeXmlDeclaration;
     }
