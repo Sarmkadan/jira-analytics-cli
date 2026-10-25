@@ -78,4 +78,24 @@ public static class CycleTimeResultExtensions
 
         return cycleTimeResult.IssueCycleTimes.GetCycleTimeTrendSlope();
     }
+
+    /// <summary>
+    /// Returns the issues whose cycle time is strictly greater than <paramref name="thresholdDays"/>,
+    /// ordered from slowest to fastest, so the stragglers that drag up the average can be surfaced.
+    /// </summary>
+    /// <param name="cycleTimeResult">The cycle time result whose issues are filtered.</param>
+    /// <param name="thresholdDays">The cycle time in days above which an issue is reported.</param>
+    /// <returns>The matching issues, slowest first; empty when none exceed the threshold.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="cycleTimeResult"/> is null.</exception>
+    public static IReadOnlyList<IssueCycleTime> GetIssuesExceedingCycleTime(
+        this CycleTimeResult cycleTimeResult,
+        double thresholdDays)
+    {
+        ArgumentNullException.ThrowIfNull(cycleTimeResult);
+
+        return cycleTimeResult.IssueCycleTimes
+            .Where(i => i.CycleTimeDays > thresholdDays)
+            .OrderByDescending(i => i.CycleTimeDays)
+            .ToList();
+    }
 }
