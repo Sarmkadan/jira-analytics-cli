@@ -11,6 +11,29 @@ namespace JiraAnalyticsCli.Formatters;
 /// </summary>
 public class XmlFormatter
 {
+    private const string DefaultRootElementName = "data";
+    private const string ItemElementName = "item";
+    private const string IndexAttributeName = "index";
+    private const string NullAttributeName = "null";
+    private const string NullAttributeValue = "true";
+    private const string IndentCharacters = "  ";
+    private const string XmlVersion = "1.0";
+    private const string XmlEncodingName = "UTF-8";
+    private const string XmlStandaloneValue = "yes";
+    private const string RoundTripDateTimeFormat = "O";
+    private const string InvalidElementNamePattern = "[^a-zA-Z0-9_-]";
+    private const string InvalidElementNameReplacement = "_";
+    private const string ElementNameFallbackPrefix = "_";
+    private const string XmlParsingErrorPrefix = "XML parsing error: ";
+    private const string UnexpectedErrorPrefix = "Unexpected error: ";
+    private const string FormatFailedMessage = "Failed to format XML";
+    private const string PrettifyFailedMessage = "Failed to prettify XML";
+    private const string FormattedLogMessage = "Formatted data to XML: {XmlLength} bytes";
+    private const string FormatErrorLogMessage = "Error formatting XML";
+    private const string PrettifyErrorLogMessage = "Error prettifying XML";
+    private const string XPathErrorLogMessage = "Error selecting XML values with XPath: {XPath}";
+    private const string PropertyReadWarningMessage = "Could not read property {Property}: {Error}";
+
     private readonly ILogger<XmlFormatter> _logger;
     private readonly bool _includeXmlDeclaration;
 
@@ -26,7 +49,7 @@ public class XmlFormatter
     /// Formats object as XML with root element.
     /// Uses reflection to build XML structure from object properties.
     /// </summary>
-    public string Format(object data, string rootElement = "data")
+    public string Format(object data, string rootElement = DefaultRootElementName)
     {
         ArgumentNullException.ThrowIfNull(data);
         ArgumentException.ThrowIfNullOrEmpty(rootElement);
@@ -37,7 +60,7 @@ public class XmlFormatter
             var settings = new XmlWriterSettings
             {
                 Indent = true,
-                IndentChars = "  ",
+                IndentChars = IndentCharacters,
                 OmitXmlDeclaration = !this._includeXmlDeclaration,
                 Encoding = System.Text.Encoding.UTF8
             };
@@ -48,14 +71,14 @@ public class XmlFormatter
             xmlWriter.Flush();
 
             var xml = stringWriter.ToString();
-            this._logger.LogDebug("Formatted data to XML: {XmlLength} bytes", xml.Length);
+            this._logger.LogDebug(FormattedLogMessage, xml.Length);
 
             return xml;
         }
         catch (Exception ex)
         {
-            this._logger.LogError(ex, "Error formatting XML");
-            throw new InvalidOperationException("Failed to format XML", ex);
+            this._logger.LogError(ex, FormatErrorLogMessage);
+            throw new InvalidOperationException(FormatFailedMessage, ex);
         }
     }
 
@@ -74,11 +97,11 @@ public class XmlFormatter
         }
         catch (XmlException ex)
         {
-            return (false, $"XML parsing error: {ex.Message}");
+            return (false, $"{XmlParsingErrorPrefix}{ex.Message}");
         }
         catch (Exception ex)
         {
-            return (false, $"Unexpected error: {ex.Message}");
+            return (false, $"{UnexpectedErrorPrefix}{ex.Message}");
         }
     }
 
@@ -96,7 +119,7 @@ public class XmlFormatter
             var settings = new XmlWriterSettings
             {
                 Indent = true,
-                IndentChars = "  ",
+                IndentChars = IndentCharacters,
                 OmitXmlDeclaration = !this._includeXmlDeclaration
             };
 
@@ -109,8 +132,8 @@ public class XmlFormatter
         }
         catch (Exception ex)
         {
-            this._logger.LogError(ex, "Error prettifying XML");
-            throw new InvalidOperationException("Failed to prettify XML", ex);
+            this._logger.LogError(ex, PrettifyErrorLogMessage);
+            throw new InvalidOperationException(PrettifyFailedMessage, ex);
         }
     }
 
@@ -143,7 +166,7 @@ public class XmlFormatter
         }
         catch (Exception ex)
         {
-            this._logger.LogError(ex, "Error selecting XML values with XPath: {XPath}", xpathExpression);
+            this._logger.LogError(ex, XPathErrorLogMessage, xpathExpression);
             return new List<string>();
         }
     }
@@ -157,7 +180,7 @@ public class XmlFormatter
             foreach (var key in dict.Keys)
             {
                 var value = dict[key];
-                var element = this.CreateXmlElement(key.ToString() ?? "item", value);
+                var element = this.CreateXmlElement(key.ToString() ?? ItemElementName, value);
                 root.Add(element);
             }
         }
@@ -166,8 +189,8 @@ public class XmlFormatter
             var i = 0;
             foreach (var item in enumerable)
             {
-                var element = this.CreateXmlElement("item", item);
-                element.SetAttributeValue("index", i++);
+                var element = this.CreateXmlElement(ItemElementName, item);
+                element.SetAttributeValue(IndexAttributeName, i++);
                 root.Add(element);
             }
         }
@@ -185,14 +208,14 @@ public class XmlFormatter
                 }
                 catch (Exception ex)
                 {
-                    this._logger.LogWarning("Could not read property {Property}: {Error}", prop.Name, ex.Message);
+                    this._logger.LogWarning(PropertyReadWarningMessage, prop.Name, ex.Message);
                 }
             }
         }
 
         return new XDocument(
             this._includeXmlDeclaration
-                ? new XDeclaration("1.0", "UTF-8", "yes")
+                ? new XDeclaration(XmlVersion, XmlEncodingName, XmlStandaloneValue)
                 : null,
             root
         );
@@ -204,17 +227,17 @@ public class XmlFormatter
 
         if (value == null)
         {
-            element.SetAttributeValue("null", "true");
+            element.SetAttributeValue(NullAttributeName, NullAttributeValue);
         }
         else if (value is DateTime dt)
         {
-            element.Value = dt.ToString("O");
+            element.Value = dt.ToString(RoundTripDateTimeFormat);
         }
         else if (value is System.Collections.IDictionary dict)
         {
             foreach (var key in dict.Keys)
             {
-                var child = this.CreateXmlElement(key.ToString() ?? "item", dict[key]);
+                var child = this.CreateXmlElement(key.ToString() ?? ItemElementName, dict[key]);
                 element.Add(child);
             }
         }
@@ -223,8 +246,8 @@ public class XmlFormatter
             var i = 0;
             foreach (var item in enumerable)
             {
-                var child = this.CreateXmlElement("item", item);
-                child.SetAttributeValue("index", i++);
+                var child = this.CreateXmlElement(ItemElementName, item);
+                child.SetAttributeValue(IndexAttributeName, i++);
                 element.Add(child);
             }
         }
@@ -239,11 +262,11 @@ public class XmlFormatter
     private string SanitizeElementName(string name)
     {
         // XML element names must start with letter or underscore, contain only valid chars
-        var sanitized = System.Text.RegularExpressions.Regex.Replace(name, "[^a-zA-Z0-9_-]", "_");
+        var sanitized = System.Text.RegularExpressions.Regex.Replace(name, InvalidElementNamePattern, InvalidElementNameReplacement);
 
         if (string.IsNullOrEmpty(sanitized) || !char.IsLetter(sanitized[0]) && sanitized[0] != '_')
         {
-            sanitized = "_" + sanitized;
+            sanitized = ElementNameFallbackPrefix + sanitized;
         }
 
         return sanitized;
