@@ -137,4 +137,106 @@ public class JiraIssueTests
 
         cycleTime.Should().BeApproximately(8.0, precision: 0.1);
     }
+
+    /// <summary>
+    /// Verifies that Validate throws an ArgumentException when the key is null.
+    /// </summary>
+    [Fact]
+    public void Validate_WhenKeyIsNull_ThrowsArgumentException()
+    {
+        var issue = BuildIssue();
+        issue.Key = null!;
+
+        var act = () => issue.Validate();
+
+        act.Should().Throw<ArgumentException>().WithMessage("Issue key cannot be empty*");
+    }
+
+    /// <summary>
+    /// Verifies that Validate throws an ArgumentException when the summary is null.
+    /// </summary>
+    [Fact]
+    public void Validate_WhenSummaryIsNull_ThrowsArgumentException()
+    {
+        var issue = BuildIssue();
+        issue.Summary = null!;
+
+        var act = () => issue.Validate();
+
+        act.Should().Throw<ArgumentException>().WithMessage("Issue summary cannot be empty*");
+    }
+
+    /// <summary>
+    /// Verifies that Validate on a default-constructed issue reports the missing key rather than throwing a null reference.
+    /// </summary>
+    [Fact]
+    public void Validate_OnDefaultInstance_ThrowsArgumentExceptionForMissingKey()
+    {
+        var issue = new JiraIssue();
+
+        var act = () => issue.Validate();
+
+        act.Should().Throw<ArgumentException>().WithMessage("Issue key cannot be empty*");
+    }
+
+    /// <summary>
+    /// Verifies that IsOverdue does not throw when the status is null and the due date has passed.
+    /// </summary>
+    [Fact]
+    public void IsOverdue_WhenStatusIsNull_DoesNotThrowAndReturnsTrue()
+    {
+        var issue = BuildIssue(dueDate: DateTime.UtcNow.AddDays(-5));
+        issue.Status = null!;
+
+        var act = () => issue.IsOverdue();
+
+        act.Should().NotThrow();
+        act().Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Verifies that IsHighPriority returns false without throwing when the priority is null.
+    /// </summary>
+    [Fact]
+    public void IsHighPriority_WhenPriorityIsNull_ReturnsFalse()
+    {
+        var issue = BuildIssue();
+        issue.Priority = null!;
+
+        var act = () => issue.IsHighPriority();
+
+        act.Should().NotThrow();
+        act().Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Verifies that IsInProgress returns false without throwing when the status is null.
+    /// </summary>
+    [Fact]
+    public void IsInProgress_WhenStatusIsNull_ReturnsFalse()
+    {
+        var issue = BuildIssue();
+        issue.Status = null!;
+
+        var act = () => issue.IsInProgress();
+
+        act.Should().NotThrow();
+        act().Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Verifies that ToString does not throw when the key and status are null.
+    /// </summary>
+    [Fact]
+    public void ToString_WhenKeyAndStatusAreNull_DoesNotThrow()
+    {
+        var issue = BuildIssue();
+        issue.Key = null!;
+        issue.Status = null!;
+
+        var act = () => issue.ToString();
+
+        act.Should().NotThrow();
+        act().Should().Contain("created");
+    }
 }
