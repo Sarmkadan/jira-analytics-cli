@@ -21,6 +21,19 @@ public static class SprintMetricExtensions
     }
 
     /// <summary>
+    /// Calculates the story points still open in the sprint (planned minus completed).
+    /// </summary>
+    /// <param name="sprintMetric">The sprint metric.</param>
+    /// <returns>The remaining story points, never negative.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="sprintMetric"/> is null.</exception>
+    public static int GetRemainingStoryPoints(this SprintMetric sprintMetric)
+    {
+        ArgumentNullException.ThrowIfNull(sprintMetric);
+
+        return Math.Max(0, sprintMetric.PlannedStoryPoints - sprintMetric.CompletedStoryPoints);
+    }
+
+    /// <summary>
     /// Determines if the sprint is complete.
     /// </summary>
     /// <param name="sprintMetric">The sprint metric.</param>

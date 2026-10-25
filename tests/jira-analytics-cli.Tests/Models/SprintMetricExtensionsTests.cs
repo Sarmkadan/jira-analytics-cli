@@ -61,7 +61,75 @@ public class SprintMetricExtensionsTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.IsSprintComplete"/> 
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetRemainingStoryPoints"/>
+    /// returns the difference between planned and completed story points.
+    /// </summary>
+    [Fact]
+    public void GetRemainingStoryPoints_ShouldReturnPlannedMinusCompleted()
+    {
+        // Arrange
+        var metric = new SprintMetric { PlannedStoryPoints = 40, CompletedStoryPoints = 15 };
+
+        // Act
+        var result = metric.GetRemainingStoryPoints();
+
+        // Assert
+        result.Should().Be(25);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetRemainingStoryPoints"/>
+    /// returns zero when all planned story points are completed.
+    /// </summary>
+    [Fact]
+    public void GetRemainingStoryPoints_ShouldReturnZero_WhenFullyCompleted()
+    {
+        // Arrange
+        var metric = new SprintMetric { PlannedStoryPoints = 30, CompletedStoryPoints = 30 };
+
+        // Act
+        var result = metric.GetRemainingStoryPoints();
+
+        // Assert
+        result.Should().Be(0);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetRemainingStoryPoints"/>
+    /// clamps to zero when completed story points exceed planned story points.
+    /// </summary>
+    [Fact]
+    public void GetRemainingStoryPoints_ShouldClampToZero_WhenCompletedExceedsPlanned()
+    {
+        // Arrange
+        var metric = new SprintMetric { PlannedStoryPoints = 10, CompletedStoryPoints = 13 };
+
+        // Act
+        var result = metric.GetRemainingStoryPoints();
+
+        // Assert
+        result.Should().Be(0);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.GetRemainingStoryPoints"/>
+    /// throws an <see cref="ArgumentNullException"/> when the metric is null.
+    /// </summary>
+    [Fact]
+    public void GetRemainingStoryPoints_ShouldThrowArgumentNullException_WhenMetricIsNull()
+    {
+        // Arrange
+        SprintMetric? metric = null;
+
+        // Act
+        Action act = () => metric!.GetRemainingStoryPoints();
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="JiraAnalyticsCli.Models.SprintMetricExtensions.IsSprintComplete"/>
     /// returns true when the sprint's end date is in the past.
     /// </summary>
     [Fact]
