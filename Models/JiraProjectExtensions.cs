@@ -72,4 +72,17 @@ public static class JiraProjectExtensions
             .ToList()
             .AsReadOnly();
     }
+
+    /// <summary>
+    /// Finds a sprint in the project by its identifier.
+    /// </summary>
+    /// <param name="project">The project to search.</param>
+    /// <param name="sprintId">The identifier of the sprint to locate.</param>
+    /// <returns>The first matching <see cref="Sprint"/>, or <c>null</c> if no sprint has that identifier.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="project"/> is <c>null</c>.</exception>
+    public static Sprint? FindSprintById(this JiraProject project, int sprintId)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        return project.Sprints.FirstOrDefault(s => s.Id == sprintId);
+    }
 }
