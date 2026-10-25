@@ -60,7 +60,7 @@ public class JiraApiService : IJiraApiService
         this._logger = logger;
     }
 
-    public async Task<JiraProject?> GetProjectAsync(string projectKey)
+    public async Task<JiraProject?> GetProjectAsync(string projectKey, CancellationToken cancellationToken = default)
     {
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
@@ -88,10 +88,11 @@ public class JiraApiService : IJiraApiService
             $"project {projectKey}",
             () => this._logger.LogInformation("Fetching project {ProjectKey}", projectKey),
             statusCode => this._logger.LogWarning("Failed to fetch project {ProjectKey}: {StatusCode}", projectKey, statusCode),
-            ex => this._logger.LogError(ex, "Error fetching project {ProjectKey}", projectKey));
+            ex => this._logger.LogError(ex, "Error fetching project {ProjectKey}", projectKey),
+            cancellationToken);
     }
 
-    public async Task<List<Sprint>> GetProjectSprintsAsync(string projectKey)
+    public async Task<List<Sprint>> GetProjectSprintsAsync(string projectKey, CancellationToken cancellationToken = default)
     {
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
@@ -127,10 +128,11 @@ public class JiraApiService : IJiraApiService
             $"sprints for project {projectKey}",
             () => this._logger.LogInformation("Fetching sprints for project {ProjectKey}", projectKey),
             statusCode => this._logger.LogWarning("Failed to fetch sprints: {StatusCode}", statusCode),
-            ex => this._logger.LogError(ex, "Error fetching sprints for project {ProjectKey}", projectKey)) ?? sprints;
+            ex => this._logger.LogError(ex, "Error fetching sprints for project {ProjectKey}", projectKey),
+            cancellationToken) ?? sprints;
     }
 
-    public async Task<Sprint?> GetSprintAsync(int sprintId)
+    public async Task<Sprint?> GetSprintAsync(int sprintId, CancellationToken cancellationToken = default)
     {
         // Fix: Add input validation for sprintId
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
@@ -146,10 +148,11 @@ public class JiraApiService : IJiraApiService
             $"sprint {sprintId}",
             () => this._logger.LogInformation("Fetching sprint {SprintId}", sprintId),
             statusCode => this._logger.LogWarning("Failed to fetch sprint {SprintId}: {StatusCode}", sprintId, statusCode),
-            ex => this._logger.LogError(ex, "Error fetching sprint {SprintId}", sprintId));
+            ex => this._logger.LogError(ex, "Error fetching sprint {SprintId}", sprintId),
+            cancellationToken);
     }
 
-    public async Task<List<JiraIssue>> GetSprintIssuesAsync(int sprintId)
+    public async Task<List<JiraIssue>> GetSprintIssuesAsync(int sprintId, CancellationToken cancellationToken = default)
     {
         // Fix: Add input validation for sprintId
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
@@ -177,10 +180,11 @@ public class JiraApiService : IJiraApiService
             $"issues for sprint {sprintId}",
             () => this._logger.LogInformation("Fetching issues for sprint {SprintId}", sprintId),
             statusCode => this._logger.LogWarning("Failed to fetch sprint issues: {StatusCode}", statusCode),
-            ex => this._logger.LogError(ex, "Error fetching sprint issues")) ?? issues;
+            ex => this._logger.LogError(ex, "Error fetching sprint issues"),
+            cancellationToken) ?? issues;
     }
 
-    public async Task<List<JiraIssue>> GetProjectIssuesAsync(string projectKey)
+    public async Task<List<JiraIssue>> GetProjectIssuesAsync(string projectKey, CancellationToken cancellationToken = default)
     {
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
@@ -208,10 +212,11 @@ public class JiraApiService : IJiraApiService
             $"issues for project {projectKey}",
             () => this._logger.LogInformation("Fetching issues for project {ProjectKey}", projectKey),
             logFailure: null,
-            ex => this._logger.LogError(ex, "Error fetching project issues")) ?? issues;
+            ex => this._logger.LogError(ex, "Error fetching project issues"),
+            cancellationToken) ?? issues;
     }
 
-    public async Task<List<Developer>> GetProjectTeamAsync(string projectKey)
+    public async Task<List<Developer>> GetProjectTeamAsync(string projectKey, CancellationToken cancellationToken = default)
     {
         // Fix: Add input validation for projectKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
@@ -223,7 +228,7 @@ public class JiraApiService : IJiraApiService
 
             // Jira has no dedicated "team roster" endpoint; the team is derived by
             // aggregating the distinct assignees across the project's issues.
-            var issues = await this.GetProjectIssuesAsync(projectKey);
+            var issues = await this.GetProjectIssuesAsync(projectKey, cancellationToken);
 
             var developersByAssignee = new Dictionary<string, Developer>(StringComparer.Ordinal);
 
@@ -252,7 +257,7 @@ public class JiraApiService : IJiraApiService
 
             this._logger.LogInformation("Fetched team data for project {ProjectKey}: {DeveloperCount} developers", projectKey, team.Count);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             this._logger.LogError(ex, "Error fetching project team");
         }
@@ -260,7 +265,7 @@ public class JiraApiService : IJiraApiService
         return team;
     }
 
-    public async Task<JiraIssue?> GetIssueAsync(string issueKey)
+    public async Task<JiraIssue?> GetIssueAsync(string issueKey, CancellationToken cancellationToken = default)
     {
         // Fix: Add input validation for issueKey
         ArgumentNullException.ThrowIfNullOrWhiteSpace(issueKey, nameof(issueKey));
@@ -270,10 +275,11 @@ public class JiraApiService : IJiraApiService
             $"issue {issueKey}",
             logStart: null,
             logFailure: null,
-            ex => this._logger.LogError(ex, "Error fetching issue {IssueKey}", issueKey));
+            ex => this._logger.LogError(ex, "Error fetching issue {IssueKey}", issueKey),
+            cancellationToken);
     }
 
-    public async Task<List<BurndownSnapshot>> GetBurndownDataAsync(int sprintId)
+    public async Task<List<BurndownSnapshot>> GetBurndownDataAsync(int sprintId, CancellationToken cancellationToken = default)
     {
         // Fix: Add input validation for sprintId
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
@@ -285,7 +291,7 @@ public class JiraApiService : IJiraApiService
 
             // Jira's REST API has no burndown endpoint; the standard approach is to
             // derive a snapshot from the sprint's current issue state.
-            var issues = await this.GetSprintIssuesAsync(sprintId);
+            var issues = await this.GetSprintIssuesAsync(sprintId, cancellationToken);
 
             var completedIssues = issues.Where(i => i.Status is "Done" or "Closed").ToList();
             var remainingIssues = issues.Except(completedIssues).ToList();
@@ -310,7 +316,7 @@ public class JiraApiService : IJiraApiService
 
             this._logger.LogInformation("Fetched burndown data for sprint {SprintId}: {Completed}/{Total} pts", sprintId, completedPoints, totalPoints);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             this._logger.LogError(ex, "Error fetching burndown data");
         }
@@ -318,7 +324,7 @@ public class JiraApiService : IJiraApiService
         return snapshots;
     }
 
-    public async Task<JiraSearchResult> SearchByJqlAsync(string jql, int maxResults = 50, int startAt = 0)
+    public async Task<JiraSearchResult> SearchByJqlAsync(string jql, int maxResults = 50, int startAt = 0, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxResults, nameof(maxResults));
@@ -350,15 +356,16 @@ public class JiraApiService : IJiraApiService
             "JQL search",
             () => this._logger.LogInformation("Executing JQL search (startAt={Start}, maxResults={Max}): {Jql}", startAt, maxResults, jql),
             statusCode => this._logger.LogWarning("JQL search returned {StatusCode}", statusCode),
-            ex => this._logger.LogError(ex, "Error executing JQL search")) ?? fallback;
+            ex => this._logger.LogError(ex, "Error executing JQL search"),
+            cancellationToken) ?? fallback;
     }
 
-    public async Task<bool> VerifyConnectionAsync()
+    public async Task<bool> VerifyConnectionAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             this._logger.LogInformation("Verifying Jira API connection");
-            var response = await this._httpClient.GetAsync($"{ApiV3Base}{MyselfRoute}");
+            var response = await this._httpClient.GetAsync($"{ApiV3Base}{MyselfRoute}", cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
@@ -369,7 +376,7 @@ public class JiraApiService : IJiraApiService
             this._logger.LogWarning("Failed to verify Jira connection: {StatusCode}", response.StatusCode);
             return false;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             this._logger.LogError(ex, "Error verifying Jira connection");
             return false;
@@ -382,14 +389,15 @@ public class JiraApiService : IJiraApiService
         string operationName,
         Action? logStart,
         Action<HttpStatusCode>? logFailure,
-        Action<Exception> logError)
+        Action<Exception> logError,
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(operationName, nameof(operationName));
 
         try
         {
             logStart?.Invoke();
-            var response = await this._httpClient.GetAsync(requestUri);
+            var response = await this._httpClient.GetAsync(requestUri, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -397,11 +405,11 @@ public class JiraApiService : IJiraApiService
                 return default;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
             using var doc = JsonDocument.Parse(json);
             return map(doc.RootElement);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             logError(ex);
             return default;
@@ -552,8 +560,9 @@ public class JiraApiService : IJiraApiService
     /// </summary>
     /// <param name="jql">The JQL query string.</param>
     /// <param name="pageSize">Number of issues to fetch per page.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Async stream of issues.</returns>
-    public async IAsyncEnumerable<JiraIssue> StreamIssuesByJqlAsync(string jql, int pageSize = 100)
+    public async IAsyncEnumerable<JiraIssue> StreamIssuesByJqlAsync(string jql, int pageSize = 100, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(jql, nameof(jql));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize, nameof(pageSize));
@@ -569,10 +578,10 @@ public class JiraApiService : IJiraApiService
             
             try
             {
-                var result = await this.SearchByJqlAsync(jql, pageSize, startAt);
+                var result = await this.SearchByJqlAsync(jql, pageSize, startAt, cancellationToken);
                 pageIssues = result.Issues;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
                 this._logger.LogError(ex, "Error fetching page of issues for JQL: {Jql}", jql);
                 yield break;
@@ -601,7 +610,7 @@ public class JiraApiService : IJiraApiService
         this._logger.LogInformation("Completed streaming {IssueCount} issues for JQL query", startAt);
     }
 
-    public async IAsyncEnumerable<JiraIssue> StreamProjectIssuesAsync(string projectKey, int pageSize = 100)
+    public async IAsyncEnumerable<JiraIssue> StreamProjectIssuesAsync(string projectKey, int pageSize = 100, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(projectKey, nameof(projectKey));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize, nameof(pageSize));
@@ -617,10 +626,10 @@ public class JiraApiService : IJiraApiService
 
             try
             {
-                var result = await this.SearchByJqlAsync($"project = {projectKey} {OrderByCreatedDescending}", pageSize, startAt);
+                var result = await this.SearchByJqlAsync($"project = {projectKey} {OrderByCreatedDescending}", pageSize, startAt, cancellationToken);
                 pageIssues = result.Issues;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
                 this._logger.LogError(ex, "Error fetching page of issues for project {ProjectKey}", projectKey);
                 yield break;
@@ -649,7 +658,7 @@ public class JiraApiService : IJiraApiService
         this._logger.LogInformation("Completed streaming issues for project {ProjectKey}", projectKey);
     }
 
-    public async IAsyncEnumerable<JiraIssue> StreamSprintIssuesAsync(int sprintId, int pageSize = 100)
+    public async IAsyncEnumerable<JiraIssue> StreamSprintIssuesAsync(int sprintId, int pageSize = 100, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sprintId, nameof(sprintId));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize, nameof(pageSize));
@@ -665,10 +674,10 @@ public class JiraApiService : IJiraApiService
 
             try
             {
-                var result = await this.SearchByJqlAsync($"sprint = {sprintId} {OrderByCreatedDescending}", pageSize, startAt);
+                var result = await this.SearchByJqlAsync($"sprint = {sprintId} {OrderByCreatedDescending}", pageSize, startAt, cancellationToken);
                 pageIssues = result.Issues;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
                 this._logger.LogError(ex, "Error fetching page of issues for sprint {SprintId}", sprintId);
                 yield break;
