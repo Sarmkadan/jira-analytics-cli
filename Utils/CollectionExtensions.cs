@@ -96,6 +96,22 @@ public static class CollectionExtensions
     }
 
     /// <summary>
+    /// Filters out <see langword="null"/> elements from a sequence of reference types.
+    /// Useful for cleaning up optional values before further processing.
+    /// </summary>
+    /// <typeparam name="T">The reference type of elements in the sequence.</typeparam>
+    /// <param name="source">The source sequence that may contain <see langword="null"/> elements.</param>
+    /// <returns>An enumerable containing only the non-null elements, in their original order.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/></exception>
+    public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        return source.Where(item => item is not null).Select(item => item!);
+    }
+
+    /// <summary>
     /// Safely gets an item at index or returns default value.
     /// Prevents IndexOutOfRangeException when accessing potentially invalid indices.
     /// </summary>
