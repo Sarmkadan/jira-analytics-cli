@@ -362,4 +362,27 @@ public static class BurndownSnapshotExtensions
         this IReadOnlyList<BurndownSnapshot> snapshots,
         int windowSize) =>
         TrendAnalysis.CalculateMovingAverage(snapshots.ToCompletedStoryPointsSeries(), windowSize);
+
+    /// <summary>
+    /// Calculates the percentage of completed issues (by count, not story points) for the snapshot.
+    /// Complements <see cref="BurndownSnapshot.GetBurndownPercentage"/>, which is story-point based.
+    /// </summary>
+    /// <param name="snapshot">The snapshot to evaluate.</param>
+    /// <returns>Percentage of issues completed (0-100), or 0 when there are no issues.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when snapshot is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when snapshot contains validation errors.</exception>
+    public static double GetIssueCompletionPercentage(this BurndownSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        // Validate the snapshot before processing
+        snapshot.EnsureValid();
+
+        if (snapshot.TotalIssueCount == 0)
+        {
+            return 0;
+        }
+
+        return snapshot.CompletedIssueCount / (double)snapshot.TotalIssueCount * 100;
+    }
 }
