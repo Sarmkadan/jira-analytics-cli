@@ -155,6 +155,36 @@ public class DebuggerDisplayTests
     }
 
     [Fact]
+    public void BurndownSnapshot_ToString_WithNoStoryPoints_ShowsZeroPercent()
+    {
+        var snapshot = new BurndownSnapshot
+        {
+            SprintId = 7,
+            Timestamp = new DateTimeOffset(2026, 1, 5, 0, 0, 0, TimeSpan.Zero),
+            TotalStoryPoints = 0,
+            CompletedStoryPoints = 0,
+            RemainingStoryPoints = 0
+        };
+
+        snapshot.ToString().Should().Be("[sprint 7] 2026-01-05 00:00 UTC - 0/0 pts done (0.0%), 0 remaining");
+    }
+
+    [Fact]
+    public void BurndownSnapshot_ToString_WithNonUtcOffset_ShowsTimestampInUtc()
+    {
+        var snapshot = new BurndownSnapshot
+        {
+            SprintId = 42,
+            Timestamp = new DateTimeOffset(2026, 9, 5, 14, 30, 0, TimeSpan.FromHours(2)),
+            TotalStoryPoints = 20,
+            CompletedStoryPoints = 5,
+            RemainingStoryPoints = 15
+        };
+
+        snapshot.ToString().Should().Be("[sprint 42] 2026-09-05 12:30 UTC - 5/20 pts done (25.0%), 15 remaining");
+    }
+
+    [Fact]
     public void Developer_ToString_ShowsDisplayNameAndCompletedAndInProgressCounts()
     {
         var developer = new Developer
